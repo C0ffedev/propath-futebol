@@ -1,0 +1,11 @@
+# não enviar pro build da imagem
+carreira.db
+*.db
+*.sqlite
+node_modules
+.git
+.gitignore
+gh.zip
+gh_extract
+_refactor_main.js
+npm-debug.log

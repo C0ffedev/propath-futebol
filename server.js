@@ -6,7 +6,7 @@ const crypto = require('crypto');
 const { DatabaseSync } = require('node:sqlite');
 
 const ROOT = __dirname;
-const DB_PATH = path.join(ROOT, 'carreira.db');
+const DB_PATH = process.env.DB_PATH || path.join(ROOT, 'carreira.db');
 const PORT = process.env.PORT || 4321;
 
 // ---------- SQLite ----------
