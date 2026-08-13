@@ -31,15 +31,22 @@ function starInfo(star, teamO){
   if (typeof star === 'string') return { n:star, o:_clamp((teamO||70) + ((_hash(star)%9)-4), 55, 95) };
   return { n:star.n, o:_clamp(star.o||teamO||70, 55, 95) };
 }
-// elenco mínimo de 11 titulares (determinístico por nome do time), estrelas como destaques
+// elenco de 11 titulares (determinístico por nome do time), estrelas como destaques
+// formação 4-3-3 padrão do futebol brasileiro
 E.genSquad = function(teamName, teamO, stars){
-  const layout = ['GOL','ZAG','ZAG','ZAG','LAT','LAT','MEI','MEI','MEI','ATA','ATA'];
-  const posBias = { GOL:3, ZAG:-2, LAT:-1, MEI:0, ATA:2, VOL:0 };
+  const layout = [
+    { pos:'GOL', setor:'Goleiro' },
+    { pos:'ZAG', setor:'Defesa' }, { pos:'ZAG', setor:'Defesa' },
+    { pos:'LAT', setor:'Defesa' }, { pos:'LAT', setor:'Defesa' },
+    { pos:'VOL', setor:'Meio' }, { pos:'MEI', setor:'Meio' }, { pos:'MEI', setor:'Meio' },
+    { pos:'ATA', setor:'Ataque' }, { pos:'ATA', setor:'Ataque' }, { pos:'ATA', setor:'Ataque' }
+  ];
+  const posBias = { GOL:3, ZAG:-2, LAT:-1, VOL:0, MEI:0, ATA:2 };
   const used = (stars||[]).map(s=>starInfo(s, teamO));
   const pool = ['Júnior','Rafinha','Dudu','Léo','Caio','Thiago','Pedro','Lucas','Marcelo','Bruno','Wallace','Rômulo','Henrique','Vinícius','Gabriel','Felipe','Rodrigo','Anderson','Patrick','Yuri'];
   const squad = [];
   for (let i=0;i<11;i++){
-    const pos = layout[i];
+    const { pos, setor } = layout[i];
     let n, o;
     if (i < used.length){ n = used[i].n; o = used[i].o; }
     else {
@@ -47,7 +54,7 @@ E.genSquad = function(teamName, teamO, stars){
       n = pool[seed % pool.length] + ' ' + String.fromCharCode(65 + (seed>>3)%26) + '.';
       o = _clamp((teamO||70) + (posBias[pos]||0) + ((seed%7)-3), 55, 95);
     }
-    squad.push({ pos, n, o });
+    squad.push({ pos, setor, n, o });
   }
   return squad;
 };

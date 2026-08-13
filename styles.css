@@ -394,3 +394,18 @@ input:focus,select:focus{outline:none;border-color:var(--accent)}
 .club-hon{display:flex;flex-wrap:wrap;gap:6px}
 .club-hon .hon{background:#241a08;border:1px solid #4a3608;color:var(--gold);border-radius:8px;padding:4px 9px;font-size:12px;font-weight:700}
 .club-hall .trophy{background:linear-gradient(135deg,#2a1418,#3a1a20);border:1px solid var(--accent);border-radius:9px;padding:8px 12px;margin:6px 0;font-weight:700;color:var(--gold);font-size:14px}
+
+/* ===== PROVÁVEL ESCALAÇÃO (4-3-3) ===== */
+.ms-card.squad{margin-top:14px}
+.squad-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:8px}
+.squad-col{background:rgba(0,0,0,.18);border:1px solid var(--line);border-radius:10px;padding:10px}
+.squad-h{font-size:14px;font-weight:800;color:var(--gold);text-align:center;padding:6px 0;margin-bottom:8px;border-bottom:1px solid var(--line)}
+.squad-h.me{color:var(--accent);border-bottom-color:var(--accent)}
+.sblock{margin-bottom:8px}
+.sblock-h{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin:6px 0 4px}
+.srow{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;padding:3px 6px;border-radius:6px;font-size:13px}
+.srow:nth-child(odd){background:rgba(255,255,255,.03)}
+.spos{font-size:10px;font-weight:800;color:var(--accent);background:rgba(255,39,64,.14);border:1px solid rgba(255,39,64,.35);border-radius:5px;padding:2px 5px;min-width:62px;text-align:center}
+.sn{color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sov{font-weight:800;color:var(--gold);font-size:12px;min-width:24px;text-align:right}
+@media(max-width:560px){.squad-cols{grid-template-columns:1fr}}

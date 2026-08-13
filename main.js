@@ -286,10 +286,16 @@ function showMatchScreen(r){
   const _oppTeam = E.leagueTeams(S).find(t=>t.n===oppName) || LEAGUE_BY_ID(S.leagueId).teams.find(t=>t.n===oppName) || { o:(opp&&opp.o)||70, stars:[] };
   const _youSquad = E.genSquad(S.teamName, S.teamOvr, _myStars);
   const _oppSquad = E.genSquad(oppName, _oppTeam.o||70, _oppTeam.stars||[]);
-  const squadSection = `<div class="ms-card squad"><div class="ms-card-h">PROVÁVEL ESCALAÇÃO</div>
+  const squadCols = (title, me, sq) => {
+    const settGroup = (setor, rows) => `<div class="sblock"><div class="sblock-h">${setor}</div>${rows.map(p=>`<div class="srow"><span class="spos">${(POSITIONS[p.pos]&&POSITIONS[p.pos].label)||p.pos}</span><span class="sn">${UI.esc(p.n)}</span><span class="sov">${p.o}</span></div>`).join('')}</div>`;
+    const order = ['Goleiro','Defesa','Meio','Ataque'];
+    const groups = order.map(s=>{ const r=sq.filter(x=>x.setor===s); return r.length?settGroup(s,r):''; }).join('');
+    return `<div class="squad-col"><div class="squad-h ${me?'me':''}">${UI.esc(title)}</div>${groups}</div>`;
+  };
+  const squadSection = `<div class="ms-card squad"><div class="ms-card-h">PROVÁVEL ESCALAÇÃO (4-3-3)</div>
     <div class="squad-cols">
-      <div class="squad-col"><div class="squad-h me">${UI.esc(S.teamName)}</div>${_youSquad.map(p=>`<div class="srow"><span class="spos">${p.pos}</span><span class="sn">${UI.esc(p.n)}</span><span class="sov">${p.o}</span></div>`).join('')}</div>
-      <div class="squad-col"><div class="squad-h">${UI.esc(oppName)}</div>${_oppSquad.map(p=>`<div class="srow"><span class="spos">${p.pos}</span><span class="sn">${UI.esc(p.n)}</span><span class="sov">${p.o}</span></div>`).join('')}</div>
+      ${squadCols(S.teamName, true, _youSquad)}
+      ${squadCols(oppName, false, _oppSquad)}
     </div></div>`;
   const html = `
   <div class="mscreen ${resCls}">
