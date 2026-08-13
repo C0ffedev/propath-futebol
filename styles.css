@@ -395,6 +395,16 @@ input:focus,select:focus{outline:none;border-color:var(--accent)}
 .club-hon .hon{background:#241a08;border:1px solid #4a3608;color:var(--gold);border-radius:8px;padding:4px 9px;font-size:12px;font-weight:700}
 .club-hall .trophy{background:linear-gradient(135deg,#2a1418,#3a1a20);border:1px solid var(--accent);border-radius:9px;padding:8px 12px;margin:6px 0;font-weight:700;color:var(--gold);font-size:14px}
 
+/* ===== ABA TEMPORADA: aviso de janela de transferências ===== */
+.tf-banner{margin:10px 0 12px;padding:9px 12px;border-radius:9px;font-size:13px;background:rgba(177,75,255,.12);border:1px solid rgba(177,75,255,.4);color:var(--obsession);font-weight:600}
+.tf-banner.open{background:rgba(255,39,64,.16);border-color:var(--accent);color:var(--txt);font-weight:800;animation:pulse 1.4s infinite}
+.tf-banner.done{background:rgba(255,255,255,.05);border-color:var(--line);color:var(--muted);font-weight:500}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,39,64,.4)}50%{box-shadow:0 0 0 6px rgba(255,39,64,0)}}
+.tf-window{background:linear-gradient(90deg,rgba(177,75,255,.18),transparent);border-left:3px solid var(--obsession)}
+.tf-window td{color:var(--obsession);font-weight:700;padding:6px 4px}
+.tf-window .rd{color:var(--obsession);font-size:10px;letter-spacing:1px}
+
+
 /* ===== PROVÁVEL ESCALAÇÃO (4-3-3) ===== */
 .ms-card.squad{margin-top:14px}
 .squad-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:8px}

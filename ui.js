@@ -127,8 +127,15 @@ UI.ficha = function(){
 
 UI.temporada = function(){
   const S=UI.S;
+  const midIdx = Math.floor((S.calendar||[]).length/2); // janela na metade da temporada
+  const midWeek = midIdx + 1; // semana 1-based
   const rows=[]; let mi=0;
   S.calendar.forEach((c,i)=>{
+    // linha destacada da janela de transferências na posição do calendário
+    if (i === midIdx){
+      const state = (S.calIdx > midIdx) ? 'já ocorreu' : (S.calIdx === midIdx || S.pendingTransfer) ? 'ABERTA AGORA' : `Semana ${midWeek}`;
+      rows.push(`<tr class="tf-window"><td>🔔</td><td class="rd">JAN</td><td style="text-align:left"><b>JANELA DE TRANSFERÊNCIAS</b> — ${state}</td><td></td></tr>`);
+    }
     if (c.type!=='match') return;
     const done = i < S.calIdx;
     const isCur = i === S.calIdx;
@@ -139,7 +146,12 @@ UI.temporada = function(){
     const round = c.cup ? 'COPA' : ('R'+(c.round||(done?'?':'')));
     rows.push(`<tr class="${isCur?'pos':''}"><td>${done?'✓':(isCur?'▶':'')}</td><td class="rd">${round}</td><td style="text-align:left">${UI.esc(t)}</td><td>${r}</td></tr>`);
   });
+  let tfBanner;
+  if (S.pendingTransfer) tfBanner = `<div class="tf-banner open">🔔 JANELA DE TRANSFERÊNCIAS ABERTA — decida seu futuro na aba Mercado/Carreira.</div>`;
+  else if (S.calIdx > midIdx) tfBanner = `<div class="tf-banner done">A janela de transferências da temporada ${S.season} já ocorreu (metade da temporada).</div>`;
+  else tfBanner = `<div class="tf-banner">🔔 Próxima janela de transferências: <b>Semana ${midWeek}</b> (metade da temporada ${S.season}).</div>`;
   return `<div class="panel"><h2><span class="ic">📅</span> Calendário de Jogos — Temporada ${S.season}</h2>
+    ${tfBanner}
     <table class="tbl"><tr><th></th><th class="rd">Rod</th><th class="l">Jogo</th><th>Resultado</th></tr>${rows.join('')}</table>
     <div class="muted" style="margin-top:8px">CASA/FORA definem mando; COPA = mata-mata extra. A tabela da liga (aba Liga) reflete estes resultados + os rivais simulados.</div>
     <div class="actions"><button class="big-btn purple" id="btn-plan">⚙ Definir Plano de Treino</button></div></div>`;
