@@ -2,6 +2,7 @@
 // Servidor local: serve o protótipo e persiste os saves em SQLite (várias carreiras).
 const express = require('express');
 const path = require('path');
+const crypto = require('crypto');
 const { DatabaseSync } = require('node:sqlite');
 
 const ROOT = __dirname;
@@ -32,6 +33,19 @@ db.exec(`
     updated_at INTEGER NOT NULL
   );
 `);
+
+// ---------- Senhas (hash scrypt + salt, nunca plaintext) ----------
+function hashPassword(pass) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const derived = crypto.scryptSync(String(pass), salt, 64).toString('hex');
+  return `${salt}:${derived}`;
+}
+function verifyPassword(pass, stored) {
+  if (!stored || !stored.includes(':')) return false;
+  const [salt, derived] = stored.split(':');
+  const check = crypto.scryptSync(String(pass), salt, 64).toString('hex');
+  return crypto.timingSafeEqual(Buffer.from(check, 'hex'), Buffer.from(derived, 'hex'));
+}
 
 // ---------- Express ----------
 const app = express();
@@ -116,10 +130,23 @@ app.post('/api/account', (req, res) => {
     const { id, name, pass } = req.body || {};
     if (!id || !name) return res.status(400).json({ error: 'id e name obrigatórios' });
     const now = Date.now();
+    const passHash = pass ? hashPassword(pass) : '';
     db.prepare('INSERT INTO accounts (id, name, pass, created_at) VALUES (?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET name=excluded.name')
-      .run(String(id), String(name), String(pass || ''), now);
+      .run(String(id), String(name), passHash, now);
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: 'Erro ao criar conta: ' + String(e) }); }
+});
+
+// login (modo online — verifica hash, nunca compara plaintext)
+app.post('/api/login', (req, res) => {
+  try {
+    const { id, pass } = req.body || {};
+    if (!id) return res.status(400).json({ error: 'id obrigatório' });
+    const row = db.prepare('SELECT id, name, pass FROM accounts WHERE id = ?').get(String(id));
+    if (!row) return res.status(404).json({ error: 'Conta não encontrada' });
+    if (!verifyPassword(pass || '', row.pass)) return res.status(401).json({ error: 'Senha incorreta' });
+    res.json({ ok: true, id: row.id, name: row.name });
+  } catch (e) { res.status(500).json({ error: 'Erro ao autenticar: ' + String(e) }); }
 });
 
 // healthcheck

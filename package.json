@@ -1,8 +1,8 @@
 {
-  "name": "propath-valorant",
+  "name": "propath-futebol",
   "version": "2.4.0",
   "private": true,
-  "description": "Prototipo de carreira de jogador de Valorant (frontend + backend local)",
+  "description": "Modo carreira de jogador de futebol (frontend + backend Node/Express + SQLite)",
   "scripts": {
     "start": "node server.js"
   },
