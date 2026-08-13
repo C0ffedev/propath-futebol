@@ -1,0 +1,31 @@
+# ProPath Futebol — ignore de publicação segura
+# Não versionar o banco de dados local (saves reais, contas, leaderboard)
+carreira.db
+*.db
+*.sqlite
+*.sqlite3
+
+# Dependências Node
+node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Segredos / ambiente
+.env
+.env.*
+!.env.exemplo
+
+# Lixos de SO / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
+
+# Builds
+dist/
+
+# Scripts de refactor descartáveis (contêm paths absolutos pessoais)
+_refactor_main.js

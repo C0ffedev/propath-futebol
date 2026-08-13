@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ProPath Futebol — A Carreira (Pânico × Obsessão)</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- ONBOARDING -->
+  <div id="onboard" class="hidden"></div>
+
+  <!-- APP -->
+  <header id="topbar" class="hidden">
+    <div class="brand">PRO<span>PATH</span> · FUTEBOL</div>
+    <div id="topbar-info" class="topinfo"></div>
+    <div class="topbtns">
+      <button class="tbtn" id="btn-save">Salvar</button>
+      <button class="tbtn ghost" id="btn-menu">☰</button>
+    </div>
+  </header>
+
+  <nav id="tabs" class="hidden"></nav>
+
+  <main id="app" class="hidden"></main>
+
+  <!-- MODAL / TOAST -->
+  <div id="modal" class="modal hidden"><div class="modal-box" id="modal-box"></div></div>
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="data.js"></script>
+  <script src="engine.js"></script>
+  <script src="ui.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>

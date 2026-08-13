@@ -1,0 +1,671 @@
+// ===== engine.js — ProPath Futebol (lógica da carreira) =====
+const E = {};
+
+E.calcOvr = function(pos, attrs){
+  const ks = POSITIONS[pos].attrs;
+  let s = 0; for (const k of ks) s += (attrs[k]||50);
+  return Math.round(s / ks.length);
+};
+
+// potencial define teto de crescimento por idade
+E.potential = function(age, startOvr){
+  if (age <= 21) return Math.min(99, startOvr + 30);
+  if (age <= 24) return Math.min(99, startOvr + 22);
+  if (age <= 27) return Math.min(99, startOvr + 14);
+  if (age <= 30) return Math.min(99, startOvr + 6);
+  return Math.min(99, startOvr + 2);
+};
+
+// escolhe a liga inicial com base no potencial do jogador (o usuário não seleciona)
+E.leagueForPotential = function(pot){
+  if (pot >= 82) return 'bra-sa';
+  if (pot >= 74) return 'bra-sb';
+  return 'bra-varzea';
+};
+
+// ---- Elencos, estrelas com OVR próprio e evolução da liga (funcional) ----
+function _hash(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
+function _clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+// estrela aceita string (OVR derivado/determinístico) ou objeto {n,o}
+function starInfo(star, teamO){
+  if (typeof star === 'string') return { n:star, o:_clamp((teamO||70) + ((_hash(star)%9)-4), 55, 95) };
+  return { n:star.n, o:_clamp(star.o||teamO||70, 55, 95) };
+}
+// elenco mínimo de 11 titulares (determinístico por nome do time), estrelas como destaques
+E.genSquad = function(teamName, teamO, stars){
+  const layout = ['GOL','ZAG','ZAG','ZAG','LAT','LAT','MEI','MEI','MEI','ATA','ATA'];
+  const posBias = { GOL:3, ZAG:-2, LAT:-1, MEI:0, ATA:2, VOL:0 };
+  const used = (stars||[]).map(s=>starInfo(s, teamO));
+  const pool = ['Júnior','Rafinha','Dudu','Léo','Caio','Thiago','Pedro','Lucas','Marcelo','Bruno','Wallace','Rômulo','Henrique','Vinícius','Gabriel','Felipe','Rodrigo','Anderson','Patrick','Yuri'];
+  const squad = [];
+  for (let i=0;i<11;i++){
+    const pos = layout[i];
+    let n, o;
+    if (i < used.length){ n = used[i].n; o = used[i].o; }
+    else {
+      const seed = _hash((teamName||'x')+'#'+(i-used.length));
+      n = pool[seed % pool.length] + ' ' + String.fromCharCode(65 + (seed>>3)%26) + '.';
+      o = _clamp((teamO||70) + (posBias[pos]||0) + ((seed%7)-3), 55, 95);
+    }
+    squad.push({ pos, n, o });
+  }
+  return squad;
+};
+// times da liga: usa elenco evoluído (S.leagueTeams) se houver, senão o catálogo base
+E.leagueTeams = function(S){ return (S && S.leagueTeams && S.leagueTeams.length) ? S.leagueTeams : LEAGUE_BY_ID(S.leagueId).teams; };
+// faz uma cópia profunda dos times da liga para o save (base da evolução)
+function _copyLeagueTeams(leagueId){
+  const lg = LEAGUE_BY_ID(leagueId); if (!lg) return [];
+  return lg.teams.map(t=>({ n:t.n, o:t.o, c:t.c, code:t.code, stars:(t.stars||[]).map(s=> (typeof s==='string'? s : {n:s.n,o:s.o})), honours:t.honours||{} }));
+}
+
+// atributos iniciais a partir de archetype (ou distribuição personalizada)
+E.attrStart = function(o){
+  const pos = o.pos;
+  const ks = POSITIONS[pos].attrs;
+  const a = {};
+  for (const k of ks) a[k] = 48 + Math.floor(Math.random()*8);
+  // personalizada: aplica pontos do draft
+  if (o.arch === 'personalizada' && o.skillPts){
+    const pts = o.skillPts;
+    for (const k of ks) a[k] = Math.min(95, Math.max(40, (a[k]||50) + (pts[k]||0)));
+  }
+  // aplica boost de pé (ambidestro)
+  const footBoost = (o.foot==='amb') ? (FOOT_INFO.amb.boost||0) : 0;
+  const archBoost = (o.arch && ARCHETYPES.find(x=>x.k===o.arch)) ? 0 : 0;
+  for (const k of ks) a[k] = Math.min(95, (a[k]||50) + footBoost);
+  // skills concedem atributos
+  const skills = o.skills || [];
+  for (const sk of skills){
+    const def = SKILLS.find(s=>s.k===sk);
+    if (!def) continue;
+    if (def.attrAll) for (const k of ks) a[k] = Math.min(95, (a[k]||50)+def.attrAll);
+    if (def.attr) for (const k in def.attr) if (a[k]!==undefined) a[k]=Math.min(95,(a[k]||50)+def.attr[k]);
+  }
+  // aplica OVR alvo do archetype (escala os atributos)
+  if (o.ovrTarget){
+    const cur = E.calcOvr(pos, a);
+    const f = o.ovrTarget / cur;
+    for (const k of ks) a[k] = Math.min(95, Math.round((a[k]||50)*f));
+  }
+  return a;
+};
+
+E.createPlayer = function(o){
+  const arch = ARCHETYPES.find(x=>x.k===o.arch) || ARCHETYPES[3];
+  const foot = o.foot || 'dir';
+  const age = o.age != null ? o.age : (arch.age[0] + Math.floor(Math.random()*(arch.age[1]-arch.age[0]+1)));
+  // OVR alvo conforme archetype
+  let ovrTarget = null;
+  if (arch.k === 'personalizada') ovrTarget = null;
+  else ovrTarget = arch.ovr + Math.floor(Math.random()*3)-1;
+  const attrs = E.attrStart({pos:o.pos, arch:o.arch, foot, skillPts:o.skillPts, ovrTarget});
+  const ovr = E.calcOvr(o.pos, attrs);
+  let pot;
+  if (o.potTarget != null) pot = o.potTarget;
+  else if (arch.pot != null) pot = arch.pot + Math.floor(Math.random()*11)-5;
+  else pot = Math.min(99, ovr + 20);
+  pot = Math.max(50, Math.min(99, pot));
+  let tierDef;
+  if (o.leagueId && LEAGUE_BY_ID(o.leagueId)) tierDef = LEAGUE_BY_ID(o.leagueId);
+  else tierDef = LEAGUE_BY_ID(E.leagueForPotential(pot));
+  const team = tierDef.teams[Math.floor(Math.random()*tierDef.teams.length)];
+  const me = {
+    id: 'save-' + Date.now().toString(36),
+    name: o.name, nation: o.nation, pos: o.pos,
+    age, attrs, ovr, pot, foot, skills: o.skills||[],
+    archetype: o.arch || 'branco',
+    leagueId: tierDef.id, tierIndex: TIERS.indexOf(tierDef), teamName: team.n,
+    teamOvr: team.o, salary: 1500,
+    week: 1, season: 1, morale: 70, form: 3,
+    table: {p:0,w:0,d:0,l:0,gf:0,ga:0},
+    seasonMatches: [], calendar: [], calIdx: 0,
+    trainPlan: {k:'tecnico', n:'Técnica Obsessiva'},
+    sMeEvo: [], trophies: [], offers: [],
+    seasonStats: { games:0, wins:0, draws:0, losses:0, goals:0, assists:0, cleanSheets:0,
+                   mom:0, goalsConceded:0, bestRating:0, worstRating:10, biggestWin:0, hatTricks:0, cupGames:0 },
+    records: { bestSeasonGoals:0, bestStreak:0, curStreak:0, mostGoalsGame:0, mostAssistsGame:0, bestRating:0 },
+    careerStats: { games:0, wins:0, draws:0, losses:0, goals:0, assists:0, cleanSheets:0,
+                   mom:0, goalsConceded:0, bestRating:0, worstRating:10, biggestWin:0,
+                   hatTricks:0, cupGames:0, seasons:1, teamsPlayed:{} },
+    seasonSummary: null,
+    career: [`Temporada 1: ${o.name} estreia na ${tierDef.name} (${FOOT_LABEL[foot]}).`],
+    leaderPushed: false
+  };
+  me.calendar = E.genCalendar(me);
+  E.initLeague(me);
+  return me;
+};
+
+E.normalizeSave = function(S){
+  if (!S) return S;
+  if (typeof S.version !== 'number') S.version = 1;
+  // garante que TODOS os atributos da posição existam (evita NaN em saves antigos)
+  if (S.attrs && S.pos && POSITIONS[S.pos]){
+    for (const k of POSITIONS[S.pos].attrs) if (typeof S.attrs[k] !== 'number') S.attrs[k] = 50;
+  }
+  if (!S.seasonStats) S.seasonStats = { games:0, wins:0, draws:0, losses:0, goals:0, assists:0, cleanSheets:0,
+    mom:0, goalsConceded:0, bestRating:0, worstRating:10, biggestWin:0, hatTricks:0, cupGames:0 };
+  if (!S.careerStats) S.careerStats = { games:0, wins:0, draws:0, losses:0, goals:0, assists:0,
+    cleanSheets:0, mom:0, goalsConceded:0, bestRating:0, worstRating:10, biggestWin:0,
+    hatTricks:0, cupGames:0, seasons:S.season||1, teamsPlayed:{} };
+  if (!S.skills) S.skills = [];
+  if (!S.foot) S.foot = 'dir';
+  if (!S.seasonSummary) S.seasonSummary = null;
+  // compatibilidade com saves ANTIGOS (criados antes da refatoração de ligas):
+  // eles usavam 'tierIndex' da pirâmide BR antiga (0=Várzea, 1=Série B, 2=Série A, 3=Libe, 4=Panteão).
+  // Mapeia para a liga nova correta. Se o time não está na liga armazenada (save já
+  // corrompido por mapeamento antigo), re-deriva a partir do tierIndex.
+  const _oldTierToLeague = function(ti){
+    const M = {0:'bra-varzea', 1:'bra-sb', 2:'bra-sa', 3:'bra-sa', 4:'bra-sa'};
+    return (typeof ti === 'number' && M[ti]) ? M[ti] : 'bra-sb';
+  };
+  const _lgOf = LEAGUE_BY_ID(S.leagueId);
+  const _inLeague = _lgOf && _lgOf.teams.some(t => t.n === S.teamName);
+  if (!S.leagueId || !_inLeague){
+    S.leagueId = _oldTierToLeague(S.tierIndex);
+  }
+  if (typeof S.tierIndex !== 'number' || !TIERS[S.tierIndex] || TIERS[S.tierIndex].id !== S.leagueId){
+    const idx = TIERS.findIndex(t=>t.id===S.leagueId);
+    if (idx >= 0) S.tierIndex = idx;
+  }
+  // elenco evoluível da liga (cópia dos times base); alimenta evolução ano a ano
+  if (!S.leagueTeams || !S.leagueTeams.length) S.leagueTeams = _copyLeagueTeams(S.leagueId);
+  if (!S.sMeEvo) S.sMeEvo = [];
+  if (!S.trophies) S.trophies = [];
+  if (!S.offers) S.offers = [];
+  if (!S.records) S.records = { bestSeasonGoals:0, bestStreak:0, curStreak:0, mostGoalsGame:0, mostAssistsGame:0, bestRating:0 };
+  if (!S.seasonMatches) S.seasonMatches = [];
+  if (!S.table) S.table = {p:0,w:0,d:0,l:0,gf:0,ga:0};
+  if (!S.calendar) S.calendar = E.genCalendar(S);
+  if (typeof S.calIdx !== 'number') S.calIdx = 0;
+  if (!S.trainPlan) S.trainPlan = {k:'tecnico', n:'Técnica Obsessiva'};
+  // Liga: garante tabela + sincroniza com os jogos já disputados (corrige saves antigos desbalanceados)
+  E.recomputeLeague(S);
+  S.version = 2;
+  return S;
+};
+
+// ===== LIGA REAL (tabela computada por resultados) =====
+// Gera o calendário a partir das rodadas do round-robin (ida e volta). O `round`
+// de cada jogo do jogador == índice da rodada em E._roundPairs, para que
+// simOtherMatches saiba exatamente quais rivais simular naquela rodada.
+E.genCalendar = function(S){
+  const fixture = E._roundPairs(E.leagueTeams(S)); // array de rodadas; cada rodada = lista de pares
+  const cal = [];
+  fixture.forEach((roundPairs, ri) => {
+    const round = ri + 1;
+    // o jogador joga 1 vez por rodada (se estiver num dos pares)
+    const myPair = roundPairs.find(p => p[0].n === S.teamName || p[1].n === S.teamName);
+    if (myPair){
+      const home = myPair[0].n === S.teamName;
+      const rival = home ? myPair[1] : myPair[0];
+      cal.push({ type:'match', opp: rival, home, round, cup:false });
+    }
+    // semana de treino entre rodadas (exceto após a última)
+    if (ri < fixture.length-1) cal.push({ type:'train' });
+  });
+  // Copas (mata-mata) extras na metade e fim da temporada
+  const cupOpp = CUP_TEAMS(S);
+  if (cupOpp.length){
+    cal.splice(Math.floor(cal.length/2), 0, { type:'match', opp: cupOpp[Math.floor(Math.random()*cupOpp.length)], cup:true });
+    cal.push({ type:'match', opp: cupOpp[Math.floor(Math.random()*cupOpp.length)], cup:true });
+  }
+  return cal;
+};
+
+// Simula TODOS os jogos de liga de uma rodada EXCETO o do jogador (que é o seu
+// match real). Usa a mesma E.simMatch para manter coerência com a simulação validada.
+// Atualiza S.leagueTable (tabela real) e S.scorers (artilharia agregada).
+// Reconstrói as RODADAS do round-robin (cada rodada = lista de pares [home, away]),
+// mesma lógica do genCalendar, para simular só os jogos rivais da rodada atual.
+E._roundPairs = function(leagueIdOrTeams){
+  const teams = Array.isArray(leagueIdOrTeams) ? leagueIdOrTeams : LEAGUE_BY_ID(leagueIdOrTeams).teams;
+  const arr = teams.slice();
+  if (arr.length % 2 === 1) arr.push(null); // bye se ímpar
+  const single = [];
+  for (let r=0; r<arr.length-1; r++){
+    const roundPairs = [];
+    for (let i=0; i<arr.length/2; i++){
+      const h = arr[i], a = arr[arr.length-1-i];
+      if (h && a) roundPairs.push([h,a]);
+    }
+    single.push(roundPairs);
+    arr.splice(1,0,arr.pop());
+  }
+  // volta (mandos invertidos)
+  const back = single.map(rp => rp.map(([h,a]) => [a,h]));
+  // ATENÇÃO: deve espelhar EXATAMENTE a ordem do genCalendar (ida completa, depois volta completa)
+  const fixture = single.concat(back);
+  return fixture; // fixture[roundIdx] = array de pares daquela rodada
+};
+
+// Simula SÓ os jogos dos RIVAIS da rodada atual (exclui o do jogador, que já foi
+// computado em advanceWeek). Mantém a tabela real e a artilharia coerentes.
+E.simOtherMatches = function(S, wk){
+  if (!S.leagueTable) E.initLeague(S);
+  const fixture = E._roundPairs(E.leagueTeams(S));
+  const roundPairs = fixture[(wk.round-1) % fixture.length];
+  if (!roundPairs) return;
+  roundPairs.forEach(function(pair){
+    const A = pair[0], B = pair[1];
+    if (A.n === S.teamName || B.n === S.teamName) return; // jogo do jogador já tratado em advanceWeek
+    const r = E.simMatch({ teamOvr:A.o, ovr:A.o, pos:'MEI', form:3, skills:[] },
+                         { n:B.n, o:B.o }, false);
+    E.applyLeagueResult(S, A.n, B.n, r.gf, r.ga);
+    const aStar = A.stars ? A.stars[Math.floor(Math.random()*A.stars.length)] : A.n;
+    const bStar = B.stars ? B.stars[Math.floor(Math.random()*B.stars.length)] : B.n;
+    if (r.gf > 0) E.addScorer(S, aStar, 1 + (Math.random()<0.25?1:0), A.n);
+    if (r.ga > 0) E.addScorer(S, bStar, 1 + (Math.random()<0.25?1:0), B.n);
+  });
+};
+
+// Reconstrói a tabela real + artilharia a partir do que o jogador JÁ disputou.
+// Garante sincronia com as partidas do usuário (corrige saves antigos desbalanceados):
+// para cada rodada de liga já computada (i < calIdx), aplica o resultado do jogador
+// (de seasonMatches) e simula os rivais daquela rodada.
+E.recomputeLeague = function(S){
+  E.initLeague(S);
+  const cal = S.calendar || [];
+  let mi = 0; // índice em seasonMatches (alinhado à ordem dos jogos)
+  for (let i=0; i<cal.length && i<S.calIdx; i++){
+    const c = cal[i];
+    if (c.type !== 'match' || c.cup) continue; // só liga
+    const m = S.seasonMatches[mi++];
+    if (!m) continue;
+    // resultado do jogador nesta rodada
+    E.applyLeagueResult(S, S.teamName, c.opp.n, m.gf, m.ga);
+    if (m.goals > 0) E.addScorer(S, S.name, m.goals, S.teamName, true);
+    // simula os RIVAIS da mesma rodada (mantém a tabela coerente)
+    if (m.gf !== undefined){
+      E.simOtherMatches(S, { round: c.round });
+    }
+  }
+};
+
+E.initLeague = function(S){
+  const teams = E.leagueTeams(S);
+  S.leagueTable = {};
+  teams.forEach(t => { S.leagueTable[t.n] = { n:t.n, p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0,team:true }; });
+  S.scorers = [];
+  // inclui o jogador na artilharia (zera)
+  S.scorers.push({ name: S.name, team: S.teamName, goals: 0, you:true });
+};
+
+E.applyLeagueResult = function(S, aName, bName, gf, ga){
+  if (!S.leagueTable) E.initLeague(S);
+  const A = S.leagueTable[aName], B = S.leagueTable[bName];
+  if (!A || !B) return;
+  A.p++; B.p++; A.gf+=gf; A.ga+=ga; B.gf+=ga; B.ga+=gf;
+  if (gf>ga){ A.w++; B.l++; A.pts+=3; }
+  else if (gf<ga){ B.w++; A.l++; B.pts+=3; }
+  else { A.d++; B.d++; A.pts++; B.pts++; }
+};
+
+E.addScorer = function(S, name, goals, team, you){
+  if (!S.scorers) S.scorers = [];
+  let e = S.scorers.find(x => x.name === name && x.team === team);
+  if (!e){ e = { name, team, goals:0, you: !!you }; S.scorers.push(e); }
+  e.goals += goals;
+};
+
+// Tabela ordenada (critério: pts, depois saldo, depois gf)
+E.getLeagueTable = function(S){
+  if (!S.leagueTable) E.initLeague(S);
+  return Object.values(S.leagueTable).map(r => ({
+    n:r.n, p:r.p, w:r.w, d:r.d, l:r.l, gf:r.gf, ga:r.ga,
+    sg:r.gf-r.ga, pts:r.pts, me: r.n===S.teamName
+  })).sort((a,b) => b.pts-a.pts || (b.sg-a.sg) || (b.gf-a.gf));
+};
+
+E.getTopScorers = function(S){
+  if (!S.scorers) return [];
+  return S.scorers.slice().sort((a,b)=> b.goals-a.goals).slice(0,10);
+};
+
+E.trainGain = function(S, planOverride){
+  const plan = planOverride || TRAIN_PLANS.find(p=>p.k===S.trainPlan.k) || TRAIN_PLANS[1];
+  const inc = (S.age <= 27) ? 1.1 : 0.35;
+  for (const a of plan.a){
+    if (!S.attrs[a]) continue;
+    if (S.attrs[a] < S.pot) S.attrs[a] = Math.min(S.pot, +(S.attrs[a] + inc).toFixed(1));
+    else if (S.age > 30) S.attrs[a] = Math.max(40, +(S.attrs[a] - 0.15).toFixed(1));
+  }
+  for (const k in S.attrs) if (S.attrs[k] < S.pot) S.attrs[k] = Math.min(S.pot, +(S.attrs[k] + 0.18).toFixed(1));
+  S.ovr = E.calcOvr(S.pos, S.attrs);
+};
+
+// multiplicador de skill para uma categoria especial
+E.skillMul = function(S, catKey){
+  let mul = 1;
+  for (const sk of (S.skills||[])){
+    const def = SKILLS.find(s=>s.k===sk);
+    if (def && def.cat && def.cat[catKey]) mul *= def.cat[catKey];
+  }
+  return mul;
+};
+
+E.simMatch = function(S, opp, cup){
+  const myStr = S.teamOvr + (S.ovr - 65)*0.25 + (S.form-3)*1.2;
+  const opStr = opp.o + 2;
+  const exp = myStr/(myStr+opStr);
+  const gf = E.poisson(exp*2.4 + 0.4);
+  const ga = E.poisson((1-exp)*2.4 + 0.3);
+  const rating = Math.max(5, Math.min(10, S.ovr/10 + (S.form-3)*0.4 + (Math.random()*3-1.2) + (gf>ga?0.5:gf<ga?-0.4:0)));
+  const isAtt = (S.pos==='ATA'||S.pos==='MEI');
+  let goals = 0, assists = 0;
+  const skillGoalMul = (S.skills||[]).includes('finalizador') ? 1.25 : 1;
+  const skillAstMul = (S.skills||[]).includes('armador') ? 1.3 : 1;
+  if (isAtt){ goals = Math.round(E.poisson((rating-6)*0.7)*skillGoalMul); assists = Math.round(E.poisson((rating-6)*0.4)*skillAstMul); }
+  else if (S.pos==='MEI'){ assists = Math.round(E.poisson((rating-6)*0.5)*skillAstMul); }
+  // coerência: gols+assists <= gols do próprio time
+  goals = Math.min(goals, gf);
+  if (S.pos==='GOL') goals = 0;
+  assists = Math.min(assists, Math.max(0, gf - goals));
+  const mom = rating >= 7.6;
+
+  // ----- estatísticas de jogo -----
+  const mySkill = (S.ovr + S.teamOvr)/2;
+  const oppSkill = (opp.o + opp.o)/2;
+  const posse = Math.round(Math.min(78, Math.max(22, 50 + (mySkill-oppSkill)*0.9 + (Math.random()*8-4))));
+  const totShots = gf + ga + E.poisson(6);
+  const myShots = Math.min(totShots, Math.round(totShots * (posse/100) + (gf?1:0) + Math.random()*2));
+  const oppShots = totShots - myShots;
+  const myOnTarget = Math.max(0, myShots - E.poisson(Math.max(0, myShots*0.4)));
+  const oppOnTarget = Math.max(0, oppShots - E.poisson(Math.max(0, oppShots*0.4)));
+  const myPasses = 35 + Math.round(posse*1.1) + Math.floor(Math.random()*22);
+  const oppPasses = 35 + Math.round((100-posse)*1.1) + Math.floor(Math.random()*22);
+  const myAcc = Math.max(45, Math.min(94, Math.round(62 + (mySkill-oppSkill)*0.35 + Math.random()*7)));
+  const oppAcc = Math.max(45, Math.min(94, Math.round(62 + (oppSkill-mySkill)*0.35 + Math.random()*7)));
+  const myCorners = E.poisson(5*(posse/55));
+  const oppCorners = E.poisson(5*((100-posse)/55));
+  const myFouls = E.poisson(11);
+  const oppFouls = E.poisson(11);
+  // cartões (amarelos comuns, vermelhos raros) — coerentes com faltas
+  const myYellow = Math.min(myFouls, E.poisson(1.7));
+  const oppYellow = Math.min(oppFouls, E.poisson(1.7));
+  const myRed = E.poisson(0.10), oppRed = E.poisson(0.10);
+  // impedimentos
+  const myOffsides = E.poisson(2.2);
+  const oppOffsides = E.poisson(2.2);
+  // defesas do goleiro = chutes no gol do outro lado menos os gols sofridos (coerente c/ placar)
+  const mySaves = Math.max(0, oppOnTarget - gf);
+  const oppSaves = Math.max(0, myOnTarget - ga);
+  // chutes de dentro/fora da área (split dos chutes totais)
+  const myInside = Math.round(myShots*0.45); const myOutside = myShots - myInside;
+  const oppInside = Math.round(oppShots*0.45); const oppOutside = oppShots - oppInside;
+  let pShots = 0, pPasses = 0, pTackles = 0, pDribbles = 0;
+  const infl = Math.max(0.2, (rating-5)/5);
+  if (S.pos==='ATA'){ pShots = 2 + Math.round(goals + infl*3); pPasses = 8 + Math.round(infl*14); pDribbles = 2 + Math.round(infl*4); }
+  else if (S.pos==='MEI'){ pShots = 1 + Math.round(infl*2); pPasses = 25 + Math.round(infl*30); pDribbles = 2 + Math.round(infl*4); pTackles = Math.round(infl*3); }
+  else if (S.pos==='GOL'){ pShots = 0; pPasses = 10 + Math.round(infl*10); pTackles = 0; pDribbles = 0; }
+  else { pShots = Math.round(infl); pPasses = 15 + Math.round(infl*20); pTackles = 2 + Math.round(infl*4); pDribbles = 1 + Math.round(infl*3); }
+  const pDribblesWon = Math.max(0, Math.round(pDribbles * (0.5 + infl*0.12)));
+  const pOnTarget = Math.max(0, Math.round(pShots * (0.4 + infl*0.12)));
+  const pPassAcc = Math.min(97, Math.round(78 + infl*14 + (Math.random()*6-3)));
+
+  // ----- jogadas especiais (gols raros) -----
+  const specials = [];
+  if (isAtt || S.pos==='MEI'){
+    for (const sg of SPECIAL_GOALS){
+      let chance = sg.base * E.skillMul(S, sg.k);
+      if (sg.k==='cabeca' && (S.skills||[]).includes('cabeceador')) chance *= 3;
+      if (goals>0 && Math.random() < chance){
+        specials.push(sg);
+      }
+    }
+  }
+
+  const stats = {
+    posse, myShots, oppShots, myOnTarget, oppOnTarget,
+    myPasses, oppPasses, myAcc, oppAcc,
+    myCorners, oppCorners, myFouls, oppFouls,
+    myYellow, oppYellow, myRed, oppRed, myOffsides, oppOffsides,
+    mySaves, oppSaves, myInside, myOutside, oppInside, oppOutside,
+    player:{ shots:pShots, onTarget:pOnTarget, passes:pPasses, passAcc:pPassAcc,
+      tackles:pTackles, dribbles:Math.max(0,pDribbles), dribblesWon:pDribblesWon, goals, assists, specials }
+  };
+
+  const feed = E.buildFeed(S, opp, gf, ga, goals, assists, rating, mom, specials);
+  const res = gf>ga?'V':gf<ga?'D':'E';
+  return {gf,ga,feed,rating:+rating.toFixed(1),goals,assists,mom,res,stats,specials};
+};
+
+E.poisson = function(lambda){
+  lambda = Math.max(0, lambda); let L = Math.exp(-lambda), k=0, p=1;
+  do { k++; p *= Math.random(); } while (p > L);
+  return k-1;
+};
+
+E.buildFeed = function(S, opp, gf, ga, goals, assists, rating, mom, specials){
+  const feed = [];
+  const total = gf+ga;
+  const flags = [];
+  for (let i=0;i<gf;i++) flags.push(true);
+  for (let i=0;i<ga;i++) flags.push(false);
+  for (let i=flags.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [flags[i],flags[j]]=[flags[j],flags[i]]; }
+  const mins = [];
+  for (let i=0;i<total;i++) mins.push(Math.floor(Math.random()*90)+1);
+  mins.sort((a,b)=>a-b);
+  const myGoalIdx = new Set();
+  while (myGoalIdx.size < Math.min(goals, gf)) myGoalIdx.add(Math.floor(Math.random()*gf));
+  let gi=0;
+  for (let k=0;k<total;k++){
+    const m = mins[k];
+    if (flags[k]){
+      const isMyGoal = myGoalIdx.has(gi); gi++;
+      if (isMyGoal){
+        // destaque: gol do jogador (classe 'me')
+        let verb = (S.pos==='ATA'||S.pos==='MEI') ? (Math.random()<0.5?'finaliza':'manda pro fundo') : 'desvia pra rede';
+        feed.push({min:m, t:`GOL do ${S.teamName}! ${S.name} ${verb} aos ${m}'.`, c:'me'});
+      } else {
+        feed.push({min:m, t:`GOL do ${S.teamName}! Lance coletivo (sem o ${S.name}).`, c:''});
+      }
+    } else {
+      feed.push({min:m, t:`GOL do ${opp.n}. A defesa vacila.`, c:''});
+    }
+  }
+  // jogadas especiais em destaque
+  for (const sg of (specials||[])){
+    const m = Math.floor(Math.random()*90)+1;
+    feed.push({min:m, t:`🌟 ${sg.label.toUpperCase()}: ${S.name} ${sg.verb} aos ${m}'!`, c:'special'});
+  }
+  if (S.pos==='GOL' && ga>0) feed.push({min:Math.floor(Math.random()*90)+1, t:`${S.name} faz DEFESAÇA de dar arrepios.`, c:'a'});
+  if (assists>0) feed.push({min:Math.floor(Math.random()*90)+1, t:`${S.name} dá linda assistência (${assists}x).`, c:'me'});
+  if (mom) feed.push({min:90, t:`FIM: ${S.name} é o HOMEM DO JOGO (nota ${rating.toFixed(1)}).`, c:'me'});
+  else feed.push({min:90, t:`FIM: nota de ${S.name}: ${rating.toFixed(1)}.`, c:''});
+  feed.sort((a,b)=>a.min-b.min);
+  return feed;
+};
+
+E.advanceWeek = function(S){
+  const wk = S.calendar[S.calIdx];
+  let matchRes = null;
+  if (wk && wk.type==='match'){
+    const r = E.simMatch(S, wk.opp, wk.cup);
+    matchRes = r;
+    if (!wk.cup){
+      S.table.gf += r.gf; S.table.ga += r.ga;
+      if (r.res==='V'){S.table.w++;S.table.p+=3;} else if (r.res==='E'){S.table.d++;S.table.p+=1;} else S.table.l++;
+      // ----- LIGA REAL: aplica o SEU jogo na tabela da liga -----
+      E.applyLeagueResult(S, S.teamName, wk.opp.n, r.gf, r.ga);
+      // simula os DEMAIS jogos da rodada (rivais) e atualiza tabela + artilharia
+      E.simOtherMatches(S, wk);
+      // ----- ARTILHARIA: seus gols entram na lista -----
+      if (r.goals > 0) E.addScorer(S, S.name, r.goals, S.teamName, true);
+    } else if (r.goals > 0){
+      E.addScorer(S, S.name, r.goals, S.teamName, true); // gol de copa também conta na sua artilharia pessoal
+    }
+    const sm = {opp:wk.opp.n, ovr:wk.opp.o, gf:r.gf, ga:r.ga, res:r.res, rating:r.rating, goals:r.goals, assists:r.assists, mom:r.mom, cup:!!wk.cup, specials:r.specials?r.specials.map(s=>s.label):[]};
+    S.seasonMatches.push(sm);
+    // acumula TEMPORADA
+    const ss = S.seasonStats;
+    ss.games++; if(wk.cup) ss.cupGames++;
+    if(r.res==='V'){ss.wins++; const diff=r.gf-r.ga; if(diff>ss.biggestWin)ss.biggestWin=diff;}
+    else if(r.res==='E')ss.draws++; else ss.losses++;
+    ss.goals += r.goals; ss.assists += r.assists; ss.goalsConceded += r.ga;
+    if((S.pos==='GOL') && r.ga===0) ss.cleanSheets++;
+    if(r.mom) ss.mom++; if(r.goals>=3) ss.hatTricks++;
+    if(r.rating>ss.bestRating) ss.bestRating=+r.rating.toFixed(1);
+    if(r.rating<ss.worstRating) ss.worstRating=+r.rating.toFixed(1);
+    // acumula CARREIRA
+    const cs = S.careerStats;
+    cs.games++; if(wk.cup) cs.cupGames++;
+    if(r.res==='V'){cs.wins++; const diff=r.gf-r.ga; if(diff>cs.biggestWin)cs.biggestWin=diff;}
+    else if(r.res==='E')cs.draws++; else cs.losses++;
+    cs.goals += r.goals; cs.assists += r.assists; cs.goalsConceded += r.ga;
+    if((S.pos==='GOL') && r.ga===0) cs.cleanSheets++;
+    if(r.mom) cs.mom++; if(r.goals>=3) cs.hatTricks++;
+    if(r.rating>cs.bestRating) cs.bestRating=+r.rating.toFixed(1);
+    if(r.rating<cs.worstRating) cs.worstRating=+r.rating.toFixed(1);
+    cs.teamsPlayed[S.teamName] = true;
+    // ----- RECORDES (Seus Recordes) -----
+    const rec = S.records;
+    if(r.res==='V'||r.res==='E'){ rec.curStreak++; if(rec.curStreak>rec.bestStreak) rec.bestStreak=rec.curStreak; }
+    else rec.curStreak=0;
+    if(r.goals>rec.mostGoalsGame) rec.mostGoalsGame=r.goals;
+    if(r.assists>rec.mostAssistsGame) rec.mostAssistsGame=r.assists;
+    if(r.rating>rec.bestRating) rec.bestRating=+r.rating.toFixed(1);
+    S.form = Math.max(1, Math.min(5, S.form + (r.res==='V'?1:r.res==='D'?-1:0)));
+    S.morale = Math.max(20, Math.min(100, S.morale + (r.res==='V'?8:r.res==='D'?-6:2)));
+    S.career.push(`Sem ${S.calIdx+1}: ${S.teamName} ${r.gf}x${r.ga} ${wk.opp.n} — nota ${r.rating}${r.goals?' · G'+r.goals:''}${r.assists?' A'+r.assists:''}${r.specials&&r.specials.length?' · '+r.specials.map(s=>s.label).join(', '):''}.`);
+  } else {
+    const plan = S.pendingTrain || S.trainPlan;
+    E.trainGain(S, plan);
+    S.career.push(`Sem ${S.calIdx+1}: treino (${plan.n}).`);
+    S.pendingTrain = null;
+  }
+  S.sMeEvo.push({s:S.season, o:S.ovr, r: matchRes?matchRes.rating:S.ovr/10});
+  S.calIdx++; S.week++;
+  // janela de transferências na METADE da temporada (uma vez por temporada)
+  if (S._midWin !== S.season && S.calIdx >= Math.floor(S.calendar.length/2)){
+    S.offers = E.genOffers(S); S.pendingTransfer = true; S._midWin = S.season;
+  }
+  if (S.calIdx >= S.calendar.length) E.endSeason(S);
+  return matchRes;
+};
+
+E.evolveLeague = function(S){
+  if (!S.leagueTeams || !S.leagueTeams.length) S.leagueTeams = _copyLeagueTeams(S.leagueId);
+  const table = E.getLeagueTable(S); if (!table || !table.length) return;
+  const n = table.length;
+  const posOf = {}; table.forEach((r,i)=> posOf[r.n] = i+1);
+  const topN = Math.max(2, Math.ceil(n/3)), botN = n - Math.max(2, Math.ceil(n/3));
+  S.leagueTeams.forEach(t=>{
+    const p = posOf[t.n] || (n+1);
+    let delta = 0;
+    if (p <= 2) delta = 2;
+    else if (p <= topN) delta = 1;
+    else if (p >= n-1) delta = -2;
+    else if (p > botN) delta = -1;
+    delta += (Math.random()<0.5?-1:1) * Math.floor(Math.random()*2); // ruído de mercado
+    t.o = _clamp(t.o + delta, 55, 92);
+  });
+  const myTeam = S.leagueTeams.find(t=>t.n===S.teamName);
+  if (myTeam) S.teamOvr = myTeam.o;
+};
+
+E.endSeason = function(S){
+  const league = LEAGUE_BY_ID(S.leagueId);
+  const table = E.getLeagueTable(S);
+  const pos = table.findIndex(r => r.me) + 1; // 1-based
+  const leader = table[0];
+  const champ = leader.me; // campeão = quem lidera a tabela real
+  const nTeams = table.length;
+  const relegationZone = pos > nTeams - 2; // últimas 2 posições caem
+  // resumo de temporada
+  const ss = S.seasonStats;
+  const summary = {
+    season: S.season, league: league.name, team: S.teamName,
+    w:S.table.w, d:S.table.d, l:S.table.l, pts:S.table.p, gf:S.table.gf, ga:S.table.ga,
+    games:ss.games, goals:ss.goals, assists:ss.assists, mom:ss.mom, best:+(ss.bestRating||0).toFixed(1), worst:+(ss.worstRating||10).toFixed(1),
+    champ, pos, ovrEnd:S.ovr, pot:S.pot, relegated:relegationZone
+  };
+  S.seasonSummary = summary;
+  S.career.push(`FIM DA TEMP ${S.season}: ${S.table.w}V ${S.table.d}E ${S.table.l}D (${S.table.p} pts) — ${pos}º na ${league.name} — gols ${ss.goals}, assist ${ss.assists}.`);
+  if (champ){
+    const t = `🏆 Campeão: ${league.name} (Temp ${S.season})`;
+    if (!S.trophies.includes(t)) S.trophies.push(t);
+    S.career.push(`CAMPEÃO da ${league.name}!`);
+    const adj = ADJ_LEAGUE(league, +1);
+    if (adj){ const nt = adj.teams[Math.floor(Math.random()*adj.teams.length)]; S.leagueId = adj.id; S.tierIndex = TIERS.indexOf(adj); S.teamName = nt.n; S.teamOvr = nt.o; S.salary = Math.round(S.salary*1.8); S.career.push(`PROMOVIDO! Agora joga no ${nt.n} (${adj.name}).`); }
+  } else if (relegationZone){
+    S.career.push(`REBAIXADO da ${league.name} (${pos}º). Cai pra divisão inferior.`);
+    const adj = ADJ_LEAGUE(league, -1);
+    if (adj){ const nt = adj.teams[Math.floor(Math.random()*adj.teams.length)]; S.leagueId = adj.id; S.tierIndex = TIERS.indexOf(adj); S.teamName = nt.n; S.teamOvr = nt.o; S.salary = Math.round(S.salary*0.7); S.career.push(`REBAIXADO! Volta pro ${nt.n} (${adj.name}).`); }
+  }
+  // evolução da liga: times sobem/descem de OVR conforme a campanha (ano a ano)
+  E.evolveLeague(S);
+  S.season++; S.week=1; S.calIdx=0; S.table={p:0,w:0,d:0,l:0,gf:0,ga:0};
+  // recorde de gols em uma temporada
+  if (S.seasonStats.goals > (S.records.bestSeasonGoals||0)) S.records.bestSeasonGoals = S.seasonStats.goals;
+  S.seasonStats = { games:0, wins:0, draws:0, losses:0, goals:0, assists:0, cleanSheets:0,
+    mom:0, goalsConceded:0, bestRating:0, worstRating:10, biggestWin:0, hatTricks:0, cupGames:0 };
+  S.seasonMatches=[]; S.sMeEvo=[]; S.calendar = E.genCalendar(S);
+  E.initLeague(S); // nova tabela real para a próxima temporada
+  S.offers = E.genOffers(S); S.pendingTransfer = true; S._midWin = null;
+  S.careerStats.seasons = S.season;
+  if (S.age < 40) S.age++;
+};
+
+E.genOffers = function(S){
+  const cur = LEAGUE_BY_ID(S.leagueId);
+  const offers = [];
+  const candidates = [];
+  const seen = new Set();
+  const push = (lg)=>{ if (lg && !seen.has(lg.id)){ seen.add(lg.id); candidates.push(lg); } };
+  push(ADJ_LEAGUE(cur, +1)); push(ADJ_LEAGUE(cur, -1));
+  // garante ao menos 2 ligas de OUTROS países (transferências internacionais)
+  const others = TIERS.filter(t => t.id !== cur.id);
+  let guard=0;
+  while (candidates.filter(c=>c.code!==cur.code).length < 2 && guard++ < 50 && others.length){
+    const r = others[Math.floor(Math.random()*others.length)];
+    push(r);
+  }
+  for (const lg of candidates){
+    for (const tm of lg.teams){
+      if (tm.n===S.teamName) continue;
+      if (tm.o > S.ovr - 2 || Math.random()<0.5){
+        const sal = Math.round((tm.o*55) * (1 + (S.ovr-tm.o)/200));
+        offers.push({team:tm.n, tier:lg.id, ovr:tm.o, salary:sal, cond:(tm.o>S.ovr?'Clube te quer!':'Aceita o desafio')});
+      }
+      if (offers.length>=5) break;
+    }
+    if (offers.length>=5) break;
+  }
+  return offers.slice(0,5);
+};
+
+// Transição coerente de clube (usada por promoção, rebaixamento e transferência):
+// troca time/tier/ovr E regera calendário + liga, reiniciando a temporada no novo clube.
+// Evita o bug "CRB contra o próprio CRB" (calendário antigo com o time velho como rival).
+E.joinTeam = function(S, tier, team, ovr, reason){
+  S.leagueId = tier; S.tierIndex = TIERS.findIndex(t=>t.id===tier); S.teamName = team; S.teamOvr = ovr;
+  S.leagueTeams = _copyLeagueTeams(tier); // novo elenco evoluível da liga destino
+  S.calendar = E.genCalendar(S);
+  E.initLeague(S);
+  S.seasonMatches = [];
+  S.calIdx = 0; S.week = 1;
+  S.table = {p:0,w:0,d:0,l:0,gf:0,ga:0};
+  S.sMeEvo = [];
+  S.seasonStats = { games:0, wins:0, draws:0, losses:0, goals:0, assists:0, cleanSheets:0,
+    mom:0, goalsConceded:0, bestRating:0, worstRating:10, biggestWin:0, hatTricks:0, cupGames:0 };
+  S._summaryShown = undefined;
+  if (reason) S.career.push(reason);
+};
+
+// aceita APENAS 1 oferta; as demais somem
+E.acceptOffer = function(S, i){
+  const o = S.offers[i]; if (!o) return;
+  const reason = `TRANSFERÊNCIA: ${S.name} vai pro ${o.team} (${LEAGUE_BY_ID(o.tier).name}).`;
+  S.salary = o.salary; S.offers = []; S.pendingTransfer = false; // contrato assinado: fecha a janela
+  E.joinTeam(S, o.tier, o.team, o.ovr, reason);
+};
+
+// recusa TODAS as ofertas e segue no clube atual (botão "Ficar no clube")
+E.rejectOffers = function(S){
+  S.offers = []; S.pendingTransfer = false;
+  S.career.push(`TRANSFERÊNCIA: ${S.name} ficou no ${S.teamName}.`);
+};
+
+window.E = E;

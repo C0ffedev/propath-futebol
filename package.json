@@ -1,0 +1,13 @@
+{
+  "name": "propath-valorant",
+  "version": "2.4.0",
+  "private": true,
+  "description": "Prototipo de carreira de jogador de Valorant (frontend + backend local)",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "jsdom": "^24.1.3"
+  }
+}
