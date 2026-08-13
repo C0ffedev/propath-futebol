@@ -10,15 +10,18 @@ precisam de cuidado antes de qualquer exposição pública ou deploy.
 - `node_modules/` — dependências (reinstaláveis via `npm install`).
 - `.env` — não existe hoje, mas está ignorado por precaução.
 
-## Ponto em aberto: senhas em texto puro
+## Senhas (hash scrypt + salt)
 
-`server.js` cria a tabela `accounts (id, name, pass)` e grava `pass` em texto
-puro no SQLite local. Isso é aceitável **apenas** para uso em localhost por uma
-pessoa só. Antes de qualquer deploy ou de liberar acesso de rede:
+As senhas de conta NÃO são mais gravadas em texto puro. O cadastro
+(`POST /api/account`) aplica `crypto.scryptSync(pass, salt, 64)` com salt de 16
+bytes e armazena `salt:hash` hexadecimal. A autenticação (`POST /api/login`)
+recomputa o hash e compara com `crypto.timingSafeEqual` (resistente a timing
+attack). Nunca há comparação de plaintext nem retorno da senha na resposta.
 
-1. Hashear a senha (ex.: `crypto.scrypt` + salt) no cadastro e na autenticação.
-2. Exigir re-auth do dono para operações sensíveis.
-3. Nunca expor o `carreira.db` — ele contém as senhas hasheadas.
+Antes de liberar acesso de rede:
+1. Exigir re-auth do dono para operações sensíveis.
+2. Nunca expor o `carreira.db` — ele contém os hashes (mesmo hasheados, trate
+   como dado sensível).
 
 ## Credenciais
 
