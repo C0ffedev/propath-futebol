@@ -29,3 +29,7 @@ dist/
 
 # Scripts de refactor descartáveis (contêm paths absolutos pessoais)
 _refactor_main.js
+
+# Artefatos de instalação local do gh CLI (não são do projeto)
+gh.zip
+gh_extract/
