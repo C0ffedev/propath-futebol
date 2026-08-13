@@ -403,9 +403,9 @@ input:focus,select:focus{outline:none;border-color:var(--accent)}
 .squad-h.me{color:var(--accent);border-bottom-color:var(--accent)}
 .sblock{margin-bottom:8px}
 .sblock-h{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin:6px 0 4px}
-.srow{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;padding:3px 6px;border-radius:6px;font-size:13px}
+.srow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:8px;padding:3px 6px;border-radius:6px;font-size:13px;width:100%}
 .srow:nth-child(odd){background:rgba(255,255,255,.03)}
 .spos{font-size:10px;font-weight:800;color:var(--accent);background:rgba(255,39,64,.14);border:1px solid rgba(255,39,64,.35);border-radius:5px;padding:2px 5px;min-width:62px;text-align:center}
-.sn{color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sn{color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .sov{font-weight:800;color:var(--gold);font-size:12px;min-width:24px;text-align:right}
 @media(max-width:560px){.squad-cols{grid-template-columns:1fr}}
