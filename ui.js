@@ -274,7 +274,8 @@ UI.ligas = function(){
 // para que a aba Ranking possa renderizar de forma síncrona e sem flicker.
 UI.rankSaves = [];
 UI.loadRankSaves = function(){
-  fetch('/api/saves').then(r=>r.json()).then(async list=>{
+  const owner = (window.Session && window.Session.id) || '';
+  fetch('/api/saves?owner='+encodeURIComponent(owner)).then(r=>r.json()).then(async list=>{
     const out = [];
     for (const it of (list||[]).slice(0,12)){
       try {
@@ -286,6 +287,10 @@ UI.loadRankSaves = function(){
     }
     UI.rankSaves = out;
   }).catch(()=>{ UI.rankSaves = []; });
+};
+UI.renderTopUser = function(){
+  const el = document.getElementById('top-user');
+  if (el) el.textContent = window.Session && window.Session.name ? ('👤 '+window.Session.name) : '';
 };
 
 UI.ranking = function(){

@@ -419,3 +419,22 @@ input:focus,select:focus{outline:none;border-color:var(--accent)}
 .sn{color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .sov{font-weight:800;color:var(--gold);font-size:12px;min-width:24px;text-align:right}
 @media(max-width:560px){.squad-cols{grid-template-columns:1fr}}
+
+/* ===== AUTH / LOGIN ===== */
+#auth{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}
+.auth-card{width:100%;max-width:380px;background:linear-gradient(160deg,var(--bg3),var(--bg2));border:1px solid var(--line);border-radius:16px;padding:26px 24px;box-shadow:var(--shadow)}
+.auth-brand{text-align:center;font-size:20px;font-weight:900;letter-spacing:1px;margin-bottom:6px}
+.auth-tabs{display:flex;gap:6px;margin:14px 0 16px}
+.auth-tab{flex:1;padding:9px;border:1px solid var(--line);background:var(--bg);color:var(--muted);border-radius:9px;font-weight:700;transition:.15s}
+.auth-tab.on{border-color:var(--obsession);color:var(--txt);background:#1c0f22}
+.a-err{color:var(--red);font-size:12px;min-height:16px;margin:6px 2px;font-weight:600}
+#auth .ob-field{margin-bottom:12px}
+#auth .ob-field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:600}
+#auth .ob-field input{width:100%;padding:11px 12px;border-radius:9px;border:1px solid var(--line);background:var(--bg);color:var(--txt);font-size:15px;outline:none}
+#auth .ob-field input:focus{border-color:var(--obsession)}
+#auth .big-btn{width:100%;margin-top:8px}
+.top-user{font-size:12px;color:var(--muted);font-weight:700;margin-right:4px}
+.realcard.orphan{border-style:dashed;border-color:#7a5a63}
+.claim-save{position:absolute;top:8px;right:42px;background:transparent;border:1px solid var(--obsession);color:var(--obsession);border-radius:8px;padding:0 8px;height:28px;cursor:pointer;font-size:11px;font-weight:700;transition:.15s}
+.claim-save:hover{background:rgba(177,75,255,.15)}
+.orphan-title{margin:16px 2px 8px;font-size:12px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-weight:700}

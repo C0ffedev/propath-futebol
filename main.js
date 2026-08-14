@@ -5,6 +5,13 @@ const $$ = s => [...document.querySelectorAll(s)];
 const App = { step:0, draft:{}, steps:['id','pos','nation','arch'] };
 const MAX_SKILLS = 2; // limite de skills selecionáveis no onboarding
 
+// ===== SESSÃO / CONTAS (modo local: separa saves por dono) =====
+const Session = { id:null, name:null };
+function saveSession(){ try { localStorage.setItem('propath_session', JSON.stringify(Session)); } catch(e){} }
+function loadSession(){ try { const s=JSON.parse(localStorage.getItem('propath_session')||'null'); if(s&&s.id){ Session.id=s.id; Session.name=s.name; } } catch(e){} }
+function clearSession(){ Session.id=null; Session.name=null; try{ localStorage.removeItem('propath_session'); }catch(e){} }
+function apiSaveOwner(){ return Session.id || ''; }
+
 function showToast(msg){
   const t=$('#toast'); t.textContent=msg; t.classList.remove('hidden');
   clearTimeout(App._t); App._t=setTimeout(()=>t.classList.add('hidden'),2200);
@@ -115,7 +122,8 @@ function startCareer(){
   const S = E.normalizeSave(E.createPlayer({
     name:App.draft.name, nation:App.draft.nation, pos:App.draft.pos,
     age:App.draft.age, arch:App.draft.arch, foot:pickFoot(), leagueId:null,
-    skills:App.draft.skills||[], skillPts:App.draft.skillPts||{}
+    skills:App.draft.skills||[], skillPts:App.draft.skillPts||{},
+    owner: apiSaveOwner()
   }));
   UI.S = S; UI.tab='carreira';
   $('#onboard').classList.add('hidden');
@@ -128,24 +136,117 @@ function startCareer(){
 // ---------- SAVE / LOAD ----------
 function saveGame(){
   if(!UI.S) return;
+  // garante que o save carregue sempre com o owner da sessão atual (ou o já existente)
+  if (!UI.S.owner) UI.S.owner = apiSaveOwner();
   fetch('/api/save/'+UI.S.id, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(UI.S)})
     .then(()=>showToast('💾 Salvo')).catch(()=>showToast('Erro ao salvar'));
 }
+// ---------- AUTH / LOGIN ----------
+function showLogin(){
+  $('#onboard').classList.add('hidden');
+  const box = $('#auth'); box.classList.remove('hidden');
+  box.innerHTML = `
+    <div class="auth-card">
+      <div class="brand auth-brand">PRO<span>PATH</span> · FUTEBOL</div>
+      <p class="muted" style="text-align:center;margin:4px 0 18px">Entre com sua conta para ver apenas as <b>suas</b> carreiras.</p>
+      <div class="auth-tabs">
+        <button class="auth-tab on" data-at="login">Entrar</button>
+        <button class="auth-tab" data-at="signup">Criar conta</button>
+      </div>
+      <div class="ob-field"><label>ID da conta (apelido único)</label><input type="text" id="a-id" placeholder="ex: karla" autocomplete="off"></div>
+      <div class="ob-field"><label>Senha</label><input type="password" id="a-pass" placeholder="••••••" autocomplete="off"></div>
+      <div id="a-err" class="a-err"></div>
+      <button class="big-btn" id="a-go">Entrar</button>
+      <div class="muted" style="text-align:center;font-size:11px;margin-top:10px">Suas carreiras ficam salvas neste computador, separadas por conta.</div>
+    </div>`;
+  let mode='login';
+  $$('#auth .auth-tab').forEach(t=>t.onclick=()=>{
+    mode=t.dataset.at; $$('#auth .auth-tab').forEach(x=>x.classList.toggle('on', x===t));
+    $('#a-go').textContent = mode==='login' ? 'Entrar' : 'Criar conta';
+    $('#a-err').textContent='';
+  });
+  $('#a-go').onclick = ()=>{
+    const id=$('#a-id').value.trim(); const pass=$('#a-pass').value;
+    if(!id||!pass){ $('#a-err').textContent='Preencha ID e senha.'; return; }
+    $('#a-err').textContent='';
+    if(mode==='signup'){
+      fetch('/api/account',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,name:id,pass})})
+        .then(r=>r.ok?r.json():r.json().then(j=>Promise.reject(j)))
+        .then(()=>doLogin(id,pass))
+        .catch(err=>{ $('#a-err').textContent=(err&&err.error)||'Falha ao criar conta'; });
+    } else {
+      doLogin(id,pass);
+    }
+  };
+}
+function doLogin(id,pass){
+  fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,pass})})
+    .then(r=>r.ok?r.json():r.json().then(j=>Promise.reject(j)))
+    .then(j=>{ Session.id=j.id; Session.name=j.name; saveSession(); $('#auth').classList.add('hidden'); afterLogin(); })
+    .catch(err=>{ $('#a-err').textContent=(err&&err.error)||'Falha ao entrar'; });
+}
+function afterLogin(){
+  $('#topbar').classList.remove('hidden');
+  $('#btn-logout').classList.remove('hidden');
+  UI.renderTopUser && UI.renderTopUser();
+  loadList();
+}
+function logout(){
+  clearSession();
+  UI.S=null;
+  $('#topbar').classList.add('hidden');
+  $('#tabs').classList.add('hidden');
+  $('#app').classList.add('hidden');
+  $('#btn-logout').classList.add('hidden');
+  $('#topbar-info').innerHTML='';
+  showLogin();
+}
+
 function loadList(){
-  fetch('/api/saves').then(r=>r.json()).then(list=>{
+  const owner = apiSaveOwner();
+  fetch('/api/saves?owner='+encodeURIComponent(owner)).then(r=>r.json()).then(list=>{
     if(!list.length){ renderOnboard(); return; }
-    const items = list.map(s=>{ const label = s.name ? UI.esc(s.name) : UI.esc((s.id||'').slice(0,22)); const sub = [s.team, s.tier, s.season?('Temp '+s.season):''].filter(Boolean).join(' · '); return `<div class="realcard" data-id="${s.id}">${label}<small>${sub}</small><small class="rc-id">${UI.esc((s.id||'').slice(0,14))}</small>\n      <button class="del-save" data-id="${s.id}" title="Apagar carreira">🗑</button></div>`; }).join('');
-    modal(`<h3>Carregar carreira</h3><div class="realgrid">${items}</div><div class="actions" style="margin-top:14px"><button class="btn btn-red" id="m-new">+ Nova carreira</button></div>`);
-    $$('#modal-box .realcard').forEach(el=>el.onclick=(e)=>{
-      if (e.target.classList.contains('del-save')) return;
-      const id=el.dataset.id;
-      fetch('/api/save/'+id).then(r=>r.json()).then(S=>{E.normalizeSave(S); UI.S=S;UI.tab='carreira';closeModal();$('#onboard').classList.add('hidden');$('#topbar').classList.remove('hidden');$('#tabs').classList.remove('hidden');$('#app').classList.remove('hidden');UI.render();showToast('Carreira carregada');}).catch(err=>{ console.error('Erro ao carregar save', err); showToast('Erro ao carregar: '+(err&&err.message||err)); });
+    const mine = list.filter(s=>s.owner===owner);
+    const orphans = list.filter(s=>!s.owner);
+    const mineHtml = mine.length ? mine.map(s=>{
+      const label = UI.esc(s.name || (s.id||'').slice(0,22));
+      const sub = [s.team, s.southern, s.season?('Temp '+s.season):''].filter(Boolean).join(' · ');
+      return `<div class="realcard" data-id="${s.id}">${label}<small>${sub}</small><small class="rc-id">${UI.esc((s.id||'').slice(0,14))}</small><button class="del-save" data-id="${s.id}" title="Apagar carreira">🗑</button></div>`;
+    }).join('') : '<div class="muted" style="padding:8px 4px">Você ainda não tem carreiras. Crie uma abaixo ou reivindique uma da lista "sem dono".</div>';
+    const orphanHtml = orphans.length ? orphans.map(s=>{
+      const label = UI.esc(s.name || (s.id||'').slice(0,22));
+      const sub = [s.team, s.southern, s.season?('Temp '+s.season):''].filter(Boolean).join(' · ');
+      return `<div class="realcard orphan" data-id="${s.id}">${label}<small>${sub} · sem dono</small><button class="claim-save" data-id="${s.id}" title="Tornar este meu">Reivindicar</button><button class="del-save" data-id="${s.id}" title="Apagar carreira">🗑</button></div>`;
+    }).join('') : '';
+    const orphanSection = orphans.length ? `<div class="orphan-title">Carreiras sem dono (de outras pessoas/antigas)</div><div class="realgrid">${orphanHtml}</div>` : '';
+    modal(`<h3>Carreira — ${UI.esc(Session.name||'')}</h3><div class="realgrid">${mineHtml}</div>${orphanSection}<div class="actions" style="margin-top:14px"><button class="btn btn-red" id="m-new">+ Nova carreira</button></div>`);
+    $$('#modal-box .realcard').forEach(el=>{
+      if (el.classList.contains('orphan')) return;
+      el.onclick=(e)=>{
+        if (e.target.classList.contains('del-save')) return;
+        const id=el.dataset.id;
+        fetch('/api/save/'+id).then(r=>r.json()).then(S=>{E.normalizeSave(S); UI.S=S;UI.tab='carreira';closeModal();$('#onboard').classList.add('hidden');$('#topbar').classList.remove('hidden');$('#tabs').classList.remove('hidden');$('#app').classList.remove('hidden');UI.render();showToast('Carreira carregada');}).catch(err=>{ console.error('Erro ao carregar save', err); showToast('Erro ao carregar: '+(err&&err.message||err)); });
+      };
+    });
+    $$('#modal-box .realcard.orphan').forEach(el=>{
+      el.onclick=(e)=>{
+        if (e.target.classList.contains('del-save')) return;
+        const id=el.dataset.id;
+        if (e.target.classList.contains('claim-save')){
+          fetch('/api/save/'+id+'/claim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({owner})})
+            .then(r=>r.ok?r.json():r.json().then(j=>Promise.reject(j)))
+            .then(()=>{ showToast('Carreira reivindicada ✅'); loadList(); })
+            .catch(err=>showToast((err&&err.error)||'Não foi possível reivindicar'));
+          return;
+        }
+        fetch('/api/save/'+id).then(r=>r.json()).then(S=>{E.normalizeSave(S); UI.S=S;UI.tab='carreira';closeModal();$('#onboard').classList.add('hidden');$('#topbar').classList.remove('hidden');$('#tabs').classList.remove('hidden');$('#app').classList.remove('hidden');UI.render();showToast('Carreira carregada (sem dono)');}).catch(err=>{ console.error(err); showToast('Erro ao carregar'); });
+      };
     });
     $$('#modal-box .del-save').forEach(btn=>btn.onclick=(e)=>{
       e.stopPropagation();
       const id=btn.dataset.id;
       if (confirm('Apagar esta carreira? Esta ação não pode ser desfeita.')){
-        fetch('/api/save/'+id, {method:'DELETE'}).then(()=>{ showToast('Carreira apagada 🗑'); loadList(); });
+        fetch('/api/save/'+id+'?owner='+encodeURIComponent(owner), {method:'DELETE'}).then(()=>{ showToast('Carreira apagada 🗑'); loadList(); });
       }
     });
     $('#m-new').onclick=()=>{closeModal();renderOnboard();};
@@ -153,7 +254,7 @@ function loadList(){
 }
 
 window.App=App; window.showToast=showToast; window.modal=modal; window.closeModal=closeModal;
-window.saveGame=saveGame; window.loadList=loadList;
+window.saveGame=saveGame; window.loadList=loadList; window.showLogin=showLogin; window.logout=logout; window.Session=Session;
 window.showMatchScreen=showMatchScreen; window.advanceWeek=advanceWeek; window.openTrainChoice=openTrainChoice;
 
 // ---------- NAVEGAÇÃO ----------
@@ -161,6 +262,7 @@ function bindNav(){
   $$('#tabs .tab').forEach(b=>b.onclick=()=>{UI.tab=b.dataset.tab; UI.render(); afterRender();});
   $('#btn-save').onclick=saveGame;
   $('#btn-menu').onclick=loadList;
+  $('#btn-logout').onclick=logout;
 }
 function afterRender(){
   $('#btn-advance') && ($('#btn-advance').onclick = advanceWeek);
@@ -408,7 +510,8 @@ UI.render = function(){
 window.addEventListener('DOMContentLoaded', ()=>{
   UI.tab='carreira';
   UI.loadRankSaves(); // pré-carrega Hall da Fama (offline) para a aba Ranking
-  loadList();
+  loadSession();
+  if (Session.id){ afterLogin(); } else { showLogin(); }
 });
 
 })();

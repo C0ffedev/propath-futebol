@@ -15,6 +15,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS saves (
     id TEXT PRIMARY KEY,
     data TEXT NOT NULL,
+    owner TEXT NOT NULL DEFAULT '',
     updated_at INTEGER NOT NULL
   );
   CREATE TABLE IF NOT EXISTS accounts (
@@ -33,6 +34,11 @@ db.exec(`
     updated_at INTEGER NOT NULL
   );
 `);
+
+// migration idempotente: garante coluna owner nos saves (bancos antigos)
+try {
+  db.exec("ALTER TABLE saves ADD COLUMN owner TEXT NOT NULL DEFAULT ''");
+} catch (e) { /* coluna já existe — ok */ }
 
 // ---------- Senhas (hash scrypt + salt, nunca plaintext) ----------
 function hashPassword(pass) {
@@ -62,9 +68,17 @@ app.use((req, res, next) => { if (req.method === 'OPTIONS') return res.sendStatu
 app.use(express.static(ROOT, { index: 'index.html' }));
 
 // ---------- API de saves (várias carreiras) ----------
+// owner: '' = órfão (visível a todos, ainda não reivindicado); 'contaId' = dono logado
 app.get('/api/saves', (req, res) => {
   try {
-    const rows = db.prepare('SELECT id, data, updated_at FROM saves ORDER BY updated_at DESC').all();
+    const owner = req.query.owner || '';
+    let rows;
+    if (owner) {
+      // só os saves do dono + os ainda órfãos (para ele poder reivindicar)
+      rows = db.prepare("SELECT id, data, owner, updated_at FROM saves WHERE owner = ? OR owner = '' ORDER BY updated_at DESC").all(owner);
+    } else {
+      rows = db.prepare('SELECT id, data, owner, updated_at FROM saves ORDER BY updated_at DESC').all();
+    }
     const list = rows.map(r => {
       let name = '', team = '', tier = '', season = '';
       try {
@@ -74,7 +88,7 @@ app.get('/api/saves', (req, res) => {
         tier = d.tierIndex != null ? ('T' + (d.tierIndex + 1)) : '';
         season = d.season || '';
       } catch (e) {}
-      return { id: r.id, updated_at: r.updated_at, name, team, tier, season };
+      return { id: r.id, owner: r.owner || '', updated_at: r.updated_at, name, team, southern: tier, season };
     });
     res.json(list);
   } catch (e) { res.status(500).json({ error: 'Erro ao listar saves: ' + String(e) }); }
@@ -92,15 +106,35 @@ app.post('/api/save/:id', (req, res) => {
   try {
     const id = req.params.id;
     const data = JSON.stringify(req.body);
+    const owner = (req.body && req.body.owner) || '';
     const now = Date.now();
-    db.prepare(`INSERT INTO saves (id, data, updated_at) VALUES (?, ?, ?)
-      ON CONFLICT(id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at`).run(id, data, now);
-    res.json({ ok: true, id, updated_at: now });
+    db.prepare(`INSERT INTO saves (id, data, owner, updated_at) VALUES (?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET data = excluded.data, owner = excluded.owner, updated_at = excluded.updated_at`).run(id, data, owner, now);
+    res.json({ ok: true, id, owner, updated_at: now });
   } catch (e) { res.status(500).json({ error: 'Erro ao salvar: ' + String(e) }); }
+});
+
+// Reivindicar (assumir posse) de um save órfão. Só órfãos (owner='') podem ser reivindicados.
+app.post('/api/save/:id/claim', (req, res) => {
+  try {
+    const id = req.params.id;
+    const owner = (req.body && req.body.owner) || '';
+    if (!owner) return res.status(400).json({ error: 'owner obrigatório' });
+    const row = db.prepare('SELECT owner FROM saves WHERE id = ?').get(id);
+    if (!row) return res.status(404).json({ error: 'Save não encontrado' });
+    if (row.owner && row.owner !== owner) return res.status(409).json({ error: 'Este save já pertence a outra conta' });
+    db.prepare('UPDATE saves SET owner = ? WHERE id = ?').run(owner, id);
+    res.json({ ok: true, id, owner });
+  } catch (e) { res.status(500).json({ error: 'Erro ao reivindicar save: ' + String(e) }); }
 });
 
 app.delete('/api/save/:id', (req, res) => {
   try {
+    const owner = req.query.owner || '';
+    if (owner) {
+      const row = db.prepare('SELECT owner FROM saves WHERE id = ?').get(req.params.id);
+      if (row && row.owner && row.owner !== owner) return res.status(403).json({ error: 'Não é dono deste save' });
+    }
     db.prepare('DELETE FROM saves WHERE id = ?').run(req.params.id);
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: 'Erro ao apagar save: ' + String(e) }); }

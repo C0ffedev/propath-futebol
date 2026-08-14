@@ -137,7 +137,8 @@ E.createPlayer = function(o){
                    hatTricks:0, cupGames:0, seasons:1, teamsPlayed:{} },
     seasonSummary: null,
     career: [`Temporada 1: ${o.name} estreia na ${tierDef.name} (${FOOT_LABEL[foot]}).`],
-    leaderPushed: false
+    leaderPushed: false,
+    owner: o.owner || ''
   };
   me.calendar = E.genCalendar(me);
   E.initLeague(me);
