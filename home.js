@@ -193,7 +193,21 @@
       document.getElementById('topbar-info').innerHTML = UI.topbar();
       const tabs=[['carreira','Carreira'],['ficha','Ficha'],['estatisticas','Estatísticas'],['temporada','Temporada'],['liga','Liga'],['ligas','Ligas'],['competicoes','Comp'],['mercado','Mercado'],['conquistas','Conquistas'],['ranking','Ranking']];
       document.getElementById('tabs').innerHTML = tabs.map(t=>`<button class="tab ${UI.tab===t[0]?'on':''}" data-tab="${t[0]}">${t[1]}</button>`).join('');
-      document.getElementById('app').innerHTML = UI.hubDashboard();
+      let html;
+      try { html = UI.hubDashboard(); }
+      catch(e){
+        console.error('hubDashboard erro:', e);
+        html = '<div class="panel"><h2>Dashboard indisponível</h2>'
+          + '<div class="muted">'+(e&&e.message||e)+'</div>'
+          + '<div class="hub-quick">'
+          + '<button class="big-btn hub-advance" id="hub-advance">▶ Avançar Semana</button>'
+          + '<button class="btn" data-tab="temporada">📅 Calendário</button>'
+          + '<button class="btn" data-tab="competicoes">🏆 Competições</button>'
+          + '<button class="btn" data-tab="mercado">💱 Mercado</button>'
+          + '<button class="btn" data-tab="estatisticas">📊 Estatísticas</button>'
+          + '</div></div>';
+      }
+      document.getElementById('app').innerHTML = html;
       bindHubDash();
       return;
     }

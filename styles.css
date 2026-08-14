@@ -494,3 +494,19 @@ input:focus,select:focus{outline:none;border-color:var(--accent)}
 .hub-quick{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
 .hub-feed{max-height:200px;overflow-y:auto;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--bg2)}
 .trophy{background:rgba(232,180,0,.14);border:1px solid rgba(232,180,0,.45);color:var(--gold)}
+
+/* ===== SELEÇÃO DE CARREIRA (cards .realcard) — Bug 1: nomes sobrepostos ===== */
+.realgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin:10px 0 4px}
+.realcard{position:relative;display:flex;flex-direction:column;gap:2px;padding:14px 14px 14px;border:1px solid var(--line);border-radius:14px;
+  background:linear-gradient(160deg,var(--bg3),var(--bg2));box-shadow:0 6px 18px rgba(0,0,0,.35);
+  cursor:pointer;transition:.15s;min-height:64px}
+.realcard:hover{border-color:rgba(255,39,64,.45);box-shadow:0 8px 22px rgba(255,39,64,.18);transform:translateY(-2px)}
+.realcard{font-size:16px;font-weight:800;color:var(--txt);line-height:1.2;word-break:break-word}
+.realcard small{font-size:12px;font-weight:500;color:var(--muted);line-height:1.25}
+.realcard .rc-id{position:absolute;top:10px;right:12px;font-size:10px;color:var(--muted);opacity:.6;font-weight:600}
+.realcard.orphan{border-style:dashed;border-color:rgba(177,75,255,.4)}
+.realcard .del-save{position:absolute;bottom:8px;right:8px;background:transparent;border:none;font-size:14px;opacity:.55;cursor:pointer;padding:2px 4px}
+.realcard .del-save:hover{opacity:1;color:var(--red)}
+.realcard .claim-save{position:absolute;bottom:8px;right:8px;background:rgba(177,75,255,.15);border:1px solid rgba(177,75,255,.4);
+  color:var(--obsession);border-radius:8px;font-size:11px;padding:3px 8px;cursor:pointer}
+.orphan-title{font-size:12px;text-transform:uppercase;letter-spacing:1.4px;color:var(--gold);margin:16px 0 2px;font-weight:700}

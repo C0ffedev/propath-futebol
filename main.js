@@ -507,8 +507,9 @@ function openTransferWindow(){
 
 const _origRender = UI.render.bind(UI);
 UI.render = function(){
-  try { _origRender(); afterRender(); bindNav(); }
+  try { _origRender(); }
   catch(e){ console.error('Render error:', e); showToast('Erro ao renderizar aba: '+(e.message||e)); }
+  finally { afterRender(); bindNav(); }  // SEMPRE liga handlers (corrige navegação travada)
 };
 
 window.addEventListener('DOMContentLoaded', ()=>{
