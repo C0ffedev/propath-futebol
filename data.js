@@ -258,7 +258,7 @@ const SKILLS = [
   {k:'cabeceador', n:'Cabeceador', d:'Aumenta muito gols de cabeça/cruzamento', cat:{cabeca:3.0}, attr:{Cabeceio:5}},
   {k:'batista', n:'Mestre da Bola Parada', d:'Aumenta gols de falta e escanteio', cat:{falta:3.0, escanteio:3.0}, attr:{Chute:3}},
   {k:'plastico', n:'Plástico', d:'Aumenta gols de bicicleta/rabona/chapéu', cat:{bicicleta:3.0, chapeu:3.0}, attr:{Drible:4}},
-  {k:'ambidestro', n:'Ambidestro', d:'+1 em todos os atributos (além do pé)', cat:{}, attrAll:1},
+  {k:'calculista', n:'Calculista do Pânico', d:'Lê o jogo friamente: +Posicionamento/Passe e mais jogadas de leitura', cat:{roubada:2.0}, attr:{Posicionamento:4,Passe:3}},
   {k:'visor', n:'Visão de Jogo', d:'+Visão e leitura', cat:{}, attr:{Visão:4,Posicionamento:3}}
 ];
 

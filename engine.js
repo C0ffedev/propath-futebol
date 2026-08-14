@@ -106,7 +106,7 @@ E.createPlayer = function(o){
   let ovrTarget = null;
   if (arch.k === 'personalizada') ovrTarget = null;
   else ovrTarget = arch.ovr + Math.floor(Math.random()*3)-1;
-  const attrs = E.attrStart({pos:o.pos, arch:o.arch, foot, skillPts:o.skillPts, ovrTarget});
+  const attrs = E.attrStart({pos:o.pos, arch:o.arch, foot, skills:o.skills, skillPts:o.skillPts, ovrTarget});
   const ovr = E.calcOvr(o.pos, attrs);
   let pot;
   if (o.potTarget != null) pot = o.potTarget;
