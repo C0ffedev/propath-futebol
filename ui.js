@@ -156,7 +156,8 @@ UI.temporada = function(){
     ${tfBanner}
     <table class="tbl"><tr><th></th><th class="rd">Rod</th><th class="l">Jogo</th><th>Resultado</th></tr>${rows.join('')}</table>
     <div class="muted" style="margin-top:8px">CASA/FORA definem mando; COPA = mata-mata extra. A tabela da liga (aba Liga) reflete estes resultados + os rivais simulados.</div>
-    <div class="actions"><button class="big-btn purple" id="btn-plan">⚙ Definir Plano de Treino</button></div></div>`;
+    <div class="actions"><button class="big-btn purple" id="btn-plan">⚙ Definir Plano de Treino</button>
+      <button class="btn" id="btn-back">← Voltar ao Painel</button></div></div>`;
 };
 
 UI.liga = function(){

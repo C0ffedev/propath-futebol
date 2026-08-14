@@ -188,7 +188,10 @@
   const _origRender = UI.render;
   UI.render = function(){
     const S=UI.S;
-    // se tem carreira e a aba for a padrão de carreira, mostra dashboard no lugar
+    if (S){
+      // garante que a UI principal esteja visível (corrige #tabs hidden -> sem botão de voltar)
+      ['topbar','tabs','app'].forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.remove('hidden'); });
+    }
     if (S && UI.tab==='carreira'){
       document.getElementById('topbar-info').innerHTML = UI.topbar();
       const tabs=[['carreira','Carreira'],['ficha','Ficha'],['estatisticas','Estatísticas'],['temporada','Temporada'],['liga','Liga'],['ligas','Ligas'],['competicoes','Comp'],['mercado','Mercado'],['conquistas','Conquistas'],['ranking','Ranking']];

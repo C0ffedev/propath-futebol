@@ -265,6 +265,7 @@ window.renderOnboard=renderOnboard; window.afterRender=afterRender; window.apiSa
 function bindNav(){
   $$('#tabs .tab').forEach(b=>b.onclick=()=>{UI.tab=b.dataset.tab; UI.render(); afterRender();});
   $('#btn-save').onclick=saveGame;
+  $('#btn-back') && ($('#btn-back').onclick = ()=>{ UI.tab='carreira'; UI.render(); afterRender(); });
   $('#btn-menu').onclick=function(){ UI.S ? UI.hub() : (typeof loadList==='function' && loadList()); };
   $('#btn-logout').onclick=logout;
 }
