@@ -51,21 +51,24 @@ function get(url){return new Promise((res,rej)=>{http.get(url,r=>{let d='';r.on(
   w.fetch('/api/save/s-amigo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:'s-amigo',name:'Só do Amigo',teamName:'Palmeiras',owner:'amigo'})});
   w.fetch('/api/save/s-orphan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:'s-orphan',name:'Órfão',teamName:'Vasco'})});
 
-  // 1) boot mostra tela de login (auth visível, onboard escondido)
-  const authVisible = !d.getElementById('auth').classList.contains('hidden');
-  console.log('tela de login visível no boot?', authVisible);
+  // 1) boot mostra a LANDING (página inicial), não o login
+  const landingVisible = !d.getElementById('landing').classList.contains('hidden');
+  console.log('landing visível no boot?', landingVisible);
 
-  // 2) simula login como KARLA
+  // 2) clica "Entrar/Criar" na landing -> abre login; simula login como KARLA
+  const enterBtn = d.getElementById('land-enter');
+  if (enterBtn) enterBtn.click();
+  await new Promise(r=>setTimeout(r,120));
   d.querySelector('#a-id').value='karla';
   d.querySelector('#a-pass').value='senha';
   d.querySelector('#a-go').click();
-  await new Promise(r=>setTimeout(r,250));
+  await new Promise(r=>setTimeout(r,350));
   const topUser = d.getElementById('top-user').textContent;
   console.log('top-user após login:', JSON.stringify(topUser));
 
-  // 3) loadList deve mostrar só os saves da karla (+ órfão) — NÃO o do amigo
-  const cards = [...d.querySelectorAll('#modal-box .realcard')].map(c=>c.dataset.id);
-  const orphans = [...d.querySelectorAll('#modal-box .realcard.orphan')].map(c=>c.dataset.id);
+  // 3) hub deve mostrar só os saves da karla (+ órfão) — NÃO o do amigo (agora no #app, não modal)
+  const cards = [...d.querySelectorAll('#app .realcard')].map(c=>c.dataset.id);
+  const orphans = [...d.querySelectorAll('#app .realcard.orphan')].map(c=>c.dataset.id);
   console.log('cards visíveis p/ karla:', cards);
   console.log('órfãos visíveis:', orphans);
   const seesAmigo = cards.includes('s-amigo');
@@ -95,12 +98,12 @@ function get(url){return new Promise((res,rej)=>{http.get(url,r=>{let d='';r.on(
   const compOk = compHtml.includes('Competi') && compHtml.includes('class="comp-card"');
   console.log('aba Competições renderizou cards?', compOk);
 
-  // 7) logout volta p/ login
+  // 7) logout volta p/ landing (não mais direto p/ login)
   d.querySelector('#btn-logout').click();
   await new Promise(r=>setTimeout(r,100));
-  console.log('após logout, auth visível?', !d.getElementById('auth').classList.contains('hidden'));
+  console.log('após logout, landing visível?', !d.getElementById('landing').classList.contains('hidden'));
 
-  const pass = errors.length===0 && authVisible && !seesAmigo && seesOwn && seesOrphan && mem.saves[S.id] && mem.saves[S.id].owner==='karla' && compOk;
+  const pass = errors.length===0 && landingVisible && !seesAmigo && seesOwn && seesOrphan && mem.saves[S.id] && mem.saves[S.id].owner==='karla' && compOk;
   console.log('ERROS CAPTURADOS:', errors.length, errors.slice(0,3));
   console.log(pass ? 'E2E PASS ✅' : 'E2E FAIL ❌');
   process.exit(pass?0:1);

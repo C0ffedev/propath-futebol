@@ -143,6 +143,7 @@ function saveGame(){
 }
 // ---------- AUTH / LOGIN ----------
 function showLogin(){
+  const ld = document.getElementById('landing'); if (ld) ld.classList.add('hidden');
   $('#onboard').classList.add('hidden');
   const box = $('#auth'); box.classList.remove('hidden');
   box.innerHTML = `
@@ -186,10 +187,11 @@ function doLogin(id,pass){
     .catch(err=>{ $('#a-err').textContent=(err&&err.error)||'Falha ao entrar'; });
 }
 function afterLogin(){
+  const ld = document.getElementById('landing'); if (ld) ld.classList.add('hidden');
   $('#topbar').classList.remove('hidden');
   $('#btn-logout').classList.remove('hidden');
   UI.renderTopUser && UI.renderTopUser();
-  loadList();
+  UI.hub();
 }
 function logout(){
   clearSession();
@@ -199,7 +201,8 @@ function logout(){
   $('#app').classList.add('hidden');
   $('#btn-logout').classList.add('hidden');
   $('#topbar-info').innerHTML='';
-  showLogin();
+  UI.tab='carreira';
+  UI.landing();
 }
 
 function loadList(){
@@ -256,12 +259,13 @@ function loadList(){
 window.App=App; window.showToast=showToast; window.modal=modal; window.closeModal=closeModal;
 window.saveGame=saveGame; window.loadList=loadList; window.showLogin=showLogin; window.logout=logout; window.Session=Session;
 window.showMatchScreen=showMatchScreen; window.advanceWeek=advanceWeek; window.openTrainChoice=openTrainChoice;
+window.renderOnboard=renderOnboard; window.afterRender=afterRender; window.apiSaveOwner=apiSaveOwner;
 
 // ---------- NAVEGAÇÃO ----------
 function bindNav(){
   $$('#tabs .tab').forEach(b=>b.onclick=()=>{UI.tab=b.dataset.tab; UI.render(); afterRender();});
   $('#btn-save').onclick=saveGame;
-  $('#btn-menu').onclick=loadList;
+  $('#btn-menu').onclick=function(){ UI.S ? UI.hub() : (typeof loadList==='function' && loadList()); };
   $('#btn-logout').onclick=logout;
 }
 function afterRender(){
@@ -511,7 +515,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
   UI.tab='carreira';
   UI.loadRankSaves(); // pré-carrega Hall da Fama (offline) para a aba Ranking
   loadSession();
-  if (Session.id){ afterLogin(); } else { showLogin(); }
+  if (Session.id){ afterLogin(); } else { UI.landing(); }
 });
 
 })();
