@@ -19,26 +19,11 @@
         <div class="land-hero">
           <div class="brand land-brand">PRO<span>PATH</span> · FUTEBOL</div>
           <h1 class="land-title">Do barro da <span class="t-obs">várzea</span> ao <span class="t-acc">Panteão</span> Mundial.</h1>
-          <p class="land-sub">Crie seu jogador. Viva uma carreira SIMULADA de verdade — times reais, competições em paralelo, decisões que importam. Tema <b>Pânico × Obsessão</b>.</p>
+          <p class="land-sub">Crie seu jogador. Viva uma carreira SIMULADA de verdade — times reais, competições em paralelo, decisões que importam.</p>
           <div class="land-cta">
             <button class="big-btn land-enter" id="land-enter">Entrar / Criar conta</button>
-            <button class="btn ghost land-premise" id="land-premise">A Premissa</button>
           </div>
           <div class="land-note muted">Seu progresso fica salvo neste computador, separado por conta.</div>
-        </div>
-
-        <div class="land-split">
-          <div class="split panico">
-            <div class="split-tag">PÂNICO</div>
-            <div class="split-name">Amber Freeman</div>
-            <div class="split-desc">Fria. Calculista. Lê o jogo antes da bola rodar. O lado cirúrgico da sua carreira.</div>
-          </div>
-          <div class="split vs">×</div>
-          <div class="split obsessao">
-            <div class="split-tag">OBSESSÃO</div>
-            <div class="split-name">Nikki Freeman</div>
-            <div class="split-desc">Devotada. Maníaca. Não larga a bola nem no sonho. O lado devorador da sua carreira.</div>
-          </div>
         </div>
 
         <div class="land-how">
@@ -54,31 +39,11 @@
           <div class="feat"><span class="feat-ic">📈</span> Evolução real de OVR e atributos</div>
         </div>
 
-        <div class="land-foot muted">Projeto não comercial · inspirado em jogos de carreira · Pânico × Obsessão</div>
+        <div class="land-foot muted">Projeto não comercial · inspirado em jogos de carreira de futebol</div>
       </div>`;
 
     const enter = document.getElementById('land-enter');
     if (enter) enter.onclick = function(){ if (typeof showLogin === 'function') showLogin(); };
-    const prem = document.getElementById('land-premise');
-    if (prem) prem.onclick = function(){ if (UI.premise) UI.premise(); };
-  };
-
-  // ===================================================================
-  // 4) INTRO NARRATIVA (Pânico × Obsessão)
-  // ===================================================================
-  UI.premise = function(){
-    const html = `<div class="premise">
-      <div class="prem-h">A PREMISSA — Pânico × Obsessão</div>
-      <p>Duas irmãs. Um vício. O futebol.</p>
-      <p><b class="c-acc">Amber (Pânico)</b> joga como quem planeja um crime: fria, cirúrgica, três lances à frente. Ela não sente o grito da torcida — ela ouve o espaço abrir.</p>
-      <p><b class="c-obs">Nikki (Obsessão)</b> joga como quem não quer soltar: devorada, maníaca, possessiva com a bola. Ela não joga pelo time — ela joga <i>pelo jogo</i>.</p>
-      <p class="muted">Sua carreira no ProPath nasce desse conflito. Cada decisão — treinar, ficar ou sair, qual competição priorizar — é um pouco de Pânico e um pouco de Obsessão. Construa a lenda.</p>
-      <div class="actions"><button class="big-btn" id="prem-ok">Entendido 🔥</button></div>
-    </div>`;
-    if (typeof modal === 'function') modal(html);
-    else { const m=document.getElementById('modal'); document.getElementById('modal-box').innerHTML=html; m.classList.remove('hidden'); }
-    const ok = document.getElementById('prem-ok');
-    if (ok) ok.onclick = function(){ if (typeof closeModal === 'function') closeModal(); };
   };
 
   // ===================================================================
@@ -122,7 +87,6 @@
             <h2><span class="ic">🏠</span> Bem-vindo, ${UI.esc((window.Session&&window.Session.name)||'')}</h2>
             <div class="hub-actions">
               <button class="big-btn btn-red" id="hub-new">+ Nova carreira</button>
-              <button class="btn ghost" id="hub-premise">A Premissa</button>
               <button class="btn ghost" id="hub-ranking" data-tab="ranking">Ranking</button>
             </div>
             <div class="orphan-title" style="margin-top:18px">Suas carreiras</div>
@@ -131,7 +95,6 @@
           </div>`;
         // handlers
         const nb = document.getElementById('hub-new'); if (nb) nb.onclick = ()=>{ if (typeof renderOnboard==='function') renderOnboard(); };
-        const pb = document.getElementById('hub-premise'); if (pb) pb.onclick = ()=> UI.premise();
         const rb = document.getElementById('hub-ranking'); if (rb) rb.onclick = ()=>{ UI.tab='ranking'; UI.render(); afterRender(); };
         box.querySelectorAll('.realcard').forEach(el=>{
           if (el.classList.contains('orphan')) return;
@@ -211,7 +174,6 @@
             <button class="btn" data-tab="competicoes">🏆 Competições</button>
             <button class="btn" data-tab="mercado">💱 Mercado</button>
             <button class="btn" data-tab="estatisticas">📊 Estatísticas</button>
-            <button class="btn ghost" id="hub-premise2">A Premissa</button>
           </div>
         </div>
       </div>
@@ -240,7 +202,6 @@
 
   function bindHubDash(){
     const adv = document.getElementById('hub-advance'); if (adv) adv.onclick = ()=>{ if (typeof advanceWeek==='function') advanceWeek(); };
-    const prem = document.getElementById('hub-premise2'); if (prem) prem.onclick = ()=> UI.premise();
     document.querySelectorAll('#app .hub-quick [data-tab]').forEach(b=>b.onclick=()=>{ UI.tab=b.dataset.tab; UI.render(); afterRender(); });
     document.querySelectorAll('#app .comp-pill').forEach(p=>p.onclick=()=>{ UI.tab='competicoes'; UI.render(); afterRender(); });
   }

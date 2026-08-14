@@ -361,7 +361,7 @@ UI.runEscalador = function(){
 
 UI.onboardHTML = function(){
   return `<div class="ob-card"><h1>Crie sua <span>LENDA</span></h1>
-    <div class="ob-sub">ProPath Futebol — do barro da várzea ao Panteão Mundial. Tema Pânico × Obsessão.</div>
+    <div class="ob-sub">ProPath Futebol — do barro da várzea ao Panteão Mundial. Crie seu jogador e conquiste o mundo.</div>
     <div class="ob-step" id="ob-step">Passo 1 / 5 — Identidade</div>
     <div id="ob-body"></div>
     <div class="ob-nav"><button class="btn btn-ghost" id="ob-back" disabled>← Voltar</button><button class="btn btn-red" id="ob-next">Próximo →</button></div>
