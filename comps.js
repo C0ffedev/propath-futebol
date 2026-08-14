@@ -6,9 +6,11 @@
 (function(){
   if (typeof E === 'undefined') { console.error('comps.js precisa vir após engine.js'); return; }
 
-  // garante que S.comps exista (idempotente)
+  // garante que S.comps exista (rebuild se alguma comp pontos estiver sem tabela — ex.: saves antigos)
   E.ensureComps = function(S){
-    if (S.comps && S.comps.length) return S.comps;
+    if (S.comps && S.comps.length && S.comps.every(c => c.type !== 'pontos' || (c.table && Object.keys(c.table).length))){
+      return S.comps;
+    }
     return E.buildComps(S);
   };
 
@@ -85,8 +87,12 @@
       const def = COMP_BY_ID(en.compId) || { id:en.compId, name:en.compId, short:en.compId, level:en.level||'nacional', type:en.type||'pontos' };
       const c = { compId:def.id, name:def.name, short:def.short, level:def.level, type:def.type, status:'active', round:1, myTeam:S.teamName };
       if (def.type === 'pontos'){
-        const teams = compTeams(S, def).slice(0, Math.min(def.teams||12, 12));
-        if (!teams.find(t=>t.n===S.teamName)) teams.push({ n:S.teamName, o:S.teamOvr||70, c:'BR', stars:[] });
+        // GARANTE que o time do jogador participe da competição (corrige saves onde
+        // o time do jogador não entrou na tabela da comp paralela).
+        let teams = compTeams(S, def).slice(0, Math.min(def.teams||12, 12));
+        teams = teams.filter(t => t.n !== S.teamName);
+        teams.unshift({ n:S.teamName, o:S.teamOvr||70, c:'BR', stars:[] });
+        teams = teams.slice(0, Math.min(def.teams||12, 12));
         c.teams = teams;
         c.table = {};
         teams.forEach(t=> c.table[t.n] = { n:t.n, p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0 });

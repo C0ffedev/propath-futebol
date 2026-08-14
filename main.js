@@ -376,7 +376,7 @@ function showMatchScreen(r){
   const wk = S.calendar[S.calIdx-1];
   const opp = wk ? wk.opp : null;
   const oppName = opp ? opp.n : 'Adversário';
-  const cupTxt = (wk && wk.cup) ? '🏆 Copa' : LEAGUE_BY_ID(S.leagueId).short;
+  const cupTxt = (wk && wk.comp) ? (COMP_BY_ID(wk.comp) ? COMP_BY_ID(wk.comp).short : LEAGUE_BY_ID(S.leagueId).short) : LEAGUE_BY_ID(S.leagueId).short;
   const resMap = {V:'VITÓRIA', D:'DERROTA', E:'EMPATE'};
   const resCls = {V:'win', D:'lose', E:'draw'}[r.res];
   const st = r.stats, p = st.player;
