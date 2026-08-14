@@ -297,3 +297,49 @@ const SPECIAL_GOALS = [
   {k:'cruzamento', base:0.05, label:'Cruzamento e gol 📐'},
   {k:'aereo', base:0.05, label:'Cabeceio dominante ⬆️'}
 ];
+
+// ============================================================================
+// CATÁLOGO DE COMPETIÇÕES (modelo do Guia: pirâmide + paralelo)
+// Cada competição tem nível, tipo de formato e regras de classificação.
+// 'id' casa com a liga/copa correspondente em TIERS/CUPS quando aplicável.
+// NÍVEIS: estadual < regional < nacional < continental < mundial
+// TIPOS:   pontos (liga), mata (copa/playoff), decisao (supercopa/recopa)
+// ============================================================================
+const COMP_LEVEL = { estadual:0, regional:1, nacional:2, continental:3, mundial:4 };
+const COMPETITIONS = [
+  // ---- ESTADUAIS (BR) ----
+  { id:'bra-paulista', name:'Campeonato Paulista', short:'PAULISTA', level:'estadual', type:'pontos', scope:'BR', state:'SP', teams:12, desc:'O mais disputado estadual do país.' },
+  { id:'bra-carioca',  name:'Campeonato Carioca',  short:'CARIOCA',  level:'estadual', type:'pontos', scope:'BR', state:'RJ', teams:12, desc:'A rivalidade fluminense em campo.' },
+  { id:'bra-mineiro',  name:'Campeonato Mineiro',  short:'MINEIRO',  level:'estadual', type:'pontos', scope:'BR', state:'MG', teams:12, desc:'Tradicionalíssimo. O galo e a massa.' },
+  { id:'bra-gaucho',   name:'Campeonato Gaúcho',   short:'GAÚCHO',   level:'estadual', type:'pontos', scope:'BR', state:'RS', teams:12, desc:'Gre-Nal e muito mais.' },
+  // ---- REGIONAIS (BR) ----
+  { id:'bra-nordeste', name:'Copa do Nordeste',   short:'NORDESTE', level:'regional', type:'mata', scope:'BR', region:'NE', teams:16, desc:'O Nordeste unido em jogo.' },
+  { id:'bra-verde',    name:'Copa Verde',          short:'VERDE',    level:'regional', type:'mata', scope:'BR', region:'NC', teams:16, desc:'Norte + Centro-Oeste brigando.' },
+  { id:'bra-sulse',    name:'Copa Sul-Sudeste',   short:'SUL-SUD',  level:'regional', type:'mata', scope:'BR', region:'SS', teams:16, desc:'As duas regiões mais fortes.' },
+  // ---- NACIONAIS (pirâmide SÉRIES + COPA + SUPERCOPA) ----
+  { id:'bra-sa', name:'Brasileirão Série A', short:'SÉRIE A', level:'nacional', type:'pontos', scope:'BR', desc:'A elite. 20 clubes, pontos corridos.' },
+  { id:'bra-sb', name:'Brasileirão Série B', short:'SÉRIE B', level:'nacional', type:'pontos', scope:'BR', desc:'O caldeirão. Subir é tudo.' },
+  { id:'bra-sc', name:'Brasileirão Série C', short:'SÉRIE C', level:'nacional', type:'pontos', scope:'BR', desc:'Divisão de acesso à Série B.' },
+  { id:'bra-sd', name:'Brasileirão Série D', short:'SÉRIE D', level:'nacional', type:'pontos', scope:'BR', desc:'A base da pirâmide. Grupos + mata-mata.' },
+  { id:'bra-copa', name:'Copa do Brasil', short:'COPA BR', level:'nacional', type:'mata', scope:'BR', desc:'Mata-mata nacional. Campeão vai à Libertadores.' },
+  { id:'bra-super', name:'Supercopa do Brasil', short:'SUPERCOPA', level:'nacional', type:'decisao', scope:'BR', needs:['bra-sa','bra-copa'], desc:'Campeão do Brasileirão × Campeão da Copa do Brasil.' },
+  // ---- CONTINENTAIS ----
+  { id:'sam-lib', name:'Copa Libertadores', short:'LIBERTADORES', level:'continental', type:'mata', scope:'SAM', desc:'O continente inteiro. O campeão da América.' },
+  { id:'sam-sula', name:'Copa Sul-Americana', short:'SUL-AMERICANA', level:'continental', type:'mata', scope:'SAM', desc:'A segunda principal da CONMEBOL.' },
+  { id:'sam-recopa', name:'Recopa Sul-Americana', short:'RECOPA', level:'continental', type:'decisao', scope:'SAM', needs:['sam-lib','sam-sula'], desc:'Libertadores × Sul-Americana.' },
+  // ---- MUNDIAIS ----
+  { id:'world-inter', name:'Copa Intercontinental da FIFA', short:'INTERCONTINENTAL', level:'mundial', type:'decisao', scope:'ALL', needs:['sam-lib'], desc:'Campeão continental vs campeões do mundo.' },
+  { id:'world-club', name:'Mundial de Clubes da FIFA', short:'MUNDIAL', level:'mundial', type:'mata', scope:'ALL', desc:'32 clubes. Ciclo de 4 anos.' }
+];
+function COMP_BY_ID(id){ return COMPETITIONS.find(c=>c.id===id); }
+function COMPS_OF_LEVEL(level){ return COMPETITIONS.filter(c=>c.level===level); }
+
+// Liga/copa "real" correspondente em TIERS/CUPS (quando existir elenco real).
+function COMP_LEAGUE_ID(comp){
+  if (!comp) return null;
+  if (['bra-sa','bra-sb','bra-sc','bra-sd'].includes(comp.id)) return comp.id;
+  if (comp.id==='bra-copa') return 'bra-copa';
+  if (comp.id==='sam-lib') return 'sam-lib';
+  return null;
+}
+

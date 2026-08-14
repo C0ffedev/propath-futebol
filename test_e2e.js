@@ -7,7 +7,7 @@ const http = require('http');
 function get(url){return new Promise((res,rej)=>{http.get(url,r=>{let d='';r.on('data',c=>d+=c);r.on('end',()=>res(d));}).on('error',rej);});}
 
 (async()=>{
-  const base='http://localhost:4555';
+  const base='http://127.0.0.1:4411';
   const errors=[];
   // estado "servidor" em memória (por dono)
   const mem={ saves:{}, accounts:{} };
@@ -88,17 +88,20 @@ function get(url){return new Promise((res,rej)=>{http.get(url,r=>{let d='';r.on(
   await new Promise(r=>setTimeout(r,200));
   console.log('save gravado com owner:', mem.saves[S.id] && mem.saves[S.id].owner, '(deve ser karla)');
 
-  // 6) percorre abas sem erro
-  ['ficha','temporada','liga','mercado','conquistas','ranking'].forEach(t=>{ w.UI.tab=t; w.UI.render(); });
+  // 6) percorre abas sem erro, incluindo a nova aba Competições
+  let compHtml='';
+  ['ficha','temporada','liga','ligas','competicoes','mercado','conquistas','ranking'].forEach(t=>{ w.UI.tab=t; w.UI.render(); if(t==='competicoes') compHtml = d.getElementById('app').innerHTML; });
   console.log('todas abas renderizaram');
+  const compOk = compHtml.includes('Competi') && compHtml.includes('class="comp-card"');
+  console.log('aba Competições renderizou cards?', compOk);
 
   // 7) logout volta p/ login
   d.querySelector('#btn-logout').click();
   await new Promise(r=>setTimeout(r,100));
   console.log('após logout, auth visível?', !d.getElementById('auth').classList.contains('hidden'));
 
-  const pass = errors.length===0 && authVisible && !seesAmigo && seesOwn && seesOrphan && mem.saves[S.id] && mem.saves[S.id].owner==='karla';
+  const pass = errors.length===0 && authVisible && !seesAmigo && seesOwn && seesOrphan && mem.saves[S.id] && mem.saves[S.id].owner==='karla' && compOk;
   console.log('ERROS CAPTURADOS:', errors.length, errors.slice(0,3));
   console.log(pass ? 'E2E PASS ✅' : 'E2E FAIL ❌');
   process.exit(pass?0:1);
-})().catch(e=>{console.error('FALHA:',e.message);process.exit(1);});
+})().catch(e=>{console.error('FALHA:', e && (e.stack||e.message)); process.exit(1);});

@@ -28,10 +28,10 @@ UI.topbar = function(){
 UI.render = function(){
   const S=UI.S; if(!S) return;
   document.getElementById('topbar-info').innerHTML = UI.topbar();
-  const tabs=[['carreira','Carreira'],['ficha','Ficha'],['estatisticas','Estatísticas'],['temporada','Temporada'],['liga','Liga'],['ligas','Ligas'],['mercado','Mercado'],['conquistas','Conquistas'],['ranking','Ranking']];
+  const tabs=[['carreira','Carreira'],['ficha','Ficha'],['estatisticas','Estatísticas'],['temporada','Temporada'],['liga','Liga'],['ligas','Ligas'],['competicoes','Comp'],['mercado','Mercado'],['conquistas','Conquistas'],['ranking','Ranking']];
   document.getElementById('tabs').innerHTML = tabs.map(t=>`<button class="tab ${UI.tab===t[0]?'on':''}" data-tab="${t[0]}">${t[1]}</button>`).join('');
   const app=document.getElementById('app');
-  const map={carreira:UI.carreira, ficha:UI.ficha, estatisticas:UI.estatisticas, temporada:UI.temporada, liga:UI.liga, ligas:UI.ligas, mercado:UI.mercado, conquistas:UI.conquistas, ranking:UI.ranking};
+  const map={carreira:UI.carreira, ficha:UI.ficha, estatisticas:UI.estatisticas, temporada:UI.temporada, liga:UI.liga, ligas:UI.ligas, competicoes:UI.competicoes, mercado:UI.mercado, conquistas:UI.conquistas, ranking:UI.ranking};
   const out = (map[UI.tab]||UI.carreira)();
   app.innerHTML = out;
   return out;
@@ -40,7 +40,8 @@ UI.render = function(){
 UI.carreira = function(){
   const S=UI.S;
   const next = S.calendar[S.calIdx];
-  const nextTxt = next?(next.type==='match'?`Jogo vs ${next.opp.n}${next.cup?' (COPA)':''}`:`Treino — clique em "Avançar" para escolher o foco`):'Fim da temporada';
+  const compName = next && next.comp ? (COMP_BY_ID(next.comp)||{short:''}).short : '';
+  const nextTxt = next?(next.type==='match'?`Jogo vs ${next.opp.n}${compName?' ('+compName+')':''}`:`Treino — clique em "Avançar" para escolher o foco`):'Fim da temporada';
   const feed = S.career.slice(-6).map(c=>`<p class="muted">${UI.esc(c)}</p>`).join('');
   const foot = FOOT_LABEL[S.foot]||'Destro';
   const footNote = FOOT_INFO[S.foot] ? FOOT_INFO[S.foot].note : '';
@@ -140,10 +141,11 @@ UI.temporada = function(){
     const done = i < S.calIdx;
     const isCur = i === S.calIdx;
     const m = S.seasonMatches[mi]; mi++;
-    const t = (c.cup?'🏆 ':'')+`vs ${c.opp.n}`+(c.home?' (CASA)':' (FORA)');
+    const compShort = c.comp ? (COMP_BY_ID(c.comp)||{short:''}).short : '';
+    const t = (compShort?'🏆 ':'')+`vs ${c.opp.n}`+(c.home?' (CASA)':' (FORA)')+(compShort?` [${compShort}]`:'');
     const sp = (m&&m.specials&&m.specials.length)?` · 🌟${m.specials.join(', ')}`:'';
     const r = m?`${m.gf}x${m.ga} (${m.res}) ⭐${m.rating}${m.goals?' G'+m.goals:''}${m.assists?' A'+m.assists:''}${sp}`:'';
-    const round = c.cup ? 'COPA' : ('R'+(c.round||(done?'?':'')));
+    const round = compShort ? compShort : ('R'+(c.round||(done?'?':'')));
     rows.push(`<tr class="${isCur?'pos':''}"><td>${done?'✓':(isCur?'▶':'')}</td><td class="rd">${round}</td><td style="text-align:left">${UI.esc(t)}</td><td>${r}</td></tr>`);
   });
   let tfBanner;
@@ -364,6 +366,37 @@ UI.onboardHTML = function(){
     <div id="ob-body"></div>
     <div class="ob-nav"><button class="btn btn-ghost" id="ob-back" disabled>← Voltar</button><button class="btn btn-red" id="ob-next">Próximo →</button></div>
   </div>`;
+};
+
+UI.competicoes = function(){
+  const S=UI.S;
+  // agrupa as competições do clube por nível (pirâmide do Guia)
+  const order = ['estadual','regional','nacional','continental','mundial'];
+  const label = {estadual:'Estadual',regional:'Regional',nacional:'Nacional',continental:'Continental',mundial:'Mundial'};
+  let html = `<div class="panel"><h2><span class="ic">🏆</span> Competições do ${UI.esc(S.teamName)} — Temp ${S.season}</h2>
+    <div class="muted" style="margin-bottom:10px">Seu clube disputa várias competições em paralelo. Pirâmide: Estadual → Regional → Nacional → Continental → Mundial.</div>`;
+  order.forEach(lvl=>{
+    const comps = (S.comps||[]).filter(c=>c.level===lvl);
+    if (!comps.length) return;
+    html += `<div class="comp-level"><h3 class="comp-level-h">${label[lvl]||lvl}</h3>`;
+    comps.forEach(c=>{
+      const def = COMP_BY_ID(c.compId) || { name:c.compId, short:c.short };
+      let body='';
+      if (c.type==='pontos' && c.table){
+        const rows = E.getCompTable(S, c.compId);
+        body = `<table class="tbl"><tr><th>#</th><th class="l">Clube</th><th>J</th><th>V</th><th>E</th><th>D</th><th>GP</th><th>GC</th><th>SG</th><th>Pts</th></tr>` +
+          rows.map((r,i)=>`<tr class="${r.me?'me':''}"><td>${i+1}</td><td class="l">${UI.esc(r.n)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gf}</td><td>${r.ga}</td><td>${r.sg>0?'+'+r.sg:r.sg}</td><td><b>${r.pts}</b></td></tr>`).join('') + '</table>';
+      } else if (c.type==='mata' || c.type==='decisao'){
+        const st = c.status==='campeao'?'🏆 CAMPEÃO': c.status==='eliminado'?'❌ Eliminado':`Fase ${c.phase}/${c.maxPhase}`;
+        body = `<div class="comp-cup-status">${st}</div>`;
+      }
+      const tag = c.status==='campeao'?' champ':'';
+      html += `<div class="comp-card${tag}"><div class="comp-card-h">${UI.esc(def.name)} <span class="muted">${def.short||''}</span></div>${body}</div>`;
+    });
+    html += `</div>`;
+  });
+  html += `</div>`;
+  return html;
 };
 
 window.UI = UI;

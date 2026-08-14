@@ -199,6 +199,10 @@ E.normalizeSave = function(S){
 // de cada jogo do jogador == índice da rodada em E._roundPairs, para que
 // simOtherMatches saiba exatamente quais rivais simular naquela rodada.
 E.genCalendar = function(S){
+  // Reforma de competições: garante que o save tenha suas competições paralelas.
+  if (typeof E.ensureComps === 'function') E.ensureComps(S);
+  // Se o save tem competições paralelas, gera calendário mesclado.
+  if (S.comps && S.comps.length){ return E.genCompCalendar(S); }
   const fixture = E._roundPairs(E.leagueTeams(S)); // array de rodadas; cada rodada = lista de pares
   const cal = [];
   fixture.forEach((roundPairs, ri) => {
@@ -332,7 +336,10 @@ E.getTopScorers = function(S){
 };
 
 E.trainGain = function(S, planOverride){
-  const plan = planOverride || TRAIN_PLANS.find(p=>p.k===S.trainPlan.k) || TRAIN_PLANS[1];
+  // resolve o plano sempre a partir do catálogo TRAIN_PLANS (que tem os atributos 'a'),
+  // mesmo se planOverride vier sem 'a' (ex.: S.trainPlan inicial do createPlayer)
+  const base = planOverride && planOverride.k ? TRAIN_PLANS.find(p=>p.k===planOverride.k) : null;
+  const plan = base || (S.trainPlan && S.trainPlan.k ? TRAIN_PLANS.find(p=>p.k===S.trainPlan.k) : null) || TRAIN_PLANS[1];
   const inc = (S.age <= 27) ? 1.1 : 0.35;
   for (const a of plan.a){
     if (!S.attrs[a]) continue;
@@ -490,9 +497,10 @@ E.advanceWeek = function(S){
   const wk = S.calendar[S.calIdx];
   let matchRes = null;
   if (wk && wk.type==='match'){
-    const r = E.simMatch(S, wk.opp, wk.cup);
+    const r = E.simMatch(S, wk.opp, !!wk.comp);
     matchRes = r;
-    if (!wk.cup){
+    const isCup = !!wk.comp && wk.comp !== S.leagueId; // qualquer comp que não seja a liga principal
+    if (!isCup){
       S.table.gf += r.gf; S.table.ga += r.ga;
       if (r.res==='V'){S.table.w++;S.table.p+=3;} else if (r.res==='E'){S.table.d++;S.table.p+=1;} else S.table.l++;
       // ----- LIGA REAL: aplica o SEU jogo na tabela da liga -----
@@ -501,10 +509,14 @@ E.advanceWeek = function(S){
       E.simOtherMatches(S, wk);
       // ----- ARTILHARIA: seus gols entram na lista -----
       if (r.goals > 0) E.addScorer(S, S.name, r.goals, S.teamName, true);
-    } else if (r.goals > 0){
-      E.addScorer(S, S.name, r.goals, S.teamName, true); // gol de copa também conta na sua artilharia pessoal
+    } else {
+      // COMPETIÇÃO PARALELA (estadual/copa/continental/etc): aplica na tabela/fase da comp
+      E.applyCompResult(S, wk.comp, S.teamName, wk.opp.n, r.gf, r.ga);
+      const won = (r.res==='V');
+      E.advanceCompPhase(S, wk.comp, won);
+      if (r.goals > 0) E.addScorer(S, S.name, r.goals, S.teamName, true);
     }
-    const sm = {opp:wk.opp.n, ovr:wk.opp.o, gf:r.gf, ga:r.ga, res:r.res, rating:r.rating, goals:r.goals, assists:r.assists, mom:r.mom, cup:!!wk.cup, specials:r.specials?r.specials.map(s=>s.label):[]};
+    const sm = {opp:wk.opp.n, ovr:wk.opp.o, gf:r.gf, ga:r.ga, res:r.res, rating:r.rating, goals:r.goals, assists:r.assists, mom:r.mom, cup:isCup, comp:wk.comp||null, specials:r.specials?r.specials.map(s=>s.label):[]};
     S.seasonMatches.push(sm);
     // acumula TEMPORADA
     const ss = S.seasonStats;
@@ -602,6 +614,15 @@ E.endSeason = function(S){
     const adj = ADJ_LEAGUE(league, -1);
     if (adj){ const nt = adj.teams[Math.floor(Math.random()*adj.teams.length)]; S.leagueId = adj.id; S.tierIndex = TIERS.indexOf(adj); S.teamName = nt.n; S.teamOvr = nt.o; S.salary = Math.round(S.salary*0.7); S.career.push(`REBAIXADO! Volta pro ${nt.n} (${adj.name}).`); }
   }
+  // ---- COMPETIÇÕES PARALELAS: processa títulos conquistados nesta temporada ----
+  (S.comps||[]).forEach(c => {
+    if (c.status === 'campeao'){
+      const def = COMP_BY_ID(c.compId) || { name:c.compId };
+      const t = `🏆 ${def.name} (Temp ${S.season})`;
+      if (!S.trophies.includes(t)) S.trophies.push(t);
+      S.career.push(`CAMPEÃO da ${def.name}!`);
+    }
+  });
   // evolução da liga: times sobem/descem de OVR conforme a campanha (ano a ano)
   E.evolveLeague(S);
   S.season++; S.week=1; S.calIdx=0; S.table={p:0,w:0,d:0,l:0,gf:0,ga:0};
@@ -609,7 +630,8 @@ E.endSeason = function(S){
   if (S.seasonStats.goals > (S.records.bestSeasonGoals||0)) S.records.bestSeasonGoals = S.seasonStats.goals;
   S.seasonStats = { games:0, wins:0, draws:0, losses:0, goals:0, assists:0, cleanSheets:0,
     mom:0, goalsConceded:0, bestRating:0, worstRating:10, biggestWin:0, hatTricks:0, cupGames:0 };
-  S.seasonMatches=[]; S.sMeEvo=[]; S.calendar = E.genCalendar(S);
+  S.seasonMatches=[]; S.sMeEvo=[]; S.comps = null; // recria competições frescas na próxima temporada
+  S.calendar = E.genCalendar(S);
   E.initLeague(S); // nova tabela real para a próxima temporada
   S.offers = E.genOffers(S); S.pendingTransfer = true; S._midWin = null;
   S.careerStats.seasons = S.season;
