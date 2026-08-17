@@ -575,6 +575,10 @@ input:focus,select:focus{outline:none;border-color:var(--accent)}
 .realcard .claim-save{position:absolute;bottom:8px;right:8px;background:rgba(177,75,255,.15);border:1px solid rgba(177,75,255,.4);
   color:var(--obsession);border-radius:8px;font-size:11px;padding:3px 8px;cursor:pointer}
 .orphan-title{font-size:12px;text-transform:uppercase;letter-spacing:1.4px;color:var(--gold);margin:16px 0 2px;font-weight:700}
+.live-plabel{font-size:4.2px;font-weight:700;fill:#dff6ff;paint-order:stroke;stroke:rgba(0,0,0,.55);stroke-width:.7px;pointer-events:none}
+.live-plabel.you{fill:#fff;stroke:#a8122a;stroke-width:.9px}
+.live-you{filter:drop-shadow(0 0 1.6px #ffd21e);animation:liveYou 1.2s ease-in-out infinite}
+@keyframes liveYou{0%,100%{stroke-width:1;r:3.6}50%{stroke-width:1.8;r:4.4}}
 .live-ring{animation:liveRing 1.1s ease-in-out infinite}
 @keyframes liveRing{0%,100%{opacity:.5;r:4.2}50%{opacity:1;r:5.4}}
 .live-watch{align-self:flex-end;background:linear-gradient(180deg,#ff2740,#a8122a);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;padding:5px 12px;cursor:pointer;margin-top:4px;box-shadow:0 2px 8px rgba(255,39,64,.35)}

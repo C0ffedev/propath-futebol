@@ -94,7 +94,12 @@
     let clock = 0;
     const totalLances = qtes.length;
     const pts = formationPts();
-    const youIdx = pts.findIndex(p=>p.s==='me');
+    // marca o ponto do jogador do usuário conforme a posição real (não fixo no GOL)
+    const POS_INDEX = { GOL:0, ZAG:2, LAT:1, VOL:5, MEI:8, ATA:11 };
+    const youIdx = (POS_INDEX[S.pos]!=null) ? POS_INDEX[S.pos] : pts.findIndex(p=>p.s==='me');
+    pts.forEach((p,i)=>{ p.s = (i===youIdx)?'me':'me'; }); // time da casa = 'me' (verde/ciano)
+    // adversário já vem com s:'opp' na formação; garantir
+    pts[pts.length-1].s = 'opp';
     let ball = { x:50, y:178 };
 
     const overlay = document.createElement('div');
@@ -117,7 +122,7 @@
           <circle cx="${W/2}" cy="${H/2}" r="14" class="live-circle"/>
           <rect x="${W/2-12}" y="2" width="24" height="4" class="live-box"/>
           <rect x="${W/2-12}" y="${H-6}" width="24" height="4" class="live-box"/>
-          ${pts.map((p,i)=>`<circle cx="${p.x}" cy="${p.y}" r="${p.s==='me'?3.4:2.2}" fill="${p.s==='me'?'#ff2740':p.s==='opp'?'#cfcfcf':'#3da35d'}" ${p.s==='me'?'stroke="#fff" stroke-width="0.6"':''}/>`).join('')}
+          <g id="live-players"></g>
           <circle id="live-ball" cx="${ball.x}" cy="${ball.y}" r="2.6" fill="#ffd21e"/>
         </svg>
         <div class="live-status" id="live-status">⚽ Aquecimento…</div>
@@ -138,8 +143,28 @@
 
     // animação contínua — simulação de jogo: bola com um dono, passes periódicos, time sobe/desce
     let autoMode = false;
-    const playerEls = Array.from(svgEl.querySelectorAll('circle')).filter(c=>c.id!=='live-ball');
-    const playerBase = playerEls.map((c,i)=>({ idx:i, el:c, x:+c.getAttribute('cx'), y:+c.getAttribute('cy'), s:c.getAttribute('fill')==='#ff2740'?'me':c.getAttribute('fill')==='#cfcfcf'?'opp':'me', ph:Math.random()*6.28, amp: 0.9 }));
+    // constrói os 22 marcadores (estilo tática): círculo + rótulo de posição
+    const playersG = overlay.querySelector('#live-players');
+    const SVGNS = 'http://www.w3.org/2000/svg';
+    const playerBase = pts.map((p,i)=>{
+      const g = document.createElementNS(SVGNS,'g'); g.setAttribute('class','live-pl');
+      const c = document.createElementNS(SVGNS,'circle');
+      c.setAttribute('cx', p.x); c.setAttribute('cy', p.y);
+      c.setAttribute('r', (i===youIdx)?3.6:2.4);
+      const isYou = (i===youIdx);
+      c.setAttribute('fill', p.s==='opp'?'#ff5bd0':(isYou?'#ffd21e':'#36e0ff'));
+      c.setAttribute('stroke', isYou?'#fff':'rgba(0,0,0,.45)');
+      c.setAttribute('stroke-width', isYou?'1':'0.5');
+      if (isYou) c.setAttribute('class','live-you');
+      const label = document.createElementNS(SVGNS,'text');
+      label.setAttribute('x', p.x); label.setAttribute('y', p.y-4.5);
+      label.setAttribute('text-anchor','middle');
+      label.setAttribute('class','live-plabel'+(isYou?' you':''));
+      label.textContent = p.n;
+      g.appendChild(c); g.appendChild(label);
+      playersG.appendChild(g);
+      return { idx:i, g, circle:c, label, x:p.x, y:p.y, s:p.s, you:isYou, ph:Math.random()*6.28, amp:0.9, cx:p.x, cy:p.y };
+    });
     const ballRing = (()=>{ const r = document.createElementNS('http://www.w3.org/2000/svg','circle'); r.setAttribute('r','4.2'); r.setAttribute('fill','none'); r.setAttribute('stroke','#ffd21e'); r.setAttribute('stroke-width','1'); r.setAttribute('opacity','0'); r.setAttribute('class','live-ring'); svgEl.appendChild(r); return r; })();
     let animT = 0, animRaf=null;
     let possessor = playerBase[Math.floor(Math.random()*playerBase.length)];
@@ -153,8 +178,10 @@
         const dx = Math.sin(animT*0.7 + p.ph) * p.amp;
         const dy = Math.cos(animT*0.9 + p.ph*1.3) * p.amp + (p.s==='me'? -pushUp : pushUp*0.4);
         p.cx = p.x + dx; p.cy = p.y + dy;
-        p.el.setAttribute('cx', p.cx.toFixed(2));
-        p.el.setAttribute('cy', p.cy.toFixed(2));
+        p.circle.setAttribute('cx', p.cx.toFixed(2));
+        p.circle.setAttribute('cy', p.cy.toFixed(2));
+        p.label.setAttribute('x', p.cx.toFixed(2));
+        p.label.setAttribute('y', (p.cy - 4.5).toFixed(2));
       }
       if (ball.locked){
         // durante a transição de lance, bola vai pra zona alvo (já setada via style transition)
