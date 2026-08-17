@@ -121,7 +121,8 @@ E.createPlayer = function(o){
     id: 'save-' + Date.now().toString(36),
     name: o.name, nation: o.nation, pos: o.pos,
     age, attrs, ovr, pot, foot, skills: o.skills||[],
-    archetype: o.arch || 'branco',
+ creationArch: o.arch || 'branco',
+ archetype: o.power || null,
     leagueId: tierDef.id, tierIndex: TIERS.indexOf(tierDef), teamName: team.n,
     teamOvr: team.o, salary: 1500,
     week: 1, season: 1, morale: 70, form: 3,
@@ -343,10 +344,10 @@ E.trainGain = function(S, planOverride){
   const inc = (S.age <= 27) ? 1.1 : 0.35;
   for (const a of plan.a){
     if (!S.attrs[a]) continue;
-    if (S.attrs[a] < S.pot) S.attrs[a] = Math.min(S.pot, +(S.attrs[a] + inc).toFixed(1));
+    if (S.attrs[a] < S.pot) S.attrs[a] = Math.min(S.pot, +(S.attrs[a] + inc*E.archetypeTrainBias(S,a)).toFixed(1));
     else if (S.age > 30) S.attrs[a] = Math.max(40, +(S.attrs[a] - 0.15).toFixed(1));
   }
-  for (const k in S.attrs) if (S.attrs[k] < S.pot) S.attrs[k] = Math.min(S.pot, +(S.attrs[k] + 0.18).toFixed(1));
+  for (const k in S.attrs) if (S.attrs[k] < S.pot) S.attrs[k] = Math.min(S.pot, +(S.attrs[k] + 0.18*E.archetypeTrainBias(S,k)).toFixed(1));
   S.ovr = E.calcOvr(S.pos, S.attrs);
 };
 
@@ -360,13 +361,82 @@ E.skillMul = function(S, catKey){
   return mul;
 };
 
+// ===== ARQUÉTIPOS (habilidade, Modelo B) =====
+// Aplica a assinatura do arquétipo ao resultado da partida.
+E.applyArchetype = function(S, ctx){
+  const k = S.archetype;
+  if (!k) return ctx;
+  const A = resolveArchetype(k);
+  if (!A) return ctx;
+  const sig = A.signature || {};
+  let { goals, assists, rating, specials } = ctx;
+  specials = specials || [];
+  // contagem de gols/assist do jogo p/ lógica
+  const scored = goals > 0;
+  if (sig.type === 'active'){
+    // Predador: chance extra de gol de destaque; Regista: assistência garantida
+    if (sig.specialChance && scored && Math.random() < sig.specialChance){
+      specials.push({ k: k, label: sig.specialLabel || 'Jogada de Classe', verb: sig.specialVerb || 'decide o jogo' });
+      rating += 0.3;
+    }
+    if (sig.guaranteedAssist){
+      const need = sig.guaranteedAssist - (ctx.assists || 0);
+      if (need > 0){ assists += need; rating += 0.2; }
+    }
+    // Predador: contraponto de risco se não marca
+    if (sig.missPenalty && !scored){ rating -= sig.missPenalty; }
+  }
+  if (sig.type === 'passive'){
+    if (sig.assistBonus) assists += Math.round(assists * sig.assistBonus + (Math.random()<0.5?1:0));
+    if (sig.ratingBonus) rating += sig.ratingBonus;
+  }
+  // teto de rating
+  rating = Math.max(5, Math.min(10, rating));
+  goals = Math.min(goals, ctx.gf);
+  assists = Math.min(assists, Math.max(0, ctx.gf - goals));
+  return { goals, assists, rating, specials };
+};
+
+// Viés de treino por arquétipo (multiplica o ganho de cada atributo)
+E.archetypeTrainBias = function(S, attr){
+  const k = S.archetype;
+  if (!k) return 1;
+  const A = resolveArchetype(k);
+  if (!A || !A.growthBias) return 1;
+  return A.growthBias[attr] || 1;
+};
+
+// Verifica marco de mutação e aplica a forma mutada (Modelo B)
+E.checkMutation = function(S){
+  const k = S.archetype;
+  if (!k) return false;
+  const A = archetypeById(k);
+  if (!A || !A.mutate) return false;
+  // já mutou?
+  if (A.mutate.k === k) return false;
+  const cs = (S.careerStats||{});
+  const at = A.mutate.at || {};
+  let hit = true;
+  if (at.goalsCareer && (cs.goals||0) < at.goalsCareer) hit = false;
+  if (at.assistsCareer && (cs.assists||0) < at.assistsCareer) hit = false;
+  if (at.gamesCareer && (cs.games||0) < at.gamesCareer) hit = false;
+  if (hit){
+    const oldName = A.n;
+    S.archetype = A.mutate.k;
+    S.career.push(`🔥 ARQUÉTIPO MUTOU: ${oldName} → ${A.mutate.n}! ${A.mutate.note}`);
+    return true;
+  }
+  return false;
+};
+
 E.simMatch = function(S, opp, cup){
   const myStr = S.teamOvr + (S.ovr - 65)*0.25 + (S.form-3)*1.2;
   const opStr = opp.o + 2;
   const exp = myStr/(myStr+opStr);
   const gf = E.poisson(exp*2.4 + 0.4);
   const ga = E.poisson((1-exp)*2.4 + 0.3);
-  const rating = Math.max(5, Math.min(10, S.ovr/10 + (S.form-3)*0.4 + (Math.random()*3-1.2) + (gf>ga?0.5:gf<ga?-0.4:0)));
+  const rating0 = Math.max(5, Math.min(10, S.ovr/10 + (S.form-3)*0.4 + (Math.random()*3-1.2) + (gf>ga?0.5:gf<ga?-0.4:0)));
+  let rating = rating0;
   const isAtt = (S.pos==='ATA'||S.pos==='MEI');
   let goals = 0, assists = 0;
   const skillGoalMul = (S.skills||[]).includes('finalizador') ? 1.25 : 1;
@@ -430,6 +500,9 @@ E.simMatch = function(S, opp, cup){
       }
     }
   }
+  // ----- ARQUÉTIPO: aplica assinatura (altera goals/assists/rating/specials) -----
+  const _ar = E.applyArchetype(S, { goals, assists, rating, specials, gf, ga });
+  goals = _ar.goals; assists = _ar.assists; rating = _ar.rating; specials.length = 0; _ar.specials.forEach(s=>specials.push(s));
 
   const stats = {
     posse, myShots, oppShots, myOnTarget, oppOnTarget,
@@ -549,6 +622,8 @@ E.advanceWeek = function(S){
     S.form = Math.max(1, Math.min(5, S.form + (r.res==='V'?1:r.res==='D'?-1:0)));
     S.morale = Math.max(20, Math.min(100, S.morale + (r.res==='V'?8:r.res==='D'?-6:2)));
     S.career.push(`Sem ${S.calIdx+1}: ${S.teamName} ${r.gf}x${r.ga} ${wk.opp.n} — nota ${r.rating}${r.goals?' · G'+r.goals:''}${r.assists?' A'+r.assists:''}${r.specials&&r.specials.length?' · '+r.specials.map(s=>s.label).join(', '):''}.`);
+    // ARQUÉTIPO: verifica marco de mutação (Modelo B)
+    E.checkMutation(S);
   } else {
     const plan = S.pendingTrain || S.trainPlan;
     E.trainGain(S, plan);

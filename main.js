@@ -49,9 +49,15 @@ function draftStep(){
     body.innerHTML = `<div class="opt-grid">`+NATIONS.map(n=>`<div class="opt ${App.draft.nation===n?'sel':''}" data-n="${n}">${n}</div>`).join('')+`</div>`;
     $$('#ob-body .opt').forEach(el=>el.onclick=()=>{App.draft.nation=el.dataset.n; $$('#ob-body .opt').forEach(e=>e.classList.remove('sel')); el.classList.add('sel');});
   } else {
-    // arquétipo + skills + (personalizada: pontos)
+    // arquétipo (perfil de criação) + arquétipo de HABILIDADE (power) + skills + (personalizada: pontos)
     const arch = App.draft.arch || 'branco';
     let html = `<div class="opt-grid">`+ARCHETYPES.map(a=>`<div class="opt ${arch===a.k?'sel':''}" data-arch="${a.k}">${a.n}<small>${a.d}</small></div>`).join('')+`</div>`;
+    // ----- ARQUÉTIPO DE HABILIDADE (Modelo B, por posição) -----
+    const pos = App.draft.pos || 'ATA';
+    const powers = archetypesForPos(pos);
+    const pw = App.draft.power || (powers[0] && powers[0].k);
+    html += `<div class="ob-sub" style="margin-top:14px;font-weight:700;color:var(--gold)">Arquétipo de estilo (define sua jogada assinatura):</div>`;
+    html += `<div class="opt-grid">`+powers.map(a=>`<div class="opt pw ${pw===a.k?'sel':''}" data-pw="${a.k}"><b>${a.n}</b><small>${a.insp}</small><small>${a.blurb}</small></div>`).join('')+`</div>`;
     html += `<div class="muted" style="margin-top:10px">Skills (opcional — máx <b>${MAX_SKILLS}</b>; aumentam atributos e jogadas especiais): <span id="sk-left">restam ${MAX_SKILLS-(App.draft.skills||[]).length}</span></div><div class="opt-grid skills">`+
       SKILLS.map(s=>`<div class="opt sk ${App.draft.skills&&App.draft.skills.includes(s.k)?'sel':''}" data-sk="${s.k}">${s.n}<small>${s.d}</small></div>`).join('')+
       `</div>`;
@@ -66,6 +72,7 @@ function draftStep(){
     }
     body.innerHTML = html;
     $$('#ob-body .opt[data-arch]').forEach(el=>el.onclick=()=>{App.draft.arch=el.dataset.arch; $$('#ob-body .opt[data-arch]').forEach(e=>e.classList.remove('sel')); el.classList.add('sel'); draftStep();});
+    $$('#ob-body .opt.pw').forEach(el=>el.onclick=()=>{App.draft.power=el.dataset.pw; $$('#ob-body .opt.pw').forEach(e=>e.classList.remove('sel')); el.classList.add('sel');});
     $$('#ob-body .opt.sk').forEach(el=>el.onclick=()=>{
       App.draft.skills = App.draft.skills||[];
       const k=el.dataset.sk;
@@ -123,6 +130,7 @@ function startCareer(){
     name:App.draft.name, nation:App.draft.nation, pos:App.draft.pos,
     age:App.draft.age, arch:App.draft.arch, foot:pickFoot(), leagueId:null,
     skills:App.draft.skills||[], skillPts:App.draft.skillPts||{},
+    power:App.draft.power||null,
     owner: apiSaveOwner()
   }));
   UI.S = S; UI.tab='carreira';
@@ -441,6 +449,8 @@ function showMatchScreen(r){
       </div>
       ${matchStatsCard(st, S.teamName, oppName, domMe, domOpp, S.pos)}
       ${squadSection}
+      ${renderMinimap(S, r)}
+      ${archetypeImpactNote(S, r)}
       <div class="ms-card feed">
         <div class="ms-card-h">CRÔNICA</div>
         <div class="ms-feed">${feed}</div>
@@ -450,6 +460,94 @@ function showMatchScreen(r){
   </div>`;
   modal(html);
   $('#ms-ok').onclick = closeModal;
+}
+
+// ===== MINIMAPA (campo top-down) + nota de impacto do arquétipo =====
+// Campo 100x200 (retrato). Plota os 22 em 4-3-3, destaca seu jogador + duo de sinergia,
+// marca os highlights da partida e a camada "reveal" do arquétipo.
+function renderMinimap(S, r){
+  const W=100, H=200;
+  const youSquad = E.genSquad(S.teamName, S.teamOvr, (E.leagueTeams(S).find(t=>t.n===S.teamName)||{}).stars||[]);
+  const oppTeam = E.leagueTeams(S).find(t=>t.n===(S.calendar[S.calIdx-1]&&S.calendar[S.calIdx-1].opp&&S.calendar[S.calIdx-1].opp.n)) || LEAGUE_BY_ID(S.leagueId).teams[0];
+  const oppSquad = E.genSquad(oppTeam?oppTeam.n:'Adversário', oppTeam?oppTeam.o:70, (oppTeam&&oppTeam.stars)||[]);
+  // posições base por setor (y "para cima" = ataque do jogador)
+  const layout = {
+    Goleiro:[50], Defesa:[22,40,60,78], Meio:[33,50,67], Ataque:[33,50,67]
+  };
+  function pts(sq, side){ // side: 'me' (baixo) ou 'opp' (topo)
+    const out=[]; const order=['Goleiro','Defesa','Meio','Ataque'];
+    let yBase = side==='me' ? [185,150,110,75] : [15,50,90,125];
+    order.forEach((setor,si)=>{
+      const rows=(sq||[]).filter(p=>p.setor===setor);
+      const xs=layout[setor];
+      rows.forEach((p,i)=>{ out.push({x:xs[i]||50, y:yBase[si], p, side}); });
+    });
+    return out;
+  }
+  const me = pts(youSquad,'me'), opp = pts(oppSquad,'opp');
+  const all = me.concat(opp);
+  const A = resolveArchetype(S.archetype);
+  // seu ponto: encontra pelo nome+pos
+  const youPos = all.find(n=>n.p&&n.p.n===S.name) || (me.find(n=>n.p&&n.p.pos===S.pos) || me[0]);
+  // duo de sinergia: outro do time com arquétipo 'likes'
+  let duo=null;
+  if (A&&A.synergy&&A.synergy.likes){
+    const mates = youSquad.filter(p=>p.n!==S.name && p.archetype && A.synergy.likes.includes(p.archetype));
+    if (mates.length){ const m=mates[0]; duo = all.find(n=>n.p===m); }
+  }
+  let svg = `<svg viewBox="0 0 ${W} ${H}" class="mini-svg" preserveAspectRatio="xMidYMid meet">`;
+  // gramado
+  svg += `<rect x="0" y="0" width="${W}" height="${H}" fill="#0c2a14"/>`;
+  svg += `<rect x="2" y="2" width="${W-4}" height="${H-4}" fill="none" stroke="#1f7a3a" stroke-width="1"/>`;
+  // meio-campo
+  svg += `<line x1="0" y1="${H/2}" x2="${W}" y2="${H/2}" stroke="#1f7a3a" stroke-width="0.6"/>`;
+  svg += `<circle cx="${W/2}" cy="${H/2}" r="10" fill="none" stroke="#1f7a3a" stroke-width="0.6"/>`;
+  // áreas
+  svg += `<rect x="${W/2-18}" y="2" width="36" height="16" fill="none" stroke="#1f7a3a" stroke-width="0.6"/>`;
+  svg += `<rect x="${W/2-18}" y="${H-18}" width="36" height="16" fill="none" stroke="#1f7a3a" stroke-width="0.6"/>`;
+  // camada reveal do arquétipo
+  if (A&&A.reveal==='spaces'){
+    svg += `<circle cx="50" cy="14" r="9" fill="rgba(255,210,40,.18)" stroke="rgba(255,210,40,.5)" stroke-width="0.5"/>`;
+    svg += `<circle cx="33" cy="20" r="6" fill="rgba(255,210,40,.15)" stroke="rgba(255,210,40,.4)" stroke-width="0.4"/>`;
+  } else if (A&&A.reveal==='finish'){
+    svg += `<circle cx="${W/2}" cy="${H-14}" r="10" fill="rgba(255,39,64,.20)" stroke="rgba(255,39,64,.6)" stroke-width="0.5"/>`;
+  } else if (A&&A.reveal==='lines'){
+    svg += `<line x1="50" y1="110" x2="50" y2="40" stroke="rgba(70,160,255,.35)" stroke-width="1" stroke-dasharray="2 2"/>`;
+    svg += `<line x1="33" y1="110" x2="33" y2="30" stroke="rgba(70,160,255,.25)" stroke-width="0.8" stroke-dasharray="2 2"/>`;
+  }
+  // pontos
+  all.forEach(n=>{
+    const isYou = (n===youPos);
+    const isDuo = (n===duo);
+    const col = n.side==='me' ? (isYou?'#ff2740':isDuo?'#b14bff':'#3da35d') : '#cfcfcf';
+    const rad = isYou?3.2:isDuo?2.6:2;
+    svg += `<circle cx="${n.x}" cy="${n.y}" r="${rad}" fill="${col}" ${isYou?'stroke="#fff" stroke-width="0.6"':''}/>`;
+  });
+  // highlight: gol do jogador -> marca na área adversária; assist -> linha do meio
+  if (r&&r.goals>0&&youPos){ svg += `<circle cx="${W/2}" cy="14" r="4" fill="#ffd21e"/>`; }
+  if (r&&r.assists>0&&youPos){ svg += `<line x1="${youPos.x}" y1="${youPos.y}" x2="${W/2}" y2="14" stroke="#ffd21e" stroke-width="0.8" stroke-dasharray="1.5 1.5"/>`; }
+  svg += `</svg>`;
+  const legend = `<div class="mini-legend"><span><i style="background:#ff2740"></i>Você</span><span><i style="background:#b14bff"></i>Dupla (sinergia)</span><span><i style="background:#3da35d"></i>Seu time</span><span><i style="background:#cfcfcf"></i>Adversário</span></div>`;
+  return `<div class="ms-card minimap"><div class="ms-card-h">MAPA DA PARTIDA (4-3-3)</div>${svg}${legend}${A?`<div class="mini-arch">⚡ ${A.n}: ${A.signature&&A.signature.name||''}</div>`:''}</div>`;
+}
+
+// Nota de impacto do arquétipo (estilo Valorant): conta o efeito da assinatura na partida
+function archetypeImpactNote(S, r){
+  const A = resolveArchetype(S.archetype);
+  if (!A) return '';
+  const sig = A.signature||{};
+  let head='', body='';
+  const isAtt = (S.pos==='ATA'||S.pos==='MEI');
+  if (sig.type==='active'){
+    const hadSpecial = (r.specials||[]).some(s=>s.k===S.archetype);
+    if (sig.specialChance && r.goals>0 && hadSpecial){ head='Instinto Predador'; body=`Você explodeu a rede com um gol de destaque — a assinatura ${A.n} brilhou e inflou sua nota (${r.rating}).`; }
+    else if (sig.missPenalty && r.goals===0){ head='Pressão do Predador'; body=`Sem gol, o risco do ${A.n} pesou: nota um pouco abaixo (${r.rating}). É o preço de jogar no limite.`; }
+    else if (sig.guaranteedAssist && r.assists>0){ head='Bombeiro Regista'; body=`Armou jogadas garantidas pela assinatura ${A.n} (${r.assists} assist.) — o meio campo funcionou.`; }
+    else { head='Leitura de jogo'; body=`A assinatura ${A.n} esteve presente, mas o jogo não pediu o momento especial.`; }
+  } else if (sig.type==='passive'){
+    head='Visão que decide'; body=`O ${A.n} subiu sua leitura: +assistências e nota (${r.rating}) de forma consistente. Quem vê, joga.`;
+  }
+  return `<div class="impact-note"><div class="in-head">⚡ Impacto do seu arquétipo</div><div class="in-h">${head}</div><div class="in-b">${body}</div></div>`;
 }
 
 function showSeasonSummary(sum){
