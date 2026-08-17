@@ -136,27 +136,51 @@
     const clockEl = overlay.querySelector('#live-clock');
     const watchBtn = overlay.querySelector('#live-watch');
 
-    // animação contínua dos 22 jogadores (respiração/deslocamento suave) + bola girando
+    // animação contínua — simulação de jogo: bola com um dono, passes periódicos, time sobe/desce
     let autoMode = false;
     const playerEls = Array.from(svgEl.querySelectorAll('circle')).filter(c=>c.id!=='live-ball');
-    const playerBase = playerEls.map(c=>({ el:c, x:+c.getAttribute('cx'), y:+c.getAttribute('cy'), ph:Math.random()*6.28, amp: c.getAttribute('fill')==='#ff2740'?1.4:0.8 }));
+    const playerBase = playerEls.map((c,i)=>({ idx:i, el:c, x:+c.getAttribute('cx'), y:+c.getAttribute('cy'), s:c.getAttribute('fill')==='#ff2740'?'me':c.getAttribute('fill')==='#cfcfcf'?'opp':'me', ph:Math.random()*6.28, amp: 0.9 }));
+    const ballRing = (()=>{ const r = document.createElementNS('http://www.w3.org/2000/svg','circle'); r.setAttribute('r','4.2'); r.setAttribute('fill','none'); r.setAttribute('stroke','#ffd21e'); r.setAttribute('stroke-width','1'); r.setAttribute('opacity','0'); r.setAttribute('class','live-ring'); svgEl.appendChild(r); return r; })();
     let animT = 0, animRaf=null;
+    let possessor = playerBase[Math.floor(Math.random()*playerBase.length)];
+    let passTarget = null, passT = 0, passFrom=null;
+    let passTimer = (0.7 + Math.random()*0.8);
     function animStep(){
-      animT += 0.04;
-      // jogadores se deslocam levemente
+      animT += 0.045;
+      // jogadores se deslocam levemente (respiração de posição) + time avança/recua junto
+      const pushUp = Math.sin(animT*0.12)*5; // o time "sobe" e "desce" de campo
       for (const p of playerBase){
         const dx = Math.sin(animT*0.7 + p.ph) * p.amp;
-        const dy = Math.cos(animT*0.9 + p.ph*1.3) * p.amp;
-        p.el.setAttribute('cx', (p.x+dx).toFixed(2));
-        p.el.setAttribute('cy', (p.y+dy).toFixed(2));
+        const dy = Math.cos(animT*0.9 + p.ph*1.3) * p.amp + (p.s==='me'? -pushUp : pushUp*0.4);
+        p.cx = p.x + dx; p.cy = p.y + dy;
+        p.el.setAttribute('cx', p.cx.toFixed(2));
+        p.el.setAttribute('cy', p.cy.toFixed(2));
       }
-      // bola circula suavemente entre zonas quando NÃO está em transição de lance
-      if (!ball.locked){
-        const bx = 50 + Math.sin(animT*0.5)*22;
-        const by = 120 + Math.sin(animT*0.8 + 1)*70;
+      if (ball.locked){
+        // durante a transição de lance, bola vai pra zona alvo (já setada via style transition)
+      } else if (passTarget){
+        passT += 0.06;
+        const k = Math.min(1, passT);
+        const bx = passFrom.cx + (passTarget.cx - passFrom.cx)*k;
+        const by = passFrom.cy + (passTarget.cy - passFrom.cy)*k;
         ballEl.setAttribute('cx', bx.toFixed(2));
         ballEl.setAttribute('cy', by.toFixed(2));
+        if (k>=1){ possessor = passTarget; passTarget=null; passFrom=null; passTimer = 0.7 + Math.random()*0.9; }
+      } else {
+        // bola colada no dono
+        ballEl.setAttribute('cx', possessor.cx.toFixed(2));
+        ballEl.setAttribute('cy', (possessor.cy - 3).toFixed(2));
+        passTimer -= 0.045;
+        if (passTimer <= 0){
+          const mates = playerBase.filter(p => p.s===possessor.s);
+          const cand = mates[Math.floor(Math.random()*mates.length)];
+          if (cand && cand!==possessor){ passFrom = possessor; passTarget = cand; passT = 0; }
+          else { passTimer = 0.5; }
+        }
       }
+      // anel na bola
+      ballRing.setAttribute('cx', ballEl.getAttribute('cx'));
+      ballRing.setAttribute('cy', ballEl.getAttribute('cy'));
       animRaf = requestAnimationFrame(animStep);
     }
     animRaf = requestAnimationFrame(animStep);
@@ -209,13 +233,24 @@
     }
 
     function moveBall(zone, cb){
+      // durante a transição a bola viaja pra zona do lance; zera estado de passe
+      passTarget = null; passFrom = null; ball.locked = true; ballRing.setAttribute('opacity','0');
       const ty = zoneY(zone);
       const tx = (zone==='ataque') ? (youIdx>=0?pts[youIdx].x:50) : 50;
-      ball.x = tx; ball.y = ty; ball.locked = true;
+      ball.x = tx; ball.y = ty;
       ballEl.style.transition = 'cx .42s cubic-bezier(.4,1.4,.5,1), cy .42s cubic-bezier(.4,1.4,.5,1)';
       ballEl.setAttribute('cx', tx); ballEl.setAttribute('cy', ty);
       statusEl.textContent = `⚽ Bola no ${zone==='ataque'?'ataque':zone==='meio'?'meio-campo':'campo defensivo'}…`;
-      setTimeout(()=>{ ball.locked = false; cb(); }, 480);
+      setTimeout(()=>{
+        ball.locked = false;
+        // dono da bola conforme a posse do lance: time da casa ataca, visitante defende
+        const side = (zone==='defesa') ? 'opp' : 'me';
+        const pool = playerBase.filter(p=>p.s===side);
+        possessor = pool.length ? pool[Math.floor(Math.random()*pool.length)] : playerBase[0];
+        passTimer = 0.5 + Math.random()*0.6;
+        ballRing.setAttribute('opacity','0.9');
+        cb();
+      }, 480);
     }
 
     // feedback imediato: flash no campo + texto flutuante
