@@ -7,16 +7,18 @@
 (function(){
   const W=100, H=200;
 
-  // pontos da formação 4-3-3 (campo vertical: 0=defesa própria, 200=ataque adversário)
+  // pontos da formação 4-3-3 (campo vertical: 0=ataque adversário, 200=defesa própria)
+  // retorna SEU time (side 'me') + time adversário espelhado (side 'opp') = 28 marcadores
   function formationPts(){
-    return [
-      {x:50,y:188,n:'G',s:'me'},
+    const home = [
+      {x:50,y:188,n:'G'},
       {x:14,y:165,n:'LD'}, {x:38,y:170,n:'Z1'}, {x:62,y:170,n:'Z2'}, {x:86,y:165,n:'LE'},
       {x:24,y:122,n:'VOL1'}, {x:50,y:128,n:'VOL2'}, {x:76,y:122,n:'VOL3'},
       {x:24,y:80,n:'ME1'}, {x:50,y:74,n:'ME2'}, {x:76,y:80,n:'ME3'},
-      {x:30,y:36,n:'ATA1'}, {x:50,y:30,n:'ATA2'}, {x:70,y:36,n:'ATA3'},
-      {x:50,y:12,n:'Gadv',s:'opp'}
+      {x:30,y:36,n:'ATA1'}, {x:50,y:30,n:'ATA2'}, {x:70,y:36,n:'ATA3'}
     ];
+    const away = home.map(p=>({ x:p.x, y:200-p.y, n:p.n+'_adv', s:'opp' }));
+    return home.map(p=>({ ...p, s:'me' })).concat(away);
   }
 
   // gera a lista de QTEs conforme a posição + arquétipo + mental (4 por jogo, + especiais)
@@ -84,16 +86,17 @@
 
   function zoneY(zone){ return zone==='ataque'?40 : zone==='meio'?120 : 178; }
 
-  // gera elenco (nomes) alinhado aos 15 pontos da formação 4-3-3 + G adversário
-  const SQUAD_POOL = ['Isagi','Bachira','Chigiri','Kunigami','Rin','Nagi','Reo','Hiori','Aiku','Barou','Otoya','Karla','Café','Aryu','Zantetsu','Gagamaru','Kunigami','Yukimiya'];
+  // gera elenco (nomes) alinhado aos 28 pontos (seu time 0-13 + adversário 14-27)
+  const SQUAD_POOL = ['Isagi','Bachira','Chigiri','Kunigami','Rin','Nagi','Reo','Hiori','Aiku','Barou','Otoya','Karla','Café','Aryu','Zantetsu','Gagamaru','Yukimiya','Hiori'];
+  const OPP_POOL = ['Kaiser','Lorenzo','Ness','Buri','Sae','Shidou','Grim','Snuffy','Noa','Prince','Demon','Vasco','Loki','Adam','Chris','Pipo','Joe','Marc'];
   function buildSquad(S, opp){
     const youIdx = (function(){ const I={GOL:0,ZAG:2,LAT:1,VOL:5,MEI:8,ATA:11}; return I[S.pos]!=null?I[S.pos]:0; })();
-    const squad = SQUAD_POOL.slice(); let si=0; const pick=()=> squad[(si++)%squad.length];
     const names = [];
-    for (let i=0;i<15;i++){
+    let hi=0, oi=0;
+    for (let i=0;i<28;i++){
       if (i===youIdx) names.push(S.name||'Você');
-      else if (i===14) names.push((opp&&opp.n?opp.n:'Adv')+' G');
-      else names.push(pick());
+      else if (i<14) names.push(SQUAD_POOL[(hi++)%SQUAD_POOL.length]);
+      else names.push((opp&&opp.n?opp.n:'Adv')+' '+(OPP_POOL[(oi++)%OPP_POOL.length]));
     }
     return names;
   }
