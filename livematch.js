@@ -85,19 +85,101 @@
 
   function zoneY(zone){ return zone==='ataque'?40 : zone==='meio'?120 : 178; }
 
-  // elenco REAL (Fluminense casa + adversário) — nomes públicos de atletas
-  // 11 do seu time (0-10) + 11 adversários (11-21). youIdx substitui o nome na posição do usuário.
-  const FLU = ['Fábio','Samuel Xavier','Nino','Thiago Silva','Marcelo','André','Martinelli','René','Arias','Cano','Keno'];
-  const ADV = ['Rossi','Varela','David Luiz','Léo Pereira','Ayrton Lucas','Pulgar','Gerson','Arrascaeta','Everton','Pedro','Bruno Henrique'];
-  function buildSquad(S, opp){
-    const youIdx = (function(){ const I={GOL:0,ZAG:2,LAT:1,VOL:5,MEI:6,ATA:9}; return I[S.pos]!=null?I[S.pos]:9; })();
-    const names = [];
-    for (let i=0;i<22;i++){
-      if (i===youIdx) names.push(S.name||'Você');
-      else if (i<11) names.push(FLU[i]);
-      else names.push(ADV[i-11]);
+  // ELENCOS REAIS — fonte: soccerwiki.org (Fluminense verificado) + elencos reais conhecidos.
+  // Cada jogador: {n:nome, p:posição normalizada G|DEF|MID|FWD}
+  // O jogo puxa SQUADS[S.teamName] (casa) e SQUADS[opp.n] (visitante); fallback _GENERIC.
+  const SQUADS = {
+    'Fluminense': [
+      {n:'Fábio',p:'G'},{n:'Vitor Eudes',p:'G'},{n:'Marcelo Pitaluga',p:'G'},
+      {n:'Samuel Xavier',p:'DEF'},{n:'Thiago Silva',p:'DEF'},{n:'Ignácio',p:'DEF'},
+      {n:'Igor Rabello',p:'DEF'},{n:'Bruno Jemmes',p:'DEF'},{n:'Guilherme Arana',p:'DEF'},
+      {n:'Martins Renê',p:'DEF'},{n:'Claudio Guga',p:'DEF'},{n:'Juan Pablo Freytes',p:'DEF'},
+      {n:'Matheus Martinelli',p:'MID'},{n:'Hércules',p:'MID'},{n:'Passos Otávio',p:'MID'},
+      {n:'Gustavo Nonato',p:'MID'},{n:'Ganso',p:'MID'},{n:'Luciano Acosta',p:'MID'},
+      {n:'Germán Cano',p:'FWD'},{n:'John Kennedy',p:'FWD'},{n:'Jefferson Savarino',p:'FWD'},
+      {n:'Agustín Canobbio',p:'FWD'},{n:'Hulk',p:'FWD'},{n:'Yeferson Soteldo',p:'FWD'},{n:'Kevin Serna',p:'FWD'}
+    ],
+    'Flamengo': [
+      {n:'Rossi',p:'G'},{n:'Dyogo Alves',p:'G'},{n:'Cleiton',p:'G'},
+      {n:'Léo Pereira',p:'DEF'},{n:'David Luiz',p:'DEF'},{n:'Pablo',p:'DEF'},
+      {n:'Ayrton Lucas',p:'DEF'},{n:'Varela',p:'DEF'},{n:'Alex Sandro',p:'DEF'},
+      {n:'Ortiz',p:'DEF'},{n:'Léo Gonçalves',p:'DEF'},
+      {n:'Gerson',p:'MID'},{n:'Pulgar',p:'MID'},{n:'Arrascaeta',p:'MID'},
+      {n:'De la Cruz',p:'MID'},{n:'Evertthon Araújo',p:'MID'},{n:'Allan',p:'MID'},
+      {n:'Pedro',p:'FWD'},{n:'Bruno Henrique',p:'FWD'},{n:'Everton Cebolinha',p:'FWD'},
+      {n:'Luiz Araújo',p:'FWD'},{n:'Michael',p:'FWD'},{n:'Carlinhos',p:'FWD'}
+    ],
+    'Vasco': [
+      {n:'Léo Jardim',p:'G'},{n:'Daniel Fuzato',p:'G'},
+      {n:'Puma Rodríguez',p:'DEF'},{n:'João Victor',p:'DEF'},{n:'Lucas Mendes',p:'DEF'},
+      {n:'Paulinho',p:'DEF'},{n:'Lucas Piton',p:'DEF'},{n:'Victor Luis',p:'DEF'},
+      {n:'Mateus Carvalho',p:'MID'},{n:'Maurício Lemos',p:'MID'},{n:'Sforza',p:'MID'},
+      {n:'Payet',p:'MID'},{n:'Gustavo Silva',p:'MID'},
+      {n:'Vegetti',p:'FWD'},{n:'Diniz',p:'FWD'},{n:'Maxime Dominguez',p:'FWD'},
+      {n:'Lorran',p:'FWD'},{n:'Coutinho',p:'FWD'}
+    ],
+    'Botafogo': [
+      {n:'John',p:'G'},{n:'Raul',p:'G'},
+      {n:'Vitão',p:'DEF'},{n:'Bastos',p:'DEF'},{n:'Lewis',p:'DEF'},
+      {n:'Cuiabano',p:'DEF'},{n:'Tchê Tchê',p:'DEF'},{n:'Marçal',p:'DEF'},
+      {n:'Marlon Freitas',p:'MID'},{n:'Gregore',p:'MID'},{n:'Santos',p:'MID'},
+      {n:'Artur',p:'MID'},{n:'Savarino',p:'MID'},
+      {n:'Igor Jesus',p:'FWD'},{n:'Jeffinho',p:'FWD'},{n:'Kauê',p:'FWD'},
+      {n:'Montoro',p:'FWD'},{n:'Newton',p:'FWD'}
+    ],
+    'Palmeiras': [
+      {n:'Weverton',p:'G'},{n:'Hugo Souza',p:'G'},
+      {n:'Gustavo Gómez',p:'DEF'},{n:'Murilo',p:'DEF'},{n:'Luan',p:'DEF'},
+      {n:'Piquerez',p:'DEF'},{n:'Mayke',p:'DEF'},{n:'Vitor Reis',p:'DEF'},
+      {n:'Richard Ríos',p:'MID'},{n:'Zé Rafael',p:'MID'},{n:'Veiga',p:'MID'},
+      {n:'Maurício',p:'MID'},{n:'Raphael Veiga',p:'MID'},
+      {n:'Estêvão',p:'FWD'},{n:'Flaco López',p:'FWD'},{n:'Vitor Roque',p:'FWD'},
+      {n:'Facundo Torres',p:'FWD'},{n:'Thalys',p:'FWD'}
+    ],
+    'Corinthians': [
+      {n:'Hugo Souza',p:'G'},{n:'Matheus Donelli',p:'G'},
+      {n:'Félix Torres',p:'DEF'},{n:'André Ramalho',p:'DEF'},{n:'Walce',p:'DEF'},
+      {n:'Hugo',p:'DEF'},{n:'Matheuzinho',p:'DEF'},{n:'Marcelo',p:'DEF'},
+      {n:'Maycon',p:'MID'},{n:'Garro',p:'MID'},{n:'Bidon',p:'MID'},
+      {n:'Carrillo',p:'MID'},{n:'Memphis',p:'MID'},
+      {n:'Yuri Alberto',p:'FWD'},{n:'Héctor Hernández',p:'FWD'},{n:'Talles Magno',p:'FWD'},
+      {n:'Pedrinho',p:'FWD'},{n:'Léo Mana',p:'FWD'}
+    ],
+    '_GENERIC': [
+      {n:'Fábio',p:'G'},{n:'Rossi',p:'G'},
+      {n:'Thiago Silva',p:'DEF'},{n:'David Luiz',p:'DEF'},{n:'Marquinhos',p:'DEF'},
+      {n:'Ayrton Lucas',p:'DEF'},{n:'Varela',p:'DEF'},{n:'Gomez',p:'DEF'},
+      {n:'Gerson',p:'MID'},{n:'Pulgar',p:'MID'},{n:'Ganso',p:'MID'},
+      {n:'Arrascaeta',p:'MID'},{n:'Veiga',p:'MID'},
+      {n:'Gabigol',p:'FWD'},{n:'Pedro',p:'FWD'},{n:'Hulk',p:'FWD'},
+      {n:'Cano',p:'FWD'},{n:'Soteldo',p:'FWD'}
+    ]
+  };
+  // seleciona 11 (1 G + 4 DEF + 3 MID + 3 FWD) na ordem dos slots da formação 4-3-3
+  function pick11(squad, userPos, userName){
+    squad = squad && squad.length ? squad : SQUADS._GENERIC;
+    const by = p => squad.filter(x=>x.p===p);
+    const gs = by('G'), ds = by('DEF'), ms = by('MID'), fs = by('FWD');
+    const need = { G:1, DEF:4, MID:3, FWD:3 };
+    const take = (arr,n,def)=>{ const out=[]; for(let i=0;i<n;i++) out.push(arr[i]||def); return out; };
+    const slots = [
+      ...take(gs,1,{n:'Goleiro',p:'G'}),
+      ...take(ds,4,{n:'Zagueiro',p:'DEF'}),
+      ...take(ms,3,{n:'Meia',p:'MID'}),
+      ...take(fs,3,{n:'Atacante',p:'FWD'})
+    ];
+    if (userPos && userName){
+      const SLOT = { GOL:0, ZAG:2, LAT:1, VOL:6, MEI:5, ATA:9 };
+      const idx = (SLOT[userPos]!=null)?SLOT[userPos]:9;
+      slots[idx] = { n:userName, p: (SLOT[userPos]!=null?['G','DEF','DEF','DEF','DEF','MID','MID','MID','FWD','FWD','FWD'][idx]:'MID') };
     }
-    return names;
+    return slots.map(s=>s.n);
+  }
+  // 11 do seu time (0-10) + 11 adversários (11-21). youIdx substitui o nome na posição do usuário.
+  function buildSquad(S, opp){
+    const home = pick11(SQUADS[(S.teamName||'Fluminense')] || SQUADS['Fluminense'], S.pos, S.name);
+    const away = pick11(SQUADS[(opp&&opp.n)||'_GENERIC'] || SQUADS._GENERIC, null, null);
+    return home.concat(away);
   }
 
   // ---------- tela ao vivo ----------
@@ -111,7 +193,7 @@
     const totalLances = qtes.length;
     const pts = formationPts();
     // marca o ponto do jogador do usuário conforme a posição real (não fixo no GOL)
-    const POS_INDEX = { GOL:0, ZAG:2, LAT:1, VOL:5, MEI:6, ATA:9 };
+    const POS_INDEX = { GOL:0, ZAG:2, LAT:1, VOL:6, MEI:5, ATA:9 };
     const youIdx = (POS_INDEX[S.pos]!=null) ? POS_INDEX[S.pos] : pts.findIndex(p=>p.s==='me');
     pts.forEach((p,i)=>{ p.s = (i===youIdx)?'me':'me'; }); // time da casa = 'me' (verde/ciano)
     // adversário já vem com s:'opp' na formação; garantir
