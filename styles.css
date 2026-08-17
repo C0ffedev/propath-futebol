@@ -552,6 +552,25 @@ input:focus,select:focus{outline:none;border-color:var(--accent)}
 .live-log-line{padding:3px 6px;border-radius:6px;background:rgba(255,255,255,.04)}
 .live-log-line.good{color:#7CFC9B;border-left:2px solid #3da35d}
 .live-log-line.bad{color:#ff9aa6;border-left:2px solid var(--red)}
+.live-tv{display:flex;align-items:center;justify-content:space-between;background:linear-gradient(120deg,rgba(177,75,255,.12),rgba(255,39,64,.08));border:1px solid var(--line);border-radius:12px;padding:8px 12px;margin-bottom:8px}
+.live-tv-team{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.live-tv-team b{color:var(--txt);font-weight:800;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.live-tv-team span{font-size:22px;font-weight:900;color:var(--gold);min-width:18px;text-align:center}
+.live-tv-team.rev{flex-direction:row-reverse}
+.live-tv-mid{font-size:15px;font-weight:800;color:var(--txt);letter-spacing:1px}
+.live-narr{padding:3px 6px;border-radius:6px;background:rgba(177,75,255,.10);color:#d9b8ff;font-size:11px;margin-bottom:2px}
+.qte-hybrid .qte-choices{margin-bottom:10px}
+#live-overlay.flash-win{animation:liveFlashWin .5s ease}
+#live-overlay.flash-lose{animation:liveFlashLose .5s ease}
+#live-overlay.flash-save{animation:liveFlashSave .5s ease}
+@keyframes liveFlashWin{0%{box-shadow:inset 0 0 0 0 rgba(61,163,93,0)}30%{box-shadow:inset 0 0 120px 0 rgba(61,163,93,.55)}100%{box-shadow:inset 0 0 0 0 rgba(61,163,93,0)}}
+@keyframes liveFlashLose{0%{box-shadow:inset 0 0 0 0 rgba(255,39,64,0)}30%{box-shadow:inset 0 0 120px 0 rgba(255,39,64,.5)}100%{box-shadow:inset 0 0 0 0 rgba(255,39,64,0)}}
+@keyframes liveFlashSave{0%{box-shadow:inset 0 0 0 0 rgba(120,180,255,0)}30%{box-shadow:inset 0 0 120px 0 rgba(120,180,255,.5)}100%{box-shadow:inset 0 0 0 0 rgba(120,180,255,0)}}
+.live-pop{position:absolute;top:38%;left:50%;transform:translateX(-50%) scale(.6);font-size:26px;font-weight:900;letter-spacing:1px;text-shadow:0 2px 10px rgba(0,0,0,.6);animation:livePop .9s ease forwards;pointer-events:none;z-index:5}
+.live-pop.pop-win{color:#7CFC9B}
+.live-pop.pop-save{color:#8ab8ff}
+.live-pop.pop-lose{color:#ff6b78;font-size:20px}
+@keyframes livePop{0%{opacity:0;transform:translateX(-50%) translateY(14px) scale(.6)}20%{opacity:1;transform:translateX(-50%) translateY(0) scale(1.1)}70%{opacity:1;transform:translateX(-50%) translateY(-6px) scale(1)}100%{opacity:0;transform:translateX(-50%) translateY(-26px) scale(.95)}}
 .realcard .del-save:hover{opacity:1;color:var(--red)}
 .realcard .claim-save{position:absolute;bottom:8px;right:8px;background:rgba(177,75,255,.15);border:1px solid rgba(177,75,255,.4);
   color:var(--obsession);border-radius:8px;font-size:11px;padding:3px 8px;cursor:pointer}
