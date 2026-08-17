@@ -211,7 +211,7 @@
           <div class="live-tv-team rev"><span id="live-opp">0</span><b>${UI.esc(opp.n)}</b></div>
         </div>
         <div class="live-top">
-          <span class="live-cup">${UI&&UI.S? (LEAGUE_BY_ID&&LEAGUE_BY_ID(S.leagueId)?LEAGUE_BY_ID(S.leagueId).short:'LIGA') : 'LIGA'}</span>
+          <span class="live-cup">${(function(){ if(wk&&wk.comp){ const _c=(typeof COMP_BY_ID==='function')?COMP_BY_ID(wk.comp):null; if(_c) return _c.short; } const _lg=(LEAGUE_BY_ID&&LEAGUE_BY_ID(S.leagueId))?LEAGUE_BY_ID(S.leagueId):null; return _lg?_lg.short:'LIGA'; })()}</span>
           <span class="live-vs">${UI.esc(S.teamName)} <b>×</b> ${UI.esc(opp.n)}</span>
           <button class="btn live-watch" id="live-watch">▶ Assistir</button>
         </div>
