@@ -350,6 +350,7 @@ E.trainGain = function(S, planOverride){
   }
   for (const k in S.attrs) if (S.attrs[k] < S.pot) S.attrs[k] = Math.min(S.pot, +(S.attrs[k] + 0.18*E.archetypeTrainBias(S,k)).toFixed(1));
   S.ovr = E.calcOvr(S.pos, S.attrs);
+  E.maintainGodMode(S); // god mode: mantém atributos/OVR/salário no teto
 };
 
 // multiplicador de skill para uma categoria especial
@@ -459,6 +460,45 @@ E.checkMentalAwaken = function(S){
     }
   }
   return changed;
+};
+
+// ===== GOD MODE (só no save do dono; ligado por S.godMode) =====
+// Liga/desliga: maxa atributos/OVR, salário, desperta todos os mentais e dá todas as skills.
+E.setGodMode = function(S, on){
+  S.godMode = !!on;
+  if (S.godMode){
+    // atributos da posição no máximo
+    if (S.pos && POSITIONS[S.pos]){ for (const k of POSITIONS[S.pos].attrs) S.attrs[k] = 99; }
+    S.ovr = 99; S.pot = 99;
+    // salário "infinito"
+    S.salary = 99999999;
+    // desperta todos os arquétipos mentais
+    S.mentalAwakened = (MENTAL_ARCHETYPES||[]).map(m=>m.k);
+    if (!S.mental && S.mentalAwakened.length) S.mental = S.mentalAwakened[0];
+    // dá todas as skills
+    if (typeof SKILLS !== 'undefined') S.skills = SKILLS.map(s=>s.k);
+    S.career.push('👑 GOD MODE ATIVADO — atributos, OVR, salário, mentais e skills no máximo.');
+  } else {
+    S.career.push('👑 God Mode desativado.');
+  }
+  return S.godMode;
+};
+
+// Mantém o jogador no teto enquanto o god mode estiver ligado (usado em treino/fim de temporada).
+E.maintainGodMode = function(S){
+  if (!S.godMode) return;
+  if (S.pos && POSITIONS[S.pos]){ for (const k of POSITIONS[S.pos].attrs) S.attrs[k] = 99; }
+  S.ovr = 99; S.pot = 99; S.salary = 99999999;
+};
+
+// Força vitória e placar favorável no resultado da partida (aplica APÓS os QTEs/liveMods).
+E.applyGodMode = function(S, r){
+  if (!S.godMode || !r) return r;
+  r.gf = Math.max(r.gf, 3);   // garante ao menos 3 gols
+  r.ga = 0;                   // nenhum gol sofrido
+  r.res = 'V';
+  if (typeof r.goals === 'number') r.goals = Math.max(r.goals, 1); // cracha ao menos 1 gol
+  return r;
 };
 
 E.simMatch = function(S, opp, cup){
@@ -633,6 +673,7 @@ E.advanceWeek = function(S, liveMods){
         }
       }
     }
+    E.applyGodMode(S, r); // god mode: força vitória/placar (após QTEs)
     matchRes = r;
     const isCup = !!wk.comp && wk.comp !== S.leagueId; // qualquer comp que não seja a liga principal
     if (!isCup){
@@ -724,6 +765,7 @@ E.evolveLeague = function(S){
 };
 
 E.endSeason = function(S){
+  E.maintainGodMode(S); // god mode: mantém teto mesmo com troca de time/promoção
   const league = LEAGUE_BY_ID(S.leagueId);
   const table = E.getLeagueTable(S);
   const pos = table.findIndex(r => r.me) + 1; // 1-based

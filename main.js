@@ -211,6 +211,9 @@ function afterLogin(){
   $('#topbar').classList.remove('hidden');
   $('#btn-logout').classList.remove('hidden');
   UI.renderTopUser && UI.renderTopUser();
+  // God Mode: visível SÓ para o dono (karla)
+  const godBtn = document.getElementById('btn-god');
+  if (godBtn){ if (Session.id === 'karla'){ godBtn.classList.remove('hidden'); } else { godBtn.classList.add('hidden'); } }
   UI.hub();
 }
 function logout(){
@@ -286,6 +289,14 @@ window.startCareer=startCareer; window.renderMinimap=renderMinimap; window.arche
 function bindNav(){
   $$('#tabs .tab').forEach(b=>b.onclick=()=>{UI.tab=b.dataset.tab; UI.render(); afterRender();});
   $('#btn-save').onclick=saveGame;
+  $('#btn-god') && ($('#btn-god').onclick = ()=>{
+    if (!UI.S){ showToast('Abra uma carreira primeiro'); return; }
+    if (Session.id !== 'karla'){ showToast('God Mode só para o dono'); return; }
+    const on = !UI.S.godMode;
+    E.setGodMode(UI.S, on);
+    UI.render(); afterRender(); saveGame();
+    showToast(on ? '👑 God Mode ATIVADO!' : 'God Mode desativado');
+  });
   $('#btn-back') && ($('#btn-back').onclick = ()=>{ UI.tab='carreira'; UI.render(); afterRender(); });
   $('#btn-menu').onclick=function(){ UI.S ? UI.hub() : (typeof loadList==='function' && loadList()); };
   $('#btn-logout').onclick=logout;
@@ -297,6 +308,12 @@ function afterRender(){
   $$('#app [data-offer]').forEach(b=>b.onclick=()=>acceptOffer(parseInt(b.dataset.offer)));
   $$('#app [data-club]').forEach(el=>el.onclick=(e)=>{ e.stopPropagation(); UI.clubProfile(el.dataset.club, el.dataset.league); });
   const hallBtn = document.querySelector('#btn-clubhall'); if (hallBtn) hallBtn.onclick = UI.clubHall;
+  // God Mode: reflete estado no botão E revela só para o dono (karla) em toda renderização
+  const godBtn2 = document.getElementById('btn-god');
+  if (godBtn2){
+    if (Session.id === 'karla') godBtn2.classList.remove('hidden'); else godBtn2.classList.add('hidden');
+    godBtn2.classList.toggle('active', !!(UI.S && UI.S.godMode));
+  }
 }
 
 function advanceWeek(){

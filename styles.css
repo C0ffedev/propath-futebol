@@ -123,6 +123,9 @@ input:focus,select:focus{outline:none;border-color:var(--accent)}
   color:var(--txt);font-size:13px;font-weight:600}
 .tbtn:hover{border-color:var(--accent)}
 .tbtn.ghost{background:transparent}
+.tbtn.gold{background:linear-gradient(180deg,#3a2c00,#5a4300);border-color:var(--gold);color:var(--gold);font-weight:800}
+.tbtn.gold:hover{box-shadow:0 0 10px rgba(255,210,30,.5)}
+.tbtn.gold.active{background:linear-gradient(180deg,#ffd21e,#b8860b);color:#1a1200;border-color:#fff3c0}
 
 /* TABS */
 #tabs{display:flex;gap:4px;padding:8px 14px 0;background:var(--bg2);
