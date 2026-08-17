@@ -398,21 +398,23 @@
 
     function runTiming(q, cb){
       const attrVal = (S.attrs && q.attr) ? (S.attrs[q.attr]||50) : 50;
-      // janela "doce" mais estreita (dificuldade): 0.07..0.15 * mul
       const mul = q.sweetMul || 1;
-      const sweetW = (0.07 + (attrVal/100)*0.08) * mul;
-      const center = 0.5;
-      const lo = center - sweetW/2, hi = center + sweetW/2;
+      // janela "doce" baseada na ação/estatística: quanto maior a attr, mais fácil (janela maior)
+      const sweetW = (0.12 + (attrVal/100)*0.16) * mul;
+      // local dourado aparece em posição aleatória na barra (não sempre no meio)
+      const center = 0.2 + Math.random()*0.6;
+      const lo = Math.max(0, center - sweetW/2), hi = Math.min(1, center + sweetW/2);
       let t = 0, dir = 1, raf=null, done=false;
       qteEl.innerHTML = `
         <div class="qte qte-timing">
           <div class="qte-label">${q.label}</div>
-          <div class="qte-bar"><div class="qte-sweet" style="left:${lo*100}%;width:${sweetW*100}%"></div><div class="qte-mark" id="qte-mark"></div></div>
+          <div class="qte-bar"><div class="qte-sweet" style="left:${lo*100}%;width:${(hi-lo)*100}%"></div><div class="qte-mark" id="qte-mark"></div></div>
           <button class="btn btn-red qte-go" id="qte-go">DISPARAR ⚡</button>
-          <div class="qte-hint">Clique NA faixa dourada — precisa de precisão!</div>
+          <div class="qte-hint">Clique NA faixa dourada — acerte no momento certo!</div>
         </div>`;
       const mark = qteEl.querySelector('#qte-mark');
-      function step(){ if(done) return; t += 0.034*dir; if(t>1){t=1;dir=-1;} if(t<0){t=0;dir=1;} mark.style.left=(t*100)+'%'; raf=requestAnimationFrame(step); }
+      // velocidade mais lenta para dar tempo de mirar
+      function step(){ if(done) return; t += 0.018*dir; if(t>1){t=1;dir=-1;} if(t<0){t=0;dir=1;} mark.style.left=(t*100)+'%'; raf=requestAnimationFrame(step); }
       raf = requestAnimationFrame(step);
       qteEl.querySelector('#qte-go').onclick = ()=>{
         if (done) return; done=true; if(raf)cancelAnimationFrame(raf);
@@ -453,19 +455,20 @@
         b.onclick = ()=>{
           const i = parseInt(b.dataset.i);
           const dirOk = (i===correct);
-          // fase 2: timing (mais estreita/rápida)
+          // fase 2: timing (janela por estatística, centro aleatório, mais lento)
           const attrVal = (S.attrs && q.attr) ? (S.attrs[q.attr]||50) : 50;
-          const sweetW = (0.08 + (attrVal/100)*0.08);
-          const lo = 0.5 - sweetW/2, hi = 0.5 + sweetW/2;
+          const sweetW = (0.12 + (attrVal/100)*0.16);
+          const center = 0.2 + Math.random()*0.6;
+          const lo = Math.max(0, center - sweetW/2), hi = Math.min(1, center + sweetW/2);
           let t=0, dir=1, raf=null, done=false;
           qteEl.innerHTML = `
             <div class="qte qte-timing">
               <div class="qte-label">${q.label} — DISPARAR ⚡</div>
-              <div class="qte-bar"><div class="qte-sweet" style="left:${lo*100}%;width:${sweetW*100}%"></div><div class="qte-mark" id="qte-mark"></div></div>
+              <div class="qte-bar"><div class="qte-sweet" style="left:${lo*100}%;width:${(hi-lo)*100}%"></div><div class="qte-mark" id="qte-mark"></div></div>
               <button class="btn btn-red qte-go" id="qte-go">DISPARAR ⚡</button>
             </div>`;
           const mark = qteEl.querySelector('#qte-mark');
-          function step(){ if(done) return; t += 0.034*dir; if(t>1){t=1;dir=-1;} if(t<0){t=0;dir=1;} mark.style.left=(t*100)+'%'; raf=requestAnimationFrame(step); }
+          function step(){ if(done) return; t += 0.018*dir; if(t>1){t=1;dir=-1;} if(t<0){t=0;dir=1;} mark.style.left=(t*100)+'%'; raf=requestAnimationFrame(step); }
           raf = requestAnimationFrame(step);
           qteEl.querySelector('#qte-go').onclick = ()=>{ if(done) return; done=true; if(raf)cancelAnimationFrame(raf); cb({ win: dirOk && (t>=lo && t<=hi) }); };
           if (autoMode) resolveAuto();
