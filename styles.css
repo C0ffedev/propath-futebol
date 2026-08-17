@@ -528,6 +528,8 @@ input:focus,select:focus{outline:none;border-color:var(--accent)}
 #live-overlay{position:fixed;inset:0;z-index:200;background:radial-gradient(circle at 50% 30%,#0d1320 0%,#060912 70%);display:flex;align-items:center;justify-content:center;padding:14px;animation:liveIn .25s ease}
 @keyframes liveIn{from{opacity:0}to{opacity:1}}
 .live-wrap{width:100%;max-width:340px;text-align:center}
+.live-title{font-size:13px;font-weight:800;letter-spacing:.5px;color:var(--txt);margin-bottom:10px;text-transform:uppercase}
+.live-title b{color:var(--gold)}
 .live-top{display:flex;flex-direction:column;gap:2px;margin-bottom:8px}
 .live-cup{font-size:10px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;font-weight:800}
 .live-vs{font-size:15px;font-weight:800;color:var(--txt)}

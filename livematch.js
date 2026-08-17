@@ -203,15 +203,22 @@
 
     const overlay = document.createElement('div');
     overlay.id = 'live-overlay';
+    // nome por extenso da competição da partida (ou da liga principal)
+    const _cupDef = (wk&&wk.comp) ? ((typeof COMP_BY_ID==='function')?COMP_BY_ID(wk.comp):null) : null;
+    const _lgDef = (LEAGUE_BY_ID&&LEAGUE_BY_ID(S.leagueId)) ? LEAGUE_BY_ID(S.leagueId) : null;
+    const _cupName = _cupDef ? _cupDef.name : (_lgDef ? _lgDef.name : 'LIGA');
+    const _cupShort = _cupDef ? _cupDef.short : (_lgDef ? _lgDef.short : 'LIGA');
+    const _cupPhase = (wk&&wk.comp&&_cupDef&&_cupDef.type==='mata') ? (' — Fase '+(wk.round||1)) : (wk&&wk.round?(' — Rodada '+(wk.round||1)):'');
     overlay.innerHTML = `
       <div class="live-wrap">
+        <div class="live-title">${UI.esc(_cupName)}${UI.esc(_cupPhase)}</div>
         <div class="live-tv">
           <div class="live-tv-team"><b>${UI.esc(S.teamName)}</b><span id="live-my">0</span></div>
           <div class="live-tv-mid"><span id="live-clock">0'</span></div>
           <div class="live-tv-team rev"><span id="live-opp">0</span><b>${UI.esc(opp.n)}</b></div>
         </div>
         <div class="live-top">
-          <span class="live-cup">${(function(){ if(wk&&wk.comp){ const _c=(typeof COMP_BY_ID==='function')?COMP_BY_ID(wk.comp):null; if(_c) return _c.short; } const _lg=(LEAGUE_BY_ID&&LEAGUE_BY_ID(S.leagueId))?LEAGUE_BY_ID(S.leagueId):null; return _lg?_lg.short:'LIGA'; })()}</span>
+          <span class="live-cup">${_cupShort}</span>
           <span class="live-vs">${UI.esc(S.teamName)} <b>×</b> ${UI.esc(opp.n)}</span>
           <button class="btn live-watch" id="live-watch">▶ Assistir</button>
         </div>
