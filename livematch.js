@@ -90,6 +90,7 @@
     const qtes = buildQTEs(S);
     const acc = { goals:0, assists:0, gaSaved:0, rating:0, special:false, oppGoals:0, attrLog:[] };
     let qi = 0;
+    let currentQ = null;
     let clock = 0;
     const totalLances = qtes.length;
     const pts = formationPts();
@@ -108,6 +109,7 @@
         <div class="live-top">
           <span class="live-cup">${UI&&UI.S? (LEAGUE_BY_ID&&LEAGUE_BY_ID(S.leagueId)?LEAGUE_BY_ID(S.leagueId).short:'LIGA') : 'LIGA'}</span>
           <span class="live-vs">${UI.esc(S.teamName)} <b>×</b> ${UI.esc(opp.n)}</span>
+          <button class="btn live-watch" id="live-watch">▶ Assistir</button>
         </div>
         <svg class="live-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
           <rect x="2" y="2" width="${W-4}" height="${H-4}" rx="6" class="live-field"/>
@@ -132,15 +134,88 @@
     const myEl = overlay.querySelector('#live-my');
     const oppEl = overlay.querySelector('#live-opp');
     const clockEl = overlay.querySelector('#live-clock');
+    const watchBtn = overlay.querySelector('#live-watch');
+
+    // animação contínua dos 22 jogadores (respiração/deslocamento suave) + bola girando
+    let autoMode = false;
+    const playerEls = Array.from(svgEl.querySelectorAll('circle')).filter(c=>c.id!=='live-ball');
+    const playerBase = playerEls.map(c=>({ el:c, x:+c.getAttribute('cx'), y:+c.getAttribute('cy'), ph:Math.random()*6.28, amp: c.getAttribute('fill')==='#ff2740'?1.4:0.8 }));
+    let animT = 0, animRaf=null;
+    function animStep(){
+      animT += 0.04;
+      // jogadores se deslocam levemente
+      for (const p of playerBase){
+        const dx = Math.sin(animT*0.7 + p.ph) * p.amp;
+        const dy = Math.cos(animT*0.9 + p.ph*1.3) * p.amp;
+        p.el.setAttribute('cx', (p.x+dx).toFixed(2));
+        p.el.setAttribute('cy', (p.y+dy).toFixed(2));
+      }
+      // bola circula suavemente entre zonas quando NÃO está em transição de lance
+      if (!ball.locked){
+        const bx = 50 + Math.sin(animT*0.5)*22;
+        const by = 120 + Math.sin(animT*0.8 + 1)*70;
+        ballEl.setAttribute('cx', bx.toFixed(2));
+        ballEl.setAttribute('cy', by.toFixed(2));
+      }
+      animRaf = requestAnimationFrame(animStep);
+    }
+    animRaf = requestAnimationFrame(animStep);
+
+    function setAuto(on){
+      autoMode = on;
+      watchBtn.textContent = on ? '⏸ Jogar' : '▶ Assistir';
+      if (on){
+        // se já há um QTE montado, dispara resolução automática
+        const pending = qteEl.querySelector('#qte-go') || qteEl.querySelector('.qte-opt');
+        if (pending) resolveAuto();
+      }
+    }
+    watchBtn.onclick = ()=> setAuto(!autoMode);
+
+    // resolve um QTE automaticamente (usando o atributo do jogador) — modo espectador
+    function qteWinChance(q){
+      const av = (S.attrs && q.attr) ? (S.attrs[q.attr]||50) : 60;
+      let ch = 0.15 + (av-50)/50*0.6; // 50->0.15, 80->0.51, 95->0.69
+      if (q.sweetMul) ch *= (q.sweetMul>1?0.8:1.15); // predador ajuda, metavisa exige mais
+      return Math.max(0.08, Math.min(0.92, ch));
+    }
+    let autoTimer=null;
+    function resolveAuto(){
+      if (!autoMode) return;
+      clearTimeout(autoTimer);
+      const go = qteEl.querySelector('#qte-go');
+      const opts = qteEl.querySelectorAll('.qte-opt');
+      if (go){
+        // timing: decide win e posiciona a marca na faixa (ou fora) antes de disparar
+        const q = currentQ;
+        const win = Math.random() < qteWinChance(q);
+        const bar = qteEl.querySelector('.qte-bar');
+        const sweet = bar ? bar.querySelector('.qte-sweet') : null;
+        if (sweet){
+          // posiciona a marca dentro/fora da faixa doce visualmente
+          const loP = parseFloat(sweet.style.left), wP = parseFloat(sweet.style.width);
+          const markPos = win ? (loP + wP/2) : (loP > 5 ? loP-6 : loP+wP+6);
+          const mark = qteEl.querySelector('#qte-mark');
+          if (mark) mark.style.left = Math.max(0,Math.min(100,markPos))+'%';
+        }
+        autoTimer = setTimeout(()=>{ if(autoMode) go.click(); }, 650);
+      } else if (opts.length){
+        const q = currentQ;
+        const win = Math.random() < qteWinChance(q);
+        const correct = +opts[0].dataset.i; // primeira é a correta se reveal, senão sorteia
+        const correctIdx = opts[0].textContent.indexOf('✨')>=0 ? 0 : Math.floor(Math.random()*opts.length);
+        autoTimer = setTimeout(()=>{ if(autoMode) opts[win?correctIdx:((correctIdx+1)%opts.length)].click(); }, 650);
+      }
+    }
 
     function moveBall(zone, cb){
       const ty = zoneY(zone);
       const tx = (zone==='ataque') ? (youIdx>=0?pts[youIdx].x:50) : 50;
-      ball.x = tx; ball.y = ty;
+      ball.x = tx; ball.y = ty; ball.locked = true;
       ballEl.style.transition = 'cx .42s cubic-bezier(.4,1.4,.5,1), cy .42s cubic-bezier(.4,1.4,.5,1)';
       ballEl.setAttribute('cx', tx); ballEl.setAttribute('cy', ty);
       statusEl.textContent = `⚽ Bola no ${zone==='ataque'?'ataque':zone==='meio'?'meio-campo':'campo defensivo'}…`;
-      setTimeout(cb, 480);
+      setTimeout(()=>{ ball.locked = false; cb(); }, 480);
     }
 
     // feedback imediato: flash no campo + texto flutuante
@@ -161,6 +236,8 @@
     }
 
     function finish(){
+      if (animRaf) cancelAnimationFrame(animRaf);
+      if (autoTimer) clearTimeout(autoTimer);
       overlay.remove();
       // deriva atributos treinados pelos QTEs (acerto sobe, erro desce)
       const attrDeltas = {};
@@ -178,6 +255,7 @@
     function nextQTE(){
       if (qi >= qtes.length){ finish(); return; }
       const q = qtes[qi++];
+      currentQ = q;
       moveBall(q.zone, ()=> runQTE(q, (res)=>{
         // avança relógio virtual
         clock += Math.round(90/totalLances);
@@ -205,7 +283,7 @@
         if (narr && logEl){ const n=document.createElement('div'); n.className='live-narr'; n.textContent='🎙️ '+narr; logEl.prepend(n); }
         qteEl.innerHTML = '';
         statusEl.textContent = `Lance ${qi}/${qtes.length}…`;
-        setTimeout(nextQTE, 180);
+        setTimeout(nextQTE, autoMode?90:180);
       }));
     }
 
@@ -238,6 +316,7 @@
         const win = (t>=lo && t<=hi);
         cb({ win });
       };
+      if (autoMode) resolveAuto();
     }
 
     function runChoice(q, cb){
@@ -255,6 +334,7 @@
           cb({ win: i===correct });
         };
       });
+      if (autoMode) resolveAuto();
     }
 
     function runHybrid(q, cb){
@@ -285,8 +365,10 @@
           function step(){ if(done) return; t += 0.034*dir; if(t>1){t=1;dir=-1;} if(t<0){t=0;dir=1;} mark.style.left=(t*100)+'%'; raf=requestAnimationFrame(step); }
           raf = requestAnimationFrame(step);
           qteEl.querySelector('#qte-go').onclick = ()=>{ if(done) return; done=true; if(raf)cancelAnimationFrame(raf); cb({ win: dirOk && (t>=lo && t<=hi) }); };
+          if (autoMode) resolveAuto();
         };
       });
+      if (autoMode) resolveAuto();
     }
 
     // inicia
