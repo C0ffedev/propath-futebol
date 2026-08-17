@@ -40,6 +40,34 @@ try {
   db.exec("ALTER TABLE saves ADD COLUMN owner TEXT NOT NULL DEFAULT ''");
 } catch (e) { /* coluna já existe — ok */ }
 
+// ---------- Migração: aleatoriza arquétipo de HABILIDADE nos saves existentes ----------
+// Saves antigos não têm S.archetype (campo novo). Ao subir o servidor, sorteamos um
+// arquétivo aleatório da posição do jogador para cada save que não tenha um.
+// Idempotente: só altera quem não tem arquétipo de habilidade válido.
+function migrateArchetypes(){
+  let changed = 0;
+  try {
+    const { archetypesForPos } = require('./archetypes.js');
+    const rows = db.prepare('SELECT id, data FROM saves').all();
+    for (const { id, data } of rows){
+      let S;
+      try { S = JSON.parse(data); } catch(e){ continue; }
+      const valid = (typeof S.archetype === 'string') && archetypesForPos(S.pos||'').some(a=>a.k===S.archetype);
+      // se não tem arquétipo de habilidade válido, sorteia um da posição
+      if (!valid && S.pos){
+        const pool = archetypesForPos(S.pos);
+        if (pool.length){
+          S.archetype = pool[Math.floor(Math.random()*pool.length)].k;
+          db.prepare('UPDATE saves SET data = ?, updated_at = ? WHERE id = ?').run(JSON.stringify(S), Date.now(), id);
+          changed++;
+        }
+      }
+    }
+  } catch(e){ console.log('[migrate] aviso (ignorado):', String(e)); }
+  if (changed) console.log(`[migrate] ${changed} save(s) receberam arquétipo de habilidade aleatório.`);
+}
+migrateArchetypes();
+
 // ---------- Senhas (hash scrypt + salt, nunca plaintext) ----------
 function hashPassword(pass) {
   const salt = crypto.randomBytes(16).toString('hex');

@@ -326,3 +326,8 @@ function resolveArchetype(k){
   }
   return base;
 }
+
+// export Node-safe (server.js usa para migrar saves; no browser 'module' é undefined)
+if (typeof module !== 'undefined' && module.exports){
+  module.exports = { PLAYER_ARCHETYPES, archetypesForPos, resolveArchetype, archetypeById };
+}
