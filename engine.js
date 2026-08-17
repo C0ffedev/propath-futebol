@@ -121,8 +121,9 @@ E.createPlayer = function(o){
     id: 'save-' + Date.now().toString(36),
     name: o.name, nation: o.nation, pos: o.pos,
     age, attrs, ovr, pot, foot, skills: o.skills||[],
- creationArch: o.arch || 'branco',
- archetype: o.power || null,
+    creationArch: o.arch || 'branco',
+    archetype: o.power || null,
+    mental: null, mentalAwakened: [],
     leagueId: tierDef.id, tierIndex: TIERS.indexOf(tierDef), teamName: team.n,
     teamOvr: team.o, salary: 1500,
     week: 1, season: 1, morale: 70, form: 3,
@@ -361,12 +362,10 @@ E.skillMul = function(S, catKey){
   return mul;
 };
 
-// ===== ARQUÉTIPOS (habilidade, Modelo B) =====
-// Aplica a assinatura do arquétipo ao resultado da partida.
+// ===== ARQUÉTIPOS (habilidade, Modelo 3 Camadas) =====
+// Aplica a assinatura do arquétipo (POSIÇÃO) + MENTAL desperto ao resultado.
 // ctx: { goals, assists, rating, specials, gf, ga } -> devolve também ga ajustado
-E.applyArchetype = function(S, ctx){
-  const k = S.archetype;
-  if (!k) return ctx;
+function _applyOne(ctx, k){
   const A = resolveArchetype(k);
   if (!A) return ctx;
   const sig = A.signature || {};
@@ -374,53 +373,55 @@ E.applyArchetype = function(S, ctx){
   specials = specials || [];
   ga = (typeof ga === 'number') ? ga : (ctx.ga || 0);
   const scored = goals > 0;
-  if (sig.type === 'active'){
-    // chance extra de jogada especial (Predador/Devorador/Ceifador)
+  const doActive = ()=>{
     if (sig.specialChance && scored && Math.random() < sig.specialChance){
       specials.push({ k: k, label: sig.specialLabel || 'Jogada de Classe', verb: sig.specialVerb || 'decide o jogo' });
       rating += 0.3;
     }
-    // assistência garantida (Regista/Alas)
     if (sig.guaranteedAssist){
       const need = sig.guaranteedAssist - (ctx.assists || 0);
       if (need > 0){ assists += need; rating += 0.2; }
     }
-    // contraponto de risco se não marca (Predador/Ceifador)
     if (sig.missPenalty && !scored){ rating -= sig.missPenalty; }
-    // piso neutro se não marca (Devorador: sem o risco do predador)
     if (sig.neutralFloor && !scored){ rating += sig.neutralFloor; }
-  }
-  if (sig.type === 'passive'){
+  };
+  const doPassive = ()=>{
     if (sig.assistBonus) assists += Math.round(assists * sig.assistBonus + (Math.random()<0.5?1:0));
     if (sig.ratingBonus) rating += sig.ratingBonus;
-    // aura defensiva: chance de anular 1 gol sofrido (Anchor/Muralha/Goleiros)
     if (sig.defAura && ga > 0 && Math.random() < sig.defAura){ ga -= 1; rating += 0.15; }
-    // bonus de mutação que sobe ainda mais assist (Predador Líder, etc.)
     if (sig.assists){ assists += Math.round(assists * sig.assists); }
-  }
-  // teto de rating
+  };
+  if (sig.type === 'active') doActive();
+  else if (sig.type === 'passive') doPassive();
+  else if (sig.type === 'hybrid'){ doActive(); doPassive(); }
   rating = Math.max(5, Math.min(10, rating));
   goals = Math.min(goals, ctx.gf);
   assists = Math.min(assists, Math.max(0, ctx.gf - goals));
   return { goals, assists, rating, specials, ga };
+}
+E.applyArchetype = function(S, ctx){
+  let out = _applyOne(ctx, S.archetype); // camada (B) posição
+  if (S.mental){ out = _applyOne(out, S.mental); } // camada (A) mental desperto
+  return out;
 };
 
-// Viés de treino por arquétipo (multiplica o ganho de cada atributo)
+// Viés de treino por arquétipo (POSIÇÃO + MENTAL)
 E.archetypeTrainBias = function(S, attr){
-  const k = S.archetype;
-  if (!k) return 1;
-  const A = resolveArchetype(k);
-  if (!A || !A.growthBias) return 1;
-  return A.growthBias[attr] || 1;
+  let mul = 1;
+  for (const k of [S.archetype, S.mental]){
+    if (!k) continue;
+    const A = resolveArchetype(k);
+    if (A && A.growthBias && A.growthBias[attr]) mul *= A.growthBias[attr];
+  }
+  return mul;
 };
 
-// Verifica marco de mutação e aplica a forma mutada (Modelo B)
+// Verifica marco de mutação da POSIÇÃO (Modelo B)
 E.checkMutation = function(S){
   const k = S.archetype;
   if (!k) return false;
   const A = archetypeById(k);
   if (!A || !A.mutate) return false;
-  // já mutou?
   if (A.mutate.k === k) return false;
   const cs = (S.careerStats||{});
   const at = A.mutate.at || {};
@@ -428,6 +429,7 @@ E.checkMutation = function(S){
   if (at.goalsCareer && (cs.goals||0) < at.goalsCareer) hit = false;
   if (at.assistsCareer && (cs.assists||0) < at.assistsCareer) hit = false;
   if (at.gamesCareer && (cs.games||0) < at.gamesCareer) hit = false;
+  if (at.cleanSheetsCareer && (cs.cleanSheets||0) < at.cleanSheetsCareer) hit = false;
   if (hit){
     const oldName = A.n;
     S.archetype = A.mutate.k;
@@ -435,6 +437,28 @@ E.checkMutation = function(S){
     return true;
   }
   return false;
+};
+
+// Verifica se algum ARQUÉTIPO MENTAL despertou (gating por marco) e auto-ativa
+E.checkMentalAwaken = function(S){
+  const cs = (S.careerStats||{});
+  const awakened = S.mentalAwakened || (S.mentalAwakened = []);
+  let changed = false;
+  for (const m of MENTAL_ARCHETYPES){
+    if (awakened.includes(m.k)) continue;
+    const g = m.gate || {};
+    let hit = true;
+    if (g.goalsCareer && (cs.goals||0) < g.goalsCareer) hit = false;
+    if (g.assistsCareer && (cs.assists||0) < g.assistsCareer) hit = false;
+    if (g.gamesCareer && (cs.games||0) < g.gamesCareer) hit = false;
+    if (hit){
+      awakened.push(m.k);
+      if (!S.mental) S.mental = m.k; // auto-ativa o primeiro que desperta
+      S.career.push(`⚡ ARQUÉTIPO MENTAL DESPERTADO: ${m.n}! ${m.blurb}`);
+      changed = true;
+    }
+  }
+  return changed;
 };
 
 E.simMatch = function(S, opp, cup){
@@ -630,8 +654,9 @@ E.advanceWeek = function(S){
     S.form = Math.max(1, Math.min(5, S.form + (r.res==='V'?1:r.res==='D'?-1:0)));
     S.morale = Math.max(20, Math.min(100, S.morale + (r.res==='V'?8:r.res==='D'?-6:2)));
     S.career.push(`Sem ${S.calIdx+1}: ${S.teamName} ${r.gf}x${r.ga} ${wk.opp.n} — nota ${r.rating}${r.goals?' · G'+r.goals:''}${r.assists?' A'+r.assists:''}${r.specials&&r.specials.length?' · '+r.specials.map(s=>s.label).join(', '):''}.`);
-    // ARQUÉTIPO: verifica marco de mutação (Modelo B)
+    // ARQUÉTIPO: verifica marco de mutação (posição) + despertar mental (gating)
     E.checkMutation(S);
+    E.checkMentalAwaken(S);
   } else {
     const plan = S.pendingTrain || S.trainPlan;
     E.trainGain(S, plan);

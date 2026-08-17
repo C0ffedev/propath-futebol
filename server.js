@@ -41,20 +41,30 @@ try {
 } catch (e) { /* coluna já existe — ok */ }
 
 // ---------- Migração: aleatoriza arquétipo de HABILIDADE nos saves existentes ----------
-// Saves antigos não têm S.archetype (campo novo). Ao subir o servidor, sorteamos um
-// arquétivo aleatório da posição do jogador para cada save que não tenha um.
-// Idempotente: só altera quem não tem arquétipo de habilidade válido.
+// Saves antigos não têm S.archetype (campo novo) — ou podem tê-lo como mental antigo.
+// Modelo 3 camadas: S.archetype = POSIÇÃO, S.mental = MENTAL desperto (agora ambos null).
+// - Se S.archetype for um MENTAL (predador/metavista/hibrido), move para S.mental e sorteia posição.
+// - Se S.archetype não for válido para a posição, sorteia um da posição.
+// - Garante S.mental=null e S.mentalAwakened=[].
+// Idempotente: não re-sorteia quem já tem arquétipo de posição válido.
 function migrateArchetypes(){
   let changed = 0;
   try {
-    const { archetypesForPos } = require('./archetypes.js');
+    const { archetypesForPos, isMental } = require('./archetypes.js');
     const rows = db.prepare('SELECT id, data FROM saves').all();
     for (const { id, data } of rows){
       let S;
       try { S = JSON.parse(data); } catch(e){ continue; }
+      if (!S.pos) continue;
+      if (typeof S.mental === 'undefined') S.mental = null;
+      if (!Array.isArray(S.mentalAwakened)) S.mentalAwakened = [];
+      // se o arquétipo atual é um MENTAL, move pra mental e limpa posição
+      if (typeof S.archetype === 'string' && isMental(S.archetype) && !S.mental){
+        S.mental = S.archetype;
+        S.archetype = null;
+      }
       const valid = (typeof S.archetype === 'string') && archetypesForPos(S.pos||'').some(a=>a.k===S.archetype);
-      // se não tem arquétipo de habilidade válido, sorteia um da posição
-      if (!valid && S.pos){
+      if (!valid){
         const pool = archetypesForPos(S.pos);
         if (pool.length){
           S.archetype = pool[Math.floor(Math.random()*pool.length)].k;

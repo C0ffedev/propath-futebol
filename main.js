@@ -62,6 +62,14 @@ function draftStep(){
     } else {
       html += `<div class="muted">Nenhum arquétipo de estilo disponível para ${pos} — você jogará no estilo clássico da posição.</div>`;
     }
+    // ----- ARQUÉTIPOS MENTAIS (transversais, TRANCADOS no início; despertam por marco) -----
+    const ms = mentalArchetypes();
+    html += `<div class="ob-sub" style="margin-top:16px;font-weight:700;color:var(--obsession)">Arquétipos Mentais (Predador / Metavisão / Híbrido) — despertam na carreira:</div>`;
+    html += `<div class="opt-grid">`+ms.map(a=>{
+      const g=a.gate||{}; const gateTxt=[g.goalsCareer?`${g.goalsCareer} gols`:'',g.assistsCareer?`${g.assistsCareer} assist`:'',g.gamesCareer?`${g.gamesCareer} jogos`:''].filter(Boolean).join(' + ');
+      return `<div class="opt pw locked" title="Trancado: desperta com ${gateTxt}"><b>${a.n} 🔒</b><small>${a.insp}</small><small>Trancado — ${gateTxt}</small></div>`;
+    }).join('')+`</div>`;
+    html += `<div class="muted" style="margin-top:6px">Essas qualidades mentais (tipo Kaiser ter meta-visão sendo atacante, ou Aiku/Niko zagueiros com meta-visão) só despertam conforme sua carreira evolui. Você combina um Arquétipo de Estilo + um Mental desperto.</div>`;
     html += `<div class="muted" style="margin-top:10px">Skills (opcional — máx <b>${MAX_SKILLS}</b>; aumentam atributos e jogadas especiais): <span id="sk-left">restam ${MAX_SKILLS-(App.draft.skills||[]).length}</span></div><div class="opt-grid skills">`+
       SKILLS.map(s=>`<div class="opt sk ${App.draft.skills&&App.draft.skills.includes(s.k)?'sel':''}" data-sk="${s.k}">${s.n}<small>${s.d}</small></div>`).join('')+
       `</div>`;
@@ -494,6 +502,7 @@ function renderMinimap(S, r, wkArg){
   const me = pts(youSquad,'me'), opp = pts(oppSquad,'opp');
   const all = me.concat(opp);
   const A = resolveArchetype(S.archetype);
+  const M = resolveArchetype(S.mental);
   // seu ponto: encontra pelo nome+pos
   const youPos = all.find(n=>n.p&&n.p.n===S.name) || (me.find(n=>n.p&&n.p.pos===S.pos) || me[0]);
   // atribui arquétipos aleatórios aos mates do elenco (o genSquad não os define) p/ sinergia aparecer
@@ -537,26 +546,35 @@ function renderMinimap(S, r, wkArg){
   if (r&&r.assists>0&&youPos){ svg += `<line x1="${youPos.x}" y1="${youPos.y}" x2="${W/2}" y2="14" stroke="#ffd21e" stroke-width="0.8" stroke-dasharray="1.5 1.5"/>`; }
   svg += `</svg>`;
   const legend = `<div class="mini-legend"><span><i style="background:#ff2740"></i>Você</span><span><i style="background:#b14bff"></i>Dupla (sinergia)</span><span><i style="background:#3da35d"></i>Seu time</span><span><i style="background:#cfcfcf"></i>Adversário</span></div>`;
-  return `<div class="ms-card minimap"><div class="ms-card-h">MAPA DA PARTIDA (4-3-3)</div>${svg}${legend}${A?`<div class="mini-arch">⚡ ${A.n}: ${A.signature&&A.signature.name||''}</div>`:''}</div>`;
+  return `<div class="ms-card minimap"><div class="ms-card-h">MAPA DA PARTIDA (4-3-3)</div>${svg}${legend}${A?`<div class="mini-arch">⚡ ${A.n}: ${A.signature&&A.signature.name||''}</div>`:''}${M?`<div class="mini-arch" style="color:var(--obsession)">🧠 ${M.n}: ${M.signature&&M.signature.name||''}</div>`:''}</div>`;
 }
 
 // Nota de impacto do arquétipo (estilo Valorant): conta o efeito da assinatura na partida
-function archetypeImpactNote(S, r){
-  const A = resolveArchetype(S.archetype);
+// Combina ARQUÉTIPO DE POSIÇÃO + MENTAL desperto (camada 3 do modelo).
+function _noteForArch(S, r, A){
   if (!A) return '';
   const sig = A.signature||{};
   let head='', body='';
-  const isAtt = (S.pos==='ATA'||S.pos==='MEI');
   if (sig.type==='active'){
-    const hadSpecial = (r.specials||[]).some(s=>s.k===S.archetype);
+    const hadSpecial = (r.specials||[]).some(s=>s.k===A.k);
     if (sig.specialChance && r.goals>0 && hadSpecial){ head='Instinto Predador'; body=`Você explodeu a rede com um gol de destaque — a assinatura ${A.n} brilhou e inflou sua nota (${r.rating}).`; }
     else if (sig.missPenalty && r.goals===0){ head='Pressão do Predador'; body=`Sem gol, o risco do ${A.n} pesou: nota um pouco abaixo (${r.rating}). É o preço de jogar no limite.`; }
     else if (sig.guaranteedAssist && r.assists>0){ head='Bombeiro Regista'; body=`Armou jogadas garantidas pela assinatura ${A.n} (${r.assists} assist.) — o meio campo funcionou.`; }
     else { head='Leitura de jogo'; body=`A assinatura ${A.n} esteve presente, mas o jogo não pediu o momento especial.`; }
   } else if (sig.type==='passive'){
     head='Visão que decide'; body=`O ${A.n} subiu sua leitura: +assistências e nota (${r.rating}) de forma consistente. Quem vê, joga.`;
+  } else if (sig.type==='hybrid'){
+    head='Domínio Total'; body=`O ${A.n} uniu leitura e instinto: você dominou o espaço e devorou a chance (nota ${r.rating}).`;
   }
-  return `<div class="impact-note"><div class="in-head">⚡ Impacto do seu arquétipo</div><div class="in-h">${head}</div><div class="in-b">${body}</div></div>`;
+  return `<div class="in-block"><div class="in-h">${head}</div><div class="in-b">${body}</div></div>`;
+}
+function archetypeImpactNote(S, r){
+  const Ap = resolveArchetype(S.archetype);
+  const Am = resolveArchetype(S.mental);
+  if (!Ap && !Am) return '';
+  let blocks = _noteForArch(S, r, Ap) + _noteForArch(S, r, Am);
+  const label = Am ? '⚡ Impacto (Posição + Mental)' : '⚡ Impacto do seu arquétipo';
+  return `<div class="impact-note"><div class="in-head">${label}</div>${blocks}</div>`;
 }
 
 function showSeasonSummary(sum){

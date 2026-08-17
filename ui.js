@@ -100,6 +100,7 @@ UI.ficha = function(){
   const foot = FOOT_LABEL[S.foot]||'Destro';
   const arch = ARCHETYPES.find(a=>a.k===(S.creationArch||S.archetype));
   const pa = resolveArchetype(S.archetype);
+  const ma = resolveArchetype(S.mental);
   const skills = (S.skills||[]).map(k=>SKILLS.find(s=>s.k===k)).filter(Boolean);
   const clubs = S.careerStats && S.careerStats.teamsPlayed ? Object.keys(S.careerStats.teamsPlayed) : [S.teamName];
   const archBlock = pa ? `<div class="panel" style="margin-top:12px"><h2><span class="ic">⚡</span> Arquétipo de Estilo — ${UI.esc(pa.n)}${pa._mutated?' <span class="mut-badge">MUTADO</span>':''}</h2>
@@ -107,6 +108,7 @@ UI.ficha = function(){
     <p style="margin:8px 0;line-height:1.5">${UI.esc(pa.blurb)}</p>
     <div class="sig-box"><b>Assinatura:</b> ${UI.esc((pa.signature&&pa.signature.name)||'—')}</div>
     ${pa.synergy&&pa.synergy.likes&&pa.synergy.likes.length?`<div class="muted" style="margin-top:6px">Sinergia com: ${pa.synergy.likes.map(k=>{const a=archetypeById(k);return a?a.n:k;}).join(', ')}</div>`:''}
+    ${ma?`<div style="margin-top:10px;border-top:1px solid var(--line);padding-top:8px"><div class="muted" style="color:var(--gold);font-weight:700">⚡ Arquétipo Mental (desperto): ${UI.esc(ma.n)}${ma._mutated?' <span class="mut-badge">MUTADO</span>':''}</div><div class="muted">${UI.esc(ma.insp)}</div><p style="margin:6px 0;line-height:1.5;font-size:12px">${UI.esc(ma.blurb)}</p><div class="sig-box"><b>Assinatura:</b> ${UI.esc((ma.signature&&ma.signature.name)||'—')}</div></div>`:`<div style="margin-top:10px;border-top:1px solid var(--line);padding-top:8px" class="muted">Arquétipo Mental: ainda não despertou — evolua sua carreira (gols/assistências) para despertar Predador, Metavisão ou Híbrido.</div>`}
   </div>` : '';
   return `<div class="panel"><h2><span class="ic">👤</span> Ficha de ${UI.esc(S.name)}</h2>
     <div class="row">
