@@ -575,6 +575,11 @@ input:focus,select:focus{outline:none;border-color:var(--accent)}
 .realcard .claim-save{position:absolute;bottom:8px;right:8px;background:rgba(177,75,255,.15);border:1px solid rgba(177,75,255,.4);
   color:var(--obsession);border-radius:8px;font-size:11px;padding:3px 8px;cursor:pointer}
 .orphan-title{font-size:12px;text-transform:uppercase;letter-spacing:1.4px;color:var(--gold);margin:16px 0 2px;font-weight:700}
+.qte-feedback{margin-top:8px;font-weight:700;font-size:13px}
+.qte-feedback.ok{color:#7CFFB0}
+.qte-feedback.no{color:#ff7a8a}
+.qte-opt.qte-correct{outline:2px solid #7CFFB0;background:rgba(124,255,176,.18)}
+.qte-opt.qte-wrong{outline:2px solid #ff7a8a;background:rgba(255,122,138,.18)}
 .live-plabel{font-size:4.2px;font-weight:700;fill:#dff6ff;paint-order:stroke;stroke:rgba(0,0,0,.55);stroke-width:.7px;pointer-events:none}
 .live-plabel.you{fill:#fff;stroke:#a8122a;stroke-width:.9px}
 .live-you{filter:drop-shadow(0 0 1.6px #ffd21e);animation:liveYou 1.2s ease-in-out infinite}

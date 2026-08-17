@@ -41,33 +41,33 @@
 
     if (pos==='ATA'){
       push(atk({type:'timing', key:'finaliza', label:'FINALIZAÇÃO', attr:'Finalização', zone:'ataque', win:{goals:1}, lose:{rating:-0.3}, arch:A&&A.k, mental:MENTAL}));
-      push({type:'choice', key:'drible', label:'PASSE DE LETRA / DRIBLE', choices:['Esquerda','Centro','Direita'], zone:'meio', win:{goals:1}, lose:{rating:-0.2}, arch:A&&A.k, mental:MENTAL});
+      push({type:'choice', key:'drible', label:'PASSE DE LETRA / DRIBLE', attr:'Drible', choices:['Esquerda','Centro','Direita'], zone:'meio', win:{goals:1}, lose:{rating:-0.2}, arch:A&&A.k, mental:MENTAL});
       push(atk({type:'timing', key:'finaliza2', label:'CHANCE DE OURO', attr:'Finalização', zone:'ataque', win:{goals:1, special:true}, lose:{rating:-0.3}, arch:A&&A.k, mental:MENTAL}));
       push({type:'timing', key:'posse', label:'RECUperaÇÃO DE POSSE', attr:'Posicionamento', zone:'meio', win:{rating:0.2}, lose:{rating:-0.1}, mental:MENTAL});
     } else if (pos==='MEI'){
-      push({type:'choice', key:'passe', label:'ENFIADA DE PASSE', choices:['Esquerda','Centro','Direita'], zone:'meio', win:{assists:1}, lose:{rating:-0.2}, arch:M&&M.k, mental:MENTAL});
+      push({type:'choice', key:'passe', label:'ENFIADA DE PASSE', attr:'Passe', choices:['Esquerda','Centro','Direita'], zone:'meio', win:{assists:1}, lose:{rating:-0.2}, arch:M&&M.k, mental:MENTAL});
       push(atk({type:'timing', key:'finaliza', label:'INFILTRA E FINALIZA', attr:'Finalização', zone:'ataque', win:{goals:1}, lose:{rating:-0.3}, arch:A&&A.k, mental:MENTAL}));
-      push({type:'choice', key:'leitura', label:'LEITURA DE JOGO', choices:['Marcar','Armar','Seguir'], zone:'meio', win:{assists:1, rating:0.1}, lose:{rating:-0.2}, arch:M&&M.k, mental:MENTAL});
+      push({type:'choice', key:'leitura', label:'LEITURA DE JOGO', attr:'Visão', choices:['Marcar','Armar','Seguir'], zone:'meio', win:{assists:1, rating:0.1}, lose:{rating:-0.2}, arch:M&&M.k, mental:MENTAL});
       push({type:'timing', key:'posse', label:'DOMÍNIO DE MEIO', attr:'Visão', zone:'meio', win:{rating:0.2}, lose:{rating:-0.1}, mental:MENTAL});
     } else if (pos==='VOL'){
       push(def({type:'timing', key:'desarme', label:'DESARME DECISIVO', attr:'Marcação', zone:'meio', win:{rating:0.2}, lose:{rating:-0.1}, mental:MENTAL}));
-      push({type:'choice', key:'passe', label:'SAÍDA DE BOLA', choices:['Esquerda','Centro','Direita'], zone:'meio', win:{assists:1}, lose:{rating:-0.2}, arch:M&&M.k, mental:MENTAL});
+      push({type:'choice', key:'passe', label:'SAÍDA DE BOLA', attr:'Passe', choices:['Esquerda','Centro','Direita'], zone:'meio', win:{assists:1}, lose:{rating:-0.2}, arch:M&&M.k, mental:MENTAL});
       push({type:'timing', key:'posse', label:'CHEGADA AO ATAQUE', attr:'Interceptação', zone:'ataque', win:{assists:1}, lose:{rating:-0.1}, mental:MENTAL});
       push(def({type:'timing', key:'defesa', label:'INTERVENÇÃO', attr:'Posicionamento', zone:'meio', win:{gaSaved:1}, lose:{rating:-0.1}, mental:MENTAL}));
     } else if (pos==='ZAG'){
       push(def({type:'timing', key:'defesa', label:'INTERVENÇÃO NA ÁREA', attr:'Marcação', zone:'defesa', win:{gaSaved:1}, lose:{rating:-0.1}, arch:M&&M.k, mental:MENTAL}));
       push(def({type:'timing', key:'defesa2', label:'DIVIDA AÉREA', attr:'Cabeceio', zone:'defesa', win:{gaSaved:1}, lose:{rating:-0.1}, mental:MENTAL}));
-      push({type:'choice', key:'posse', label:'POSICIONAMENTO', choices:['Subir','Segurar','Recuar'], zone:'defesa', win:{rating:0.2}, lose:{rating:-0.1}, mental:MENTAL});
+      push({type:'choice', key:'posse', label:'POSICIONAMENTO', attr:'Posicionamento', choices:['Subir','Segurar','Recuar'], zone:'defesa', win:{rating:0.2}, lose:{rating:-0.1}, mental:MENTAL});
       push(def({type:'timing', key:'desarme', label:'CARGA NO MEIA', attr:'Interceptação', zone:'meio', win:{rating:0.2}, lose:{rating:-0.1}, mental:MENTAL}));
     } else if (pos==='LAT'){
       push(atk({type:'timing', key:'cruzamento', label:'CRUZAMENTO NA ÁREA', attr:'Cruzamento', zone:'ataque', win:{assists:1}, lose:{rating:-0.2}, arch:A&&A.k, mental:MENTAL}));
-      push({type:'choice', key:'drible', label:'INFILTRAÇÃO PELA LINHA', choices:['Interna','Centro','Externa'], zone:'ataque', win:{assists:1}, lose:{rating:-0.2}, mental:MENTAL});
+      push({type:'choice', key:'drible', label:'INFILTRAÇÃO PELA LINHA', attr:'Drible', choices:['Interna','Centro','Externa'], zone:'ataque', win:{assists:1}, lose:{rating:-0.2}, mental:MENTAL});
       push(def({type:'timing', key:'defesa', label:'RECORRER O CONTROLE', attr:'Marcação', zone:'meio', win:{gaSaved:1}, lose:{rating:-0.1}, mental:MENTAL}));
       push(atk({type:'timing', key:'posse', label:'SUBIDA DE LATERAL', attr:'Velocidade', zone:'ataque', win:{rating:0.2}, lose:{rating:-0.1}, mental:MENTAL}));
     } else if (pos==='GOL'){
       push(def({type:'timing', key:'defesa', label:'DEFESA DIFÍCIL', attr:'Reflexos', zone:'defesa', win:{gaSaved:1}, lose:{rating:-0.1}, arch:M&&M.k, mental:MENTAL}));
       push(def({type:'timing', key:'defesa2', label:'SAÍDA DE GOL', attr:'Saída', zone:'defesa', win:{gaSaved:1}, lose:{rating:-0.1}, mental:MENTAL}));
-      push({type:'choice', key:'posse', label:'POSICIONAMENTO', choices:['Fechar Ângulo','Sair','Recuar'], zone:'defesa', win:{rating:0.2}, lose:{rating:-0.1}, mental:MENTAL});
+      push({type:'choice', key:'posse', label:'POSICIONAMENTO', attr:'Reflexos', choices:['Fechar Ângulo','Sair','Recuar'], zone:'defesa', win:{rating:0.2}, lose:{rating:-0.1}, mental:MENTAL});
       push(def({type:'timing', key:'defesa3', label:'DEFESA DE PÉ', attr:'Anticipação', zone:'defesa', win:{gaSaved:1}, lose:{rating:-0.1}, mental:MENTAL}));
     }
     // QTEs ESPECIAIS de mental (aparecem SE o mental despertou)
@@ -425,18 +425,28 @@
     }
 
     function runChoice(q, cb){
+      const attrVal = (S.attrs && q.attr) ? (S.attrs[q.attr]||50) : 50;
+      const attrName = q.attr || 'qualidade';
+      // opção correta: sorteada, MAS se o jogador é bom na ação (ou tem Metavisão) ele "sente" e a certa é revelada
+      const reveal = q.metaReveal || (attrVal >= 72);
       const correct = Math.floor(Math.random()*q.choices.length);
-      const reveal = q.metaReveal || (q.arch && (q.arch==='metavista'||q.arch==='metavista_mei'||q.arch==='metavista_total'||q.arch==='hibrido'||q.arch==='hibrido_absoluto'));
       qteEl.innerHTML = `
         <div class="qte qte-choice">
           <div class="qte-label">${q.label}</div>
           <div class="qte-choices">${q.choices.map((c,i)=>`<button class="btn qte-opt" data-i="${i}">${c}${reveal&&i===correct?' ✨':''}</button>`).join('')}</div>
-          ${reveal?'<div class="qte-hint">Metavisão revela a melhor opção (✨)</div>':'<div class="qte-hint">Escolha a melhor opção</div>'}
+          ${reveal?'<div class="qte-hint">Seu instinto ('+attrName+') aponta a opção ✨</div>':'<div class="qte-hint">Escolha a melhor jogada — sua '+attrName+' conta</div>'}
         </div>`;
       qteEl.querySelectorAll('.qte-opt').forEach(b=>{
         b.onclick = ()=>{
           const i = parseInt(b.dataset.i);
-          cb({ win: i===correct });
+          const win = (i===correct);
+          // feedback claro: mostra qual era a certa
+          qteEl.querySelectorAll('.qte-opt').forEach(x=>{ x.disabled=true; if(parseInt(x.dataset.i)===correct) x.classList.add('qte-correct'); if(x===b && !win) x.classList.add('qte-wrong'); });
+          const fb = document.createElement('div');
+          fb.className = 'qte-feedback ' + (win?'ok':'no');
+          fb.textContent = win ? '✅ Acertou a jogada!' : '❌ Errou — era: ' + q.choices[correct];
+          qteEl.appendChild(fb);
+          setTimeout(()=>cb({ win }), 850);
         };
       });
       if (autoMode) resolveAuto();
