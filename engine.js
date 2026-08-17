@@ -363,38 +363,46 @@ E.skillMul = function(S, catKey){
 
 // ===== ARQUÉTIPOS (habilidade, Modelo B) =====
 // Aplica a assinatura do arquétipo ao resultado da partida.
+// ctx: { goals, assists, rating, specials, gf, ga } -> devolve também ga ajustado
 E.applyArchetype = function(S, ctx){
   const k = S.archetype;
   if (!k) return ctx;
   const A = resolveArchetype(k);
   if (!A) return ctx;
   const sig = A.signature || {};
-  let { goals, assists, rating, specials } = ctx;
+  let { goals, assists, rating, specials, ga } = ctx;
   specials = specials || [];
-  // contagem de gols/assist do jogo p/ lógica
+  ga = (typeof ga === 'number') ? ga : (ctx.ga || 0);
   const scored = goals > 0;
   if (sig.type === 'active'){
-    // Predador: chance extra de gol de destaque; Regista: assistência garantida
+    // chance extra de jogada especial (Predador/Devorador/Ceifador)
     if (sig.specialChance && scored && Math.random() < sig.specialChance){
       specials.push({ k: k, label: sig.specialLabel || 'Jogada de Classe', verb: sig.specialVerb || 'decide o jogo' });
       rating += 0.3;
     }
+    // assistência garantida (Regista/Alas)
     if (sig.guaranteedAssist){
       const need = sig.guaranteedAssist - (ctx.assists || 0);
       if (need > 0){ assists += need; rating += 0.2; }
     }
-    // Predador: contraponto de risco se não marca
+    // contraponto de risco se não marca (Predador/Ceifador)
     if (sig.missPenalty && !scored){ rating -= sig.missPenalty; }
+    // piso neutro se não marca (Devorador: sem o risco do predador)
+    if (sig.neutralFloor && !scored){ rating += sig.neutralFloor; }
   }
   if (sig.type === 'passive'){
     if (sig.assistBonus) assists += Math.round(assists * sig.assistBonus + (Math.random()<0.5?1:0));
     if (sig.ratingBonus) rating += sig.ratingBonus;
+    // aura defensiva: chance de anular 1 gol sofrido (Anchor/Muralha/Goleiros)
+    if (sig.defAura && ga > 0 && Math.random() < sig.defAura){ ga -= 1; rating += 0.15; }
+    // bonus de mutação que sobe ainda mais assist (Predador Líder, etc.)
+    if (sig.assists){ assists += Math.round(assists * sig.assists); }
   }
   // teto de rating
   rating = Math.max(5, Math.min(10, rating));
   goals = Math.min(goals, ctx.gf);
   assists = Math.min(assists, Math.max(0, ctx.gf - goals));
-  return { goals, assists, rating, specials };
+  return { goals, assists, rating, specials, ga };
 };
 
 // Viés de treino por arquétipo (multiplica o ganho de cada atributo)
@@ -434,7 +442,7 @@ E.simMatch = function(S, opp, cup){
   const opStr = opp.o + 2;
   const exp = myStr/(myStr+opStr);
   const gf = E.poisson(exp*2.4 + 0.4);
-  const ga = E.poisson((1-exp)*2.4 + 0.3);
+  let ga = E.poisson((1-exp)*2.4 + 0.3);
   const rating0 = Math.max(5, Math.min(10, S.ovr/10 + (S.form-3)*0.4 + (Math.random()*3-1.2) + (gf>ga?0.5:gf<ga?-0.4:0)));
   let rating = rating0;
   const isAtt = (S.pos==='ATA'||S.pos==='MEI');
@@ -502,7 +510,7 @@ E.simMatch = function(S, opp, cup){
   }
   // ----- ARQUÉTIPO: aplica assinatura (altera goals/assists/rating/specials) -----
   const _ar = E.applyArchetype(S, { goals, assists, rating, specials, gf, ga });
-  goals = _ar.goals; assists = _ar.assists; rating = _ar.rating; specials.length = 0; _ar.specials.forEach(s=>specials.push(s));
+  goals = _ar.goals; assists = _ar.assists; rating = _ar.rating; if (typeof _ar.ga==='number') ga = _ar.ga; specials.length = 0; _ar.specials.forEach(s=>specials.push(s));
 
   const stats = {
     posse, myShots, oppShots, myOnTarget, oppOnTarget,

@@ -57,7 +57,11 @@ function draftStep(){
     const powers = archetypesForPos(pos);
     const pw = App.draft.power || (powers[0] && powers[0].k);
     html += `<div class="ob-sub" style="margin-top:14px;font-weight:700;color:var(--gold)">Arquétipo de estilo (define sua jogada assinatura):</div>`;
-    html += `<div class="opt-grid">`+powers.map(a=>`<div class="opt pw ${pw===a.k?'sel':''}" data-pw="${a.k}"><b>${a.n}</b><small>${a.insp}</small><small>${a.blurb}</small></div>`).join('')+`</div>`;
+    if (powers.length){
+      html += `<div class="opt-grid">`+powers.map(a=>`<div class="opt pw ${pw===a.k?'sel':''}" data-pw="${a.k}"><b>${a.n}</b><small>${a.insp}</small><small>${a.blurb}</small></div>`).join('')+`</div>`;
+    } else {
+      html += `<div class="muted">Nenhum arquétipo de estilo disponível para ${pos} — você jogará no estilo clássico da posição.</div>`;
+    }
     html += `<div class="muted" style="margin-top:10px">Skills (opcional — máx <b>${MAX_SKILLS}</b>; aumentam atributos e jogadas especiais): <span id="sk-left">restam ${MAX_SKILLS-(App.draft.skills||[]).length}</span></div><div class="opt-grid skills">`+
       SKILLS.map(s=>`<div class="opt sk ${App.draft.skills&&App.draft.skills.includes(s.k)?'sel':''}" data-sk="${s.k}">${s.n}<small>${s.d}</small></div>`).join('')+
       `</div>`;
@@ -268,6 +272,7 @@ window.App=App; window.showToast=showToast; window.modal=modal; window.closeModa
 window.saveGame=saveGame; window.loadList=loadList; window.showLogin=showLogin; window.logout=logout; window.Session=Session;
 window.showMatchScreen=showMatchScreen; window.advanceWeek=advanceWeek; window.openTrainChoice=openTrainChoice;
 window.renderOnboard=renderOnboard; window.afterRender=afterRender; window.apiSaveOwner=apiSaveOwner;
+window.startCareer=startCareer; window.renderMinimap=renderMinimap; window.archetypeImpactNote=archetypeImpactNote; window.nextStep=nextStep; window.draftStep=draftStep;
 
 // ---------- NAVEGAÇÃO ----------
 function bindNav(){
@@ -449,7 +454,7 @@ function showMatchScreen(r){
       </div>
       ${matchStatsCard(st, S.teamName, oppName, domMe, domOpp, S.pos)}
       ${squadSection}
-      ${renderMinimap(S, r)}
+      ${renderMinimap(S, r, wk)}
       ${archetypeImpactNote(S, r)}
       <div class="ms-card feed">
         <div class="ms-card-h">CRÔNICA</div>
@@ -465,10 +470,12 @@ function showMatchScreen(r){
 // ===== MINIMAPA (campo top-down) + nota de impacto do arquétipo =====
 // Campo 100x200 (retrato). Plota os 22 em 4-3-3, destaca seu jogador + duo de sinergia,
 // marca os highlights da partida e a camada "reveal" do arquétipo.
-function renderMinimap(S, r){
+function renderMinimap(S, r, wkArg){
   const W=100, H=200;
   const youSquad = E.genSquad(S.teamName, S.teamOvr, (E.leagueTeams(S).find(t=>t.n===S.teamName)||{}).stars||[]);
-  const oppTeam = E.leagueTeams(S).find(t=>t.n===(S.calendar[S.calIdx-1]&&S.calendar[S.calIdx-1].opp&&S.calendar[S.calIdx-1].opp.n)) || LEAGUE_BY_ID(S.leagueId).teams[0];
+  // B6: usa o adversário da partida em questão (wkArg) quando disponível; cai p/ calendário só p/ compatibilidade
+  const wkOpp = (typeof wkArg!=='undefined' && wkArg && wkArg.opp) ? wkArg.opp : (S.calendar[S.calIdx-1]&&S.calendar[S.calIdx-1].opp);
+  const oppTeam = E.leagueTeams(S).find(t=>t.n===(wkOpp&&wkOpp.n)) || LEAGUE_BY_ID(S.leagueId).teams[0];
   const oppSquad = E.genSquad(oppTeam?oppTeam.n:'Adversário', oppTeam?oppTeam.o:70, (oppTeam&&oppTeam.stars)||[]);
   // posições base por setor (y "para cima" = ataque do jogador)
   const layout = {
@@ -489,6 +496,8 @@ function renderMinimap(S, r){
   const A = resolveArchetype(S.archetype);
   // seu ponto: encontra pelo nome+pos
   const youPos = all.find(n=>n.p&&n.p.n===S.name) || (me.find(n=>n.p&&n.p.pos===S.pos) || me[0]);
+  // atribui arquétipos aleatórios aos mates do elenco (o genSquad não os define) p/ sinergia aparecer
+  youSquad.forEach(p=>{ if(!p.archetype){ const ps=archetypesForPos(p.pos); if(ps.length) p.archetype = ps[Math.floor(Math.random()*ps.length)].k; } });
   // duo de sinergia: outro do time com arquétipo 'likes'
   let duo=null;
   if (A&&A.synergy&&A.synergy.likes){

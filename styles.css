@@ -433,6 +433,8 @@ input:focus,select:focus{outline:none;border-color:var(--accent)}
 .impact-note .in-head{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--gold);font-weight:800;margin-bottom:6px}
 .impact-note .in-h{font-size:15px;font-weight:800;color:var(--txt);margin-bottom:4px}
 .impact-note .in-b{font-size:12.5px;line-height:1.5;color:var(--muted)}
+.mut-badge{font-size:10px;background:var(--obsession);color:#fff;border-radius:6px;padding:2px 7px;vertical-align:middle;letter-spacing:1px}
+.sig-box{margin-top:8px;font-size:13px;color:var(--txt);background:rgba(255,255,255,.04);border-left:3px solid var(--gold);padding:8px 10px;border-radius:8px}
 #auth{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}
 .auth-card{width:100%;max-width:380px;background:linear-gradient(160deg,var(--bg3),var(--bg2));border:1px solid var(--line);border-radius:16px;padding:26px 24px;box-shadow:var(--shadow)}
 .auth-brand{text-align:center;font-size:20px;font-weight:900;letter-spacing:1px;margin-bottom:6px}

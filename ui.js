@@ -98,9 +98,16 @@ UI.estatisticas = function(){
 UI.ficha = function(){
   const S=UI.S;
   const foot = FOOT_LABEL[S.foot]||'Destro';
-  const arch = ARCHETYPES.find(a=>a.k===S.archetype);
+  const arch = ARCHETYPES.find(a=>a.k===(S.creationArch||S.archetype));
+  const pa = resolveArchetype(S.archetype);
   const skills = (S.skills||[]).map(k=>SKILLS.find(s=>s.k===k)).filter(Boolean);
   const clubs = S.careerStats && S.careerStats.teamsPlayed ? Object.keys(S.careerStats.teamsPlayed) : [S.teamName];
+  const archBlock = pa ? `<div class="panel" style="margin-top:12px"><h2><span class="ic">⚡</span> Arquétipo de Estilo — ${UI.esc(pa.n)}${pa._mutated?' <span class="mut-badge">MUTADO</span>':''}</h2>
+    <div class="muted">${UI.esc(pa.insp)}</div>
+    <p style="margin:8px 0;line-height:1.5">${UI.esc(pa.blurb)}</p>
+    <div class="sig-box"><b>Assinatura:</b> ${UI.esc((pa.signature&&pa.signature.name)||'—')}</div>
+    ${pa.synergy&&pa.synergy.likes&&pa.synergy.likes.length?`<div class="muted" style="margin-top:6px">Sinergia com: ${pa.synergy.likes.map(k=>{const a=archetypeById(k);return a?a.n:k;}).join(', ')}</div>`:''}
+  </div>` : '';
   return `<div class="panel"><h2><span class="ic">👤</span> Ficha de ${UI.esc(S.name)}</h2>
     <div class="row">
       <div class="col card"><div class="muted">Atributos (${POSITIONS[S.pos].label})</div>${UI.attrRows(S.pos,S.attrs)}
@@ -112,7 +119,8 @@ UI.ficha = function(){
           <div><span>Idade</span><b>${S.age}</b></div>
           <div><span>Posição</span><b>${POSITIONS[S.pos].label}</b></div>
           <div><span>Pé</span><b>${foot}</b></div>
-          <div><span>Arquétipo</span><b>${arch?arch.n:'—'}</b></div>
+          <div><span>Perfil</span><b>${arch?arch.n:'—'}</b></div>
+          <div><span>Arquétipo</span><b>${pa?pa.n:'—'}</b></div>
           <div><span>Clube</span><b>${UI.esc(S.teamName)}</b> <i>(OVR ${S.teamOvr})</i></div>
           <div><span>Temporada</span><b>${S.season}</b></div>
           <div><span>Troféus</span><b>${S.trophies.length}</b></div>
@@ -120,6 +128,7 @@ UI.ficha = function(){
         ${skills.length?`<div class="muted" style="margin-top:8px">Skills</div><div class="mini-skills">${skills.map(s=>`<span class="pill">${s.n}</span>`).join('')}</div>`:''}
       </div>
     </div>
+    ${archBlock}
     <div class="panel" style="margin-top:12px"><h2><span class="ic">🏟️</span> Clubes na carreira</h2>
       <div class="club-list">${clubs.map(c=>`<span class="pill club">${UI.esc(c)}</span>`).join(' ')}</div>
     </div>
