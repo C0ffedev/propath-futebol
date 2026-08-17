@@ -598,11 +598,31 @@ E.buildFeed = function(S, opp, gf, ga, goals, assists, rating, mom, specials){
   return feed;
 };
 
-E.advanceWeek = function(S){
+E.advanceWeek = function(S, liveMods){
   const wk = S.calendar[S.calIdx];
   let matchRes = null;
   if (wk && wk.type==='match'){
     const r = E.simMatch(S, wk.opp, !!wk.comp);
+    // ----- APLICAÇÃO DOS QTEs AO VIVO (se vieram da tela ao vivo) -----
+    if (liveMods){
+      const simGoals = r.goals||0, simAssists = r.assists||0, simGa = r.ga||0;
+      if (typeof liveMods.goals==='number') r.goals = Math.max(0, liveMods.goals);
+      if (typeof liveMods.assists==='number') r.assists = Math.max(0, liveMods.assists);
+      if (typeof liveMods.rating==='number') r.rating = Math.max(5, Math.min(10, (r.rating||7) + liveMods.rating));
+      if (typeof liveMods.gaSaved==='number') r.ga = Math.max(0, simGa - liveMods.gaSaved);
+      // gf do TIME reflete os gols do jogador (mantém liga coerente)
+      r.gf = Math.max(r.goals, (r.gf - simGoals) + r.goals);
+      // recalcula placar/res
+      r.res = r.gf>r.ga ? 'V' : r.gf<r.ga ? 'D' : 'E';
+      // special do arquétipo se houve gol/assist e QTE pediu
+      if (liveMods.special && r.goals>0){
+        const A = resolveArchetype(S.archetype);
+        if (A && A.signature && A.signature.specialChance){
+          r.specials = r.specials||[];
+          r.specials.push({ k:S.archetype, label: A.signature.specialLabel||'Jogada de Classe', verb: A.signature.specialVerb||'decide' });
+        }
+      }
+    }
     matchRes = r;
     const isCup = !!wk.comp && wk.comp !== S.leagueId; // qualquer comp que não seja a liga principal
     if (!isCup){

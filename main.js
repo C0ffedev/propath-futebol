@@ -305,7 +305,25 @@ function advanceWeek(){
   if (wk && wk.type==='train' && !UI.S.pendingTrain){
     openTrainChoice(); return;
   }
+  if (wk && wk.type==='match'){
+    // PARTIDA AO VIVO com QTEs (estilo ProPath Valorant) — modula o desfecho
+    if (typeof window.showLiveMatch==='function'){
+      window.showLiveMatch(UI.S, wk, (mods)=>{
+        const r = E.advanceWeek(UI.S, mods);
+        finalizeWeek(r);
+      });
+    } else {
+      const r = E.advanceWeek(UI.S);
+      finalizeWeek(r);
+    }
+    return;
+  }
   const r = E.advanceWeek(UI.S);
+  finalizeWeek(r);
+}
+
+// passos pós-avanço de semana (transferência travada, render, save, resumo, tela de partida)
+function finalizeWeek(r){
   // trava o jogo numa janela de transferências até o usuário decidir
   if (UI.S.pendingTransfer){ openTransferWindow(); return; }
   UI.render(); afterRender();

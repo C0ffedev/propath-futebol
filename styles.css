@@ -523,6 +523,35 @@ input:focus,select:focus{outline:none;border-color:var(--accent)}
 .realcard .rc-id{position:absolute;top:10px;right:12px;font-size:10px;color:var(--muted);opacity:.6;font-weight:600}
 .realcard.orphan{border-style:dashed;border-color:rgba(177,75,255,.4)}
 .realcard .del-save{position:absolute;bottom:8px;right:8px;background:transparent;border:none;font-size:14px;opacity:.55;cursor:pointer;padding:2px 4px}
+
+/* ===== PARTIDA AO VIVO (QTE) ===== */
+#live-overlay{position:fixed;inset:0;z-index:200;background:radial-gradient(circle at 50% 30%,#0d1320 0%,#060912 70%);display:flex;align-items:center;justify-content:center;padding:14px;animation:liveIn .25s ease}
+@keyframes liveIn{from{opacity:0}to{opacity:1}}
+.live-wrap{width:100%;max-width:340px;text-align:center}
+.live-top{display:flex;flex-direction:column;gap:2px;margin-bottom:8px}
+.live-cup{font-size:10px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;font-weight:800}
+.live-vs{font-size:15px;font-weight:800;color:var(--txt)}
+.live-vs b{color:var(--red);margin:0 6px}
+.live-svg{width:100%;max-width:240px;height:auto;display:block;margin:0 auto;background:#0b3d1f;border-radius:10px;border:1px solid rgba(255,255,255,.06)}
+.live-field{fill:#0b3d1f;stroke:rgba(255,255,255,.25);stroke-width:.6}
+.live-mid{stroke:rgba(255,255,255,.3);stroke-width:.5;stroke-dasharray:2 2}
+.live-circle{fill:none;stroke:rgba(255,255,255,.3);stroke-width:.5}
+.live-box{fill:rgba(255,255,255,.18)}
+#live-ball{transition:cx .6s ease, cy .6s ease}
+.live-status{margin-top:8px;font-size:12px;color:var(--muted);min-height:16px}
+.live-qte{margin-top:10px;min-height:120px}
+.qte-label{font-size:13px;font-weight:800;color:var(--gold);margin-bottom:10px;letter-spacing:.5px}
+.qte-bar{position:relative;height:26px;background:rgba(255,255,255,.08);border-radius:13px;overflow:hidden;border:1px solid var(--line)}
+.qte-sweet{position:absolute;top:0;height:100%;background:linear-gradient(90deg,rgba(255,210,30,.55),rgba(255,210,30,.8));border-radius:13px}
+.qte-mark{position:absolute;top:-3px;width:4px;height:32px;background:#ff2740;border-radius:2px;box-shadow:0 0 6px rgba(255,39,64,.7);transform:translateX(-2px)}
+.qte-go{margin-top:14px;width:100%}
+.qte-hint{margin-top:8px;font-size:11px;color:var(--muted)}
+.qte-choices{display:flex;flex-direction:column;gap:8px}
+.qte-opt{width:100%}
+.live-log{margin-top:12px;max-height:90px;overflow:auto;font-size:11px;display:flex;flex-direction:column;gap:3px}
+.live-log-line{padding:3px 6px;border-radius:6px;background:rgba(255,255,255,.04)}
+.live-log-line.good{color:#7CFC9B;border-left:2px solid #3da35d}
+.live-log-line.bad{color:#ff9aa6;border-left:2px solid var(--red)}
 .realcard .del-save:hover{opacity:1;color:var(--red)}
 .realcard .claim-save{position:absolute;bottom:8px;right:8px;background:rgba(177,75,255,.15);border:1px solid rgba(177,75,255,.4);
   color:var(--obsession);border-radius:8px;font-size:11px;padding:3px 8px;cursor:pointer}
