@@ -84,6 +84,20 @@
 
   function zoneY(zone){ return zone==='ataque'?40 : zone==='meio'?120 : 178; }
 
+  // gera elenco (nomes) alinhado aos 15 pontos da formação 4-3-3 + G adversário
+  const SQUAD_POOL = ['Isagi','Bachira','Chigiri','Kunigami','Rin','Nagi','Reo','Hiori','Aiku','Barou','Otoya','Karla','Café','Aryu','Zantetsu','Gagamaru','Kunigami','Yukimiya'];
+  function buildSquad(S, opp){
+    const youIdx = (function(){ const I={GOL:0,ZAG:2,LAT:1,VOL:5,MEI:8,ATA:11}; return I[S.pos]!=null?I[S.pos]:0; })();
+    const squad = SQUAD_POOL.slice(); let si=0; const pick=()=> squad[(si++)%squad.length];
+    const names = [];
+    for (let i=0;i<15;i++){
+      if (i===youIdx) names.push(S.name||'Você');
+      else if (i===14) names.push((opp&&opp.n?opp.n:'Adv')+' G');
+      else names.push(pick());
+    }
+    return names;
+  }
+
   // ---------- tela ao vivo ----------
   function showLiveMatch(S, wk, onDone){
     const opp = wk && wk.opp ? wk.opp : {n:'Adversário', o:70};
@@ -100,6 +114,7 @@
     pts.forEach((p,i)=>{ p.s = (i===youIdx)?'me':'me'; }); // time da casa = 'me' (verde/ciano)
     // adversário já vem com s:'opp' na formação; garantir
     pts[pts.length-1].s = 'opp';
+    const squad = buildSquad(S, opp); // nomes alinhados aos 15 pontos
     let ball = { x:50, y:178 };
 
     const overlay = document.createElement('div');
@@ -160,7 +175,7 @@
       label.setAttribute('x', p.x); label.setAttribute('y', p.y-4.5);
       label.setAttribute('text-anchor','middle');
       label.setAttribute('class','live-plabel'+(isYou?' you':''));
-      label.textContent = p.n;
+      label.textContent = (squad[i]||p.n);
       g.appendChild(c); g.appendChild(label);
       playersG.appendChild(g);
       return { idx:i, g, circle:c, label, x:p.x, y:p.y, s:p.s, you:isYou, ph:Math.random()*6.28, amp:0.9, cx:p.x, cy:p.y };
@@ -172,12 +187,36 @@
     let passTimer = (0.7 + Math.random()*0.8);
     function animStep(){
       animT += 0.045;
-      // jogadores se deslocam levemente (respiração de posição) + time avança/recua junto
-      const pushUp = Math.sin(animT*0.12)*5; // o time "sobe" e "desce" de campo
+      // movimento ORIENTADO À BOLA (parece jogo, não ruído)
+      const bx = +ballEl.getAttribute('cx'), by = +ballEl.getAttribute('cy');
+      // acha o marcador mais próximo da bola entre os adversários (quem pressiona)
+      let presser=null, pd=1e9;
+      for (const p of playerBase){ if (p.s==='opp'){ const d=Math.hypot(p.x-bx,p.y-by); if(d<pd){pd=d;presser=p;} } }
       for (const p of playerBase){
-        const dx = Math.sin(animT*0.7 + p.ph) * p.amp;
-        const dy = Math.cos(animT*0.9 + p.ph*1.3) * p.amp + (p.s==='me'? -pushUp : pushUp*0.4);
-        p.cx = p.x + dx; p.cy = p.y + dy;
+        let tx = p.x, ty = p.y; // alvo = posição de casa (formação)
+        if (p.s===possessor.s && !p.you){
+          // companheiro do dono abre opção: aproxima um pouco do dono
+          tx = p.x + (possessor.cx - p.x)*0.35;
+          ty = p.y + (possessor.cy - p.y)*0.35;
+        }
+        if (p===presser){
+          // adversário mais próximo marca o dono da bola
+          tx = possessor.cx + (p.x-possessor.cx)*0.25;
+          ty = possessor.cy + (p.y-possessor.cy)*0.25;
+        } else if (p.s==='opp' && p!==possessor){
+          // outros adversários recuam em direção à própria meta (y cresce)
+          ty = p.y + 4;
+        }
+        if (p.you){
+          // seu jogador acompanha o lance: se tem a bola, avança pra meta; senão, vai pro apoio
+          if (p.s===possessor.s && p===possessor){ tx = bx; ty = Math.max(34, by-4); }
+          else { tx = bx + (p.x-bx)*0.4; ty = by + (p.y-by)*0.4; }
+        }
+        // interpola suavemente em direção ao alvo + leve ruído de respiração
+        const dx = Math.sin(animT*0.7 + p.ph)*0.5;
+        const dy = Math.cos(animT*0.9 + p.ph*1.3)*0.5;
+        p.cx += ((tx+dx) - p.cx)*0.08;
+        p.cy += ((ty+dy) - p.cy)*0.08;
         p.circle.setAttribute('cx', p.cx.toFixed(2));
         p.circle.setAttribute('cy', p.cy.toFixed(2));
         p.label.setAttribute('x', p.cx.toFixed(2));
@@ -194,9 +233,12 @@
         ballEl.setAttribute('cy', by.toFixed(2));
         if (k>=1){ possessor = passTarget; passTarget=null; passFrom=null; passTimer = 0.7 + Math.random()*0.9; }
       } else {
-        // bola colada no dono
+        // bola colada no dono; dono avança em direção à meta adversária via loop acima
         ballEl.setAttribute('cx', possessor.cx.toFixed(2));
         ballEl.setAttribute('cy', (possessor.cy - 3).toFixed(2));
+        // goleiro adversário se posiciona entre a bola e o gol (x da bola, y perto do gol)
+        const gk = playerBase[playerBase.length-1];
+        if (gk && gk.s==='opp'){ gk.cx += (bx - gk.cx)*0.05; gk.cy += (188 - gk.cy)*0.05; }
         passTimer -= 0.045;
         if (passTimer <= 0){
           const mates = playerBase.filter(p => p.s===possessor.s);
