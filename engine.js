@@ -606,6 +606,16 @@ E.advanceWeek = function(S, liveMods){
     // ----- APLICAÇÃO DOS QTEs AO VIVO (se vieram da tela ao vivo) -----
     if (liveMods){
       const simGoals = r.goals||0, simAssists = r.assists||0, simGa = r.ga||0;
+      // QTEs treinam atributos (acerto sobe, erro desce) — aplica ANTES de acumular
+      if (liveMods.attrDeltas){
+        S.attrs = S.attrs || {};
+        const validKs = (S.pos && POSITIONS[S.pos]) ? POSITIONS[S.pos].attrs : null;
+        for (const k in liveMods.attrDeltas){
+          if (validKs && validKs.indexOf(k) < 0) continue; // só atributos reconhecidos da posição
+          const cur = S.attrs[k] || 50;
+          S.attrs[k] = Math.max(1, Math.min(99, +(cur + liveMods.attrDeltas[k]).toFixed(1)));
+        }
+      }
       if (typeof liveMods.goals==='number') r.goals = Math.max(0, liveMods.goals);
       if (typeof liveMods.assists==='number') r.assists = Math.max(0, liveMods.assists);
       if (typeof liveMods.rating==='number') r.rating = Math.max(5, Math.min(10, (r.rating||7) + liveMods.rating));

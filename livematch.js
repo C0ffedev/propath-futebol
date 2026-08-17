@@ -42,32 +42,32 @@
       push(atk({type:'timing', key:'finaliza', label:'FINALIZAÇÃO', attr:'Finalização', zone:'ataque', win:{goals:1}, lose:{rating:-0.3}, arch:A&&A.k, mental:MENTAL}));
       push({type:'choice', key:'drible', label:'PASSE DE LETRA / DRIBLE', choices:['Esquerda','Centro','Direita'], zone:'meio', win:{goals:1}, lose:{rating:-0.2}, arch:A&&A.k, mental:MENTAL});
       push(atk({type:'timing', key:'finaliza2', label:'CHANCE DE OURO', attr:'Finalização', zone:'ataque', win:{goals:1, special:true}, lose:{rating:-0.3}, arch:A&&A.k, mental:MENTAL}));
-      push({type:'timing', key:'posse', label:'RECUperaÇÃO DE POSSE', attr:'Visão', zone:'meio', win:{rating:0.2}, lose:{rating:-0.1}, mental:MENTAL});
+      push({type:'timing', key:'posse', label:'RECUperaÇÃO DE POSSE', attr:'Posicionamento', zone:'meio', win:{rating:0.2}, lose:{rating:-0.1}, mental:MENTAL});
     } else if (pos==='MEI'){
       push({type:'choice', key:'passe', label:'ENFIADA DE PASSE', choices:['Esquerda','Centro','Direita'], zone:'meio', win:{assists:1}, lose:{rating:-0.2}, arch:M&&M.k, mental:MENTAL});
       push(atk({type:'timing', key:'finaliza', label:'INFILTRA E FINALIZA', attr:'Finalização', zone:'ataque', win:{goals:1}, lose:{rating:-0.3}, arch:A&&A.k, mental:MENTAL}));
       push({type:'choice', key:'leitura', label:'LEITURA DE JOGO', choices:['Marcar','Armar','Seguir'], zone:'meio', win:{assists:1, rating:0.1}, lose:{rating:-0.2}, arch:M&&M.k, mental:MENTAL});
       push({type:'timing', key:'posse', label:'DOMÍNIO DE MEIO', attr:'Visão', zone:'meio', win:{rating:0.2}, lose:{rating:-0.1}, mental:MENTAL});
     } else if (pos==='VOL'){
-      push(def({type:'timing', key:'desarme', label:'DESARME DECISIVO', attr:'Defesa', zone:'meio', win:{rating:0.2}, lose:{rating:-0.1}, mental:MENTAL}));
+      push(def({type:'timing', key:'desarme', label:'DESARME DECISIVO', attr:'Marcação', zone:'meio', win:{rating:0.2}, lose:{rating:-0.1}, mental:MENTAL}));
       push({type:'choice', key:'passe', label:'SAÍDA DE BOLA', choices:['Esquerda','Centro','Direita'], zone:'meio', win:{assists:1}, lose:{rating:-0.2}, arch:M&&M.k, mental:MENTAL});
-      push({type:'timing', key:'posse', label:'CHEGADA AO ATAQUE', attr:'Visão', zone:'ataque', win:{assists:1}, lose:{rating:-0.1}, mental:MENTAL});
-      push(def({type:'timing', key:'defesa', label:'INTERVENÇÃO', attr:'Defesa', zone:'meio', win:{gaSaved:1}, lose:{rating:-0.1}, mental:MENTAL}));
+      push({type:'timing', key:'posse', label:'CHEGADA AO ATAQUE', attr:'Interceptação', zone:'ataque', win:{assists:1}, lose:{rating:-0.1}, mental:MENTAL});
+      push(def({type:'timing', key:'defesa', label:'INTERVENÇÃO', attr:'Posicionamento', zone:'meio', win:{gaSaved:1}, lose:{rating:-0.1}, mental:MENTAL}));
     } else if (pos==='ZAG'){
-      push(def({type:'timing', key:'defesa', label:'INTERVENÇÃO NA ÁREA', attr:'Defesa', zone:'defesa', win:{gaSaved:1}, lose:{rating:-0.1}, arch:M&&M.k, mental:MENTAL}));
+      push(def({type:'timing', key:'defesa', label:'INTERVENÇÃO NA ÁREA', attr:'Marcação', zone:'defesa', win:{gaSaved:1}, lose:{rating:-0.1}, arch:M&&M.k, mental:MENTAL}));
       push(def({type:'timing', key:'defesa2', label:'DIVIDA AÉREA', attr:'Cabeceio', zone:'defesa', win:{gaSaved:1}, lose:{rating:-0.1}, mental:MENTAL}));
       push({type:'choice', key:'posse', label:'POSICIONAMENTO', choices:['Subir','Segurar','Recuar'], zone:'defesa', win:{rating:0.2}, lose:{rating:-0.1}, mental:MENTAL});
-      push(def({type:'timing', key:'desarme', label:'CARGA NO MEIA', attr:'Defesa', zone:'meio', win:{rating:0.2}, lose:{rating:-0.1}, mental:MENTAL}));
+      push(def({type:'timing', key:'desarme', label:'CARGA NO MEIA', attr:'Interceptação', zone:'meio', win:{rating:0.2}, lose:{rating:-0.1}, mental:MENTAL}));
     } else if (pos==='LAT'){
-      push(atk({type:'timing', key:'cruzamento', label:'CRUZAMENTO NA ÁREA', attr:'Passe', zone:'ataque', win:{assists:1}, lose:{rating:-0.2}, arch:A&&A.k, mental:MENTAL}));
+      push(atk({type:'timing', key:'cruzamento', label:'CRUZAMENTO NA ÁREA', attr:'Cruzamento', zone:'ataque', win:{assists:1}, lose:{rating:-0.2}, arch:A&&A.k, mental:MENTAL}));
       push({type:'choice', key:'drible', label:'INFILTRAÇÃO PELA LINHA', choices:['Interna','Centro','Externa'], zone:'ataque', win:{assists:1}, lose:{rating:-0.2}, mental:MENTAL});
-      push(def({type:'timing', key:'defesa', label:'RECORRER O CONTROLE', attr:'Defesa', zone:'meio', win:{gaSaved:1}, lose:{rating:-0.1}, mental:MENTAL}));
-      push(atk({type:'timing', key:'posse', label:'SUBIDA DE LATERAL', attr:'Passe', zone:'ataque', win:{rating:0.2}, lose:{rating:-0.1}, mental:MENTAL}));
+      push(def({type:'timing', key:'defesa', label:'RECORRER O CONTROLE', attr:'Marcação', zone:'meio', win:{gaSaved:1}, lose:{rating:-0.1}, mental:MENTAL}));
+      push(atk({type:'timing', key:'posse', label:'SUBIDA DE LATERAL', attr:'Velocidade', zone:'ataque', win:{rating:0.2}, lose:{rating:-0.1}, mental:MENTAL}));
     } else if (pos==='GOL'){
-      push(def({type:'timing', key:'defesa', label:'DEFESA DIFÍCIL', attr:'Defesa', zone:'defesa', win:{gaSaved:1}, lose:{rating:-0.1}, arch:M&&M.k, mental:MENTAL}));
-      push(def({type:'timing', key:'defesa2', label:'SAÍDA DE GOL', attr:'Visão', zone:'defesa', win:{gaSaved:1}, lose:{rating:-0.1}, mental:MENTAL}));
+      push(def({type:'timing', key:'defesa', label:'DEFESA DIFÍCIL', attr:'Reflexos', zone:'defesa', win:{gaSaved:1}, lose:{rating:-0.1}, arch:M&&M.k, mental:MENTAL}));
+      push(def({type:'timing', key:'defesa2', label:'SAÍDA DE GOL', attr:'Saída', zone:'defesa', win:{gaSaved:1}, lose:{rating:-0.1}, mental:MENTAL}));
       push({type:'choice', key:'posse', label:'POSICIONAMENTO', choices:['Fechar Ângulo','Sair','Recuar'], zone:'defesa', win:{rating:0.2}, lose:{rating:-0.1}, mental:MENTAL});
-      push(def({type:'timing', key:'defesa3', label:'DEFESA DE PÉ', attr:'Defesa', zone:'defesa', win:{gaSaved:1}, lose:{rating:-0.1}, mental:MENTAL}));
+      push(def({type:'timing', key:'defesa3', label:'DEFESA DE PÉ', attr:'Anticipação', zone:'defesa', win:{gaSaved:1}, lose:{rating:-0.1}, mental:MENTAL}));
     }
     // QTEs ESPECIAIS de mental (aparecem SE o mental despertou)
     if (predador){
@@ -88,7 +88,7 @@
   function showLiveMatch(S, wk, onDone){
     const opp = wk && wk.opp ? wk.opp : {n:'Adversário', o:70};
     const qtes = buildQTEs(S);
-    const acc = { goals:0, assists:0, gaSaved:0, rating:0, special:false, oppGoals:0 };
+    const acc = { goals:0, assists:0, gaSaved:0, rating:0, special:false, oppGoals:0, attrLog:[] };
     let qi = 0;
     let clock = 0;
     const totalLances = qtes.length;
@@ -162,9 +162,15 @@
 
     function finish(){
       overlay.remove();
+      // deriva atributos treinados pelos QTEs (acerto sobe, erro desce)
+      const attrDeltas = {};
+      acc.attrLog.forEach(l=>{
+        const d = (l.win?1:-0.5);
+        attrDeltas[l.attr] = (attrDeltas[l.attr]||0) + d;
+      });
       const mods = {
         goals: acc.goals, assists: acc.assists, gaSaved: acc.gaSaved,
-        rating: acc.rating, special: acc.special
+        rating: acc.rating, special: acc.special, attrDeltas
       };
       onDone(mods);
     }
@@ -184,6 +190,7 @@
           if (q.win.gaSaved){ acc.gaSaved += q.win.gaSaved; popTxt='🧤 DEFESA!'; popKind='save'; narr=`${S.name} defendeu!`; }
           if (q.win.rating && !popTxt){ acc.rating += q.win.rating; popTxt='✅ BEM JOGADO'; popKind='win'; narr=`${S.name} se saiu bem.`; }
           if (q.win.special){ acc.special = true; if(popTxt==='⚽ GOOOOL!'){ popTxt='👹 GOL DE DESTAQUE!'; } }
+          if (q.attr) acc.attrLog.push({ attr:q.attr, win:true });
           flash(popKind, popTxt);
           if (myEl) myEl.textContent = acc.goals;
           logLine('✅ '+(q.label), true);
@@ -192,6 +199,7 @@
           if (q.win && q.win.gaSaved){ acc.oppGoals += 1; if(oppEl) oppEl.textContent = acc.oppGoals; }
           if (q.key && /defesa|desarme/.test(q.key)){ flash('lose', '❌ PASSEU!'); narr=`${S.name} não alcançou — gol adversário.`; }
           else { flash('lose', '❌ ERROU'); narr=`${S.name} errou a jogada.`; }
+          if (q.attr) acc.attrLog.push({ attr:q.attr, win:false });
           logLine('❌ '+(q.label), false);
         }
         if (narr && logEl){ const n=document.createElement('div'); n.className='live-narr'; n.textContent='🎙️ '+narr; logEl.prepend(n); }
@@ -209,9 +217,9 @@
 
     function runTiming(q, cb){
       const attrVal = (S.attrs && q.attr) ? (S.attrs[q.attr]||50) : 50;
-      // janela "doce" (0..1) — atributo alto = janela maior; arquétipo ajusta via sweetMul
+      // janela "doce" mais estreita (dificuldade): 0.07..0.15 * mul
       const mul = q.sweetMul || 1;
-      const sweetW = (0.12 + (attrVal/100)*0.18) * mul; // 0.12..0.30 * mul
+      const sweetW = (0.07 + (attrVal/100)*0.08) * mul;
       const center = 0.5;
       const lo = center - sweetW/2, hi = center + sweetW/2;
       let t = 0, dir = 1, raf=null, done=false;
@@ -220,10 +228,10 @@
           <div class="qte-label">${q.label}</div>
           <div class="qte-bar"><div class="qte-sweet" style="left:${lo*100}%;width:${sweetW*100}%"></div><div class="qte-mark" id="qte-mark"></div></div>
           <button class="btn btn-red qte-go" id="qte-go">DISPARAR ⚡</button>
-          <div class="qte-hint">Clique no momento certo (na faixa dourada)</div>
+          <div class="qte-hint">Clique NA faixa dourada — precisa de precisão!</div>
         </div>`;
       const mark = qteEl.querySelector('#qte-mark');
-      function step(){ if(done) return; t += 0.022*dir; if(t>1){t=1;dir=-1;} if(t<0){t=0;dir=1;} mark.style.left=(t*100)+'%'; raf=requestAnimationFrame(step); }
+      function step(){ if(done) return; t += 0.034*dir; if(t>1){t=1;dir=-1;} if(t<0){t=0;dir=1;} mark.style.left=(t*100)+'%'; raf=requestAnimationFrame(step); }
       raf = requestAnimationFrame(step);
       qteEl.querySelector('#qte-go').onclick = ()=>{
         if (done) return; done=true; if(raf)cancelAnimationFrame(raf);
@@ -262,9 +270,9 @@
         b.onclick = ()=>{
           const i = parseInt(b.dataset.i);
           const dirOk = (i===correct);
-          // fase 2: timing
+          // fase 2: timing (mais estreita/rápida)
           const attrVal = (S.attrs && q.attr) ? (S.attrs[q.attr]||50) : 50;
-          const sweetW = 0.16 + (attrVal/100)*0.16;
+          const sweetW = (0.08 + (attrVal/100)*0.08);
           const lo = 0.5 - sweetW/2, hi = 0.5 + sweetW/2;
           let t=0, dir=1, raf=null, done=false;
           qteEl.innerHTML = `
@@ -274,7 +282,7 @@
               <button class="btn btn-red qte-go" id="qte-go">DISPARAR ⚡</button>
             </div>`;
           const mark = qteEl.querySelector('#qte-mark');
-          function step(){ if(done) return; t += 0.02*dir; if(t>1){t=1;dir=-1;} if(t<0){t=0;dir=1;} mark.style.left=(t*100)+'%'; raf=requestAnimationFrame(step); }
+          function step(){ if(done) return; t += 0.034*dir; if(t>1){t=1;dir=-1;} if(t<0){t=0;dir=1;} mark.style.left=(t*100)+'%'; raf=requestAnimationFrame(step); }
           raf = requestAnimationFrame(step);
           qteEl.querySelector('#qte-go').onclick = ()=>{ if(done) return; done=true; if(raf)cancelAnimationFrame(raf); cb({ win: dirOk && (t>=lo && t<=hi) }); };
         };
