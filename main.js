@@ -211,9 +211,9 @@ function afterLogin(){
   $('#topbar').classList.remove('hidden');
   $('#btn-logout').classList.remove('hidden');
   UI.renderTopUser && UI.renderTopUser();
-  // God Mode: visível SÓ para o dono (karla)
+  // God Mode: visível SÓ para o dono (C0ffe)
   const godBtn = document.getElementById('btn-god');
-  if (godBtn){ if (Session.id === 'karla'){ godBtn.classList.remove('hidden'); } else { godBtn.classList.add('hidden'); } }
+  if (godBtn){ if (Session.id === 'C0ffe'){ godBtn.classList.remove('hidden'); } else { godBtn.classList.add('hidden'); } }
   UI.hub();
 }
 function logout(){
@@ -291,7 +291,7 @@ function bindNav(){
   $('#btn-save').onclick=saveGame;
   $('#btn-god') && ($('#btn-god').onclick = ()=>{
     if (!UI.S){ showToast('Abra uma carreira primeiro'); return; }
-    if (Session.id !== 'karla'){ showToast('God Mode só para o dono'); return; }
+    if (Session.id !== 'C0ffe'){ showToast('God Mode só para o dono'); return; }
     const on = !UI.S.godMode;
     E.setGodMode(UI.S, on);
     UI.render(); afterRender(); saveGame();
@@ -308,10 +308,10 @@ function afterRender(){
   $$('#app [data-offer]').forEach(b=>b.onclick=()=>acceptOffer(parseInt(b.dataset.offer)));
   $$('#app [data-club]').forEach(el=>el.onclick=(e)=>{ e.stopPropagation(); UI.clubProfile(el.dataset.club, el.dataset.league); });
   const hallBtn = document.querySelector('#btn-clubhall'); if (hallBtn) hallBtn.onclick = UI.clubHall;
-  // God Mode: reflete estado no botão E revela só para o dono (karla) em toda renderização
+  // God Mode: reflete estado no botão E revela só para o dono (C0ffe) em toda renderização
   const godBtn2 = document.getElementById('btn-god');
   if (godBtn2){
-    if (Session.id === 'karla') godBtn2.classList.remove('hidden'); else godBtn2.classList.add('hidden');
+    if (Session.id === 'C0ffe') godBtn2.classList.remove('hidden'); else godBtn2.classList.add('hidden');
     godBtn2.classList.toggle('active', !!(UI.S && UI.S.godMode));
   }
 }
