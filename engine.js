@@ -679,8 +679,10 @@ E.advanceWeek = function(S, liveMods){
       if (typeof liveMods.assists==='number') r.assists = Math.max(0, liveMods.assists);
       if (typeof liveMods.rating==='number') r.rating = Math.max(5, Math.min(10, (r.rating||7) + liveMods.rating));
       if (typeof liveMods.gaSaved==='number') r.ga = Math.max(0, simGa - liveMods.gaSaved);
-      // gf do TIME reflete os gols do jogador (mantém liga coerente)
-      r.gf = Math.max(r.goals, (r.gf - simGoals) + r.goals);
+      // gf do TIME: mantém os gols dos companheiros da simulação E acomoda os gols
+      // que o jogador marcou/armou via QTE (cada assistência vira gol de companheiro).
+      const companionGoals = Math.max(0, (r.gf||0) - simGoals);
+      r.gf = Math.max(r.gf, companionGoals + (r.goals||0) + (r.assists||0));
       // coerência: não dá pra ter mais assistências que gols do time menos os gols do jogador
       r.assists = Math.min(r.assists || 0, Math.max(0, r.gf - (r.goals||0)));
       // recalcula placar/res
