@@ -662,6 +662,8 @@ E.advanceWeek = function(S, liveMods){
       if (typeof liveMods.gaSaved==='number') r.ga = Math.max(0, simGa - liveMods.gaSaved);
       // gf do TIME reflete os gols do jogador (mantém liga coerente)
       r.gf = Math.max(r.goals, (r.gf - simGoals) + r.goals);
+      // coerência: não dá pra ter mais assistências que gols do time menos os gols do jogador
+      r.assists = Math.min(r.assists || 0, Math.max(0, r.gf - (r.goals||0)));
       // recalcula placar/res
       r.res = r.gf>r.ga ? 'V' : r.gf<r.ga ? 'D' : 'E';
       // special do arquétipo se houve gol/assist e QTE pediu
