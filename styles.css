@@ -626,6 +626,19 @@ input:focus,select:focus{outline:none;border-color:var(--accent)}
 .qte-opt.qte-wrong{outline:2px solid #ff7a8a;background:rgba(255,122,138,.18)}
 .live-plabel{font-size:4.2px;font-weight:700;fill:#dff6ff;paint-order:stroke;stroke:rgba(0,0,0,.55);stroke-width:.7px;pointer-events:none}
 .live-plabel.you{fill:#fff;stroke:#a8122a;stroke-width:.9px}
+/* CAMADA 1 (1): número de camisa curto abaixo do marcador */
+.live-pnum{font-size:3px;font-weight:800;fill:#9cc4ff;paint-order:stroke;stroke:rgba(0,0,0,.6);stroke-width:.6px;pointer-events:none;opacity:.85}
+.live-pnum.you{fill:#ffd21e;stroke:#a8122a;stroke-width:.7px;opacity:1}
+/* CAMADA 1 (4): rastro da bola */
+.live-trail circle{filter:drop-shadow(0 0 1px #ffd21e)}
+/* CAMADA 1 (2): seta de passe na ponta da linha */
+.live-pass-arrow{fill:rgba(255,210,30,.9);animation:livePassFade .6s ease forwards}
+/* CAMADA 1 (3): sombra de jogada (rótulo do atributo na zona) */
+.live-shadow-txt{font-size:5px;font-weight:900;fill:#fff;stroke:rgba(0,0,0,.7);stroke-width:.8px;paint-order:stroke;letter-spacing:.3px;animation:liveShadow 1.3s ease-in-out infinite}
+@keyframes liveShadow{0%,100%{opacity:.35}50%{opacity:.95}}
+/* CAMADA 1 (5): jogador específico com a posse destacado */
+.live-has-ball{fill:#ffd21e !important;stroke:#a8122a !important;stroke-width:1px !important;animation:liveHasBall 1s ease-in-out infinite}
+@keyframes liveHasBall{0%,100%{opacity:.8}50%{opacity:1}}
 .live-you{filter:drop-shadow(0 0 1.6px #ffd21e);animation:liveYou 1.2s ease-in-out infinite}
 @keyframes liveYou{0%,100%{stroke-width:1;r:3.6}50%{stroke-width:1.8;r:4.4}}
 .live-ring{animation:liveRing 1.1s ease-in-out infinite}

@@ -229,9 +229,11 @@
           <rect x="${W/2-12}" y="${H-6}" width="24" height="4" class="live-box"/>
           <g id="live-zone"></g>
           <g id="live-players"></g>
+          <g id="live-trail"></g>
           <circle id="live-owner-ring" class="live-ring-off" cx="${ball.x}" cy="${ball.y}" r="5" fill="none" stroke="#ffd21e" stroke-width="1.1" opacity="0"/>
           <g id="live-pass"></g>
           <circle id="live-ball" cx="${ball.x}" cy="${ball.y}" r="2.6" fill="#ffd21e"/>
+          <g id="live-shadow"></g>
         </svg>
         <div class="live-status" id="live-status">⚽ Aquecimento…</div>
         <div class="live-qte" id="live-qte"></div>
@@ -251,6 +253,8 @@
     const zoneG = overlay.querySelector('#live-zone');
     const ownerRing = overlay.querySelector('#live-owner-ring');
     const passG = overlay.querySelector('#live-pass');
+    const trailG = overlay.querySelector('#live-trail');
+    const shadowG = overlay.querySelector('#live-shadow');
 
     // marcadores estáticos em formação (o jogo pausa no QTE, então não há corrida contínua)
     let autoMode = false;
@@ -271,11 +275,18 @@
       label.setAttribute('text-anchor','middle');
       label.setAttribute('class','live-plabel'+(isYou?' you':''));
       label.textContent = (squad[i]||p.n);
-      g.appendChild(c); g.appendChild(label);
+      // número de camisa curto (G/LD/Z1/Z2/LE/VOL1-3/ATA1-3) abaixo do marcador
+      const num = document.createElementNS(SVGNS,'text');
+      num.setAttribute('x', p.x); num.setAttribute('y', p.y+5.5);
+      num.setAttribute('text-anchor','middle');
+      num.setAttribute('class','live-pnum'+(isYou?' you':''));
+      num.textContent = p.n;
+      g.appendChild(c); g.appendChild(label); g.appendChild(num);
       playersG.appendChild(g);
-      return { idx:i, g, circle:c, label, x:p.x, y:p.y, s:p.s, you:isYou, cx:p.x, cy:p.y };
+      return { idx:i, g, circle:c, label, num, x:p.x, y:p.y, s:p.s, you:isYou, cx:p.x, cy:p.y };
     });
     let animRaf=null;
+    const trailPos = []; // CAMADA 1 (4): histórico de posições da bola p/ rastro
 
     function setAuto(on){
       autoMode = on;
@@ -329,13 +340,37 @@
       const tx = (zone==='ataque') ? (youIdx>=0?pts[youIdx].x:50) : 50;
       const fromX = ball.x, fromY = ball.y;
       ball.x = tx; ball.y = ty;
-      // ---- FRENTE A (1): linha de passe tracejada da posição antiga à nova ----
+      // ---- CAMADA 1 (4): rastro da bola (histórico de posições, opacidade/raio crescentes) ----
+      // Não limpa a cada lance: o rastro ACUMULA durante a partida (mais cinematográfico)
+      if (trailG){
+        trailPos.push({x:tx,y:ty});
+        if (trailPos.length>8) trailPos.shift();
+        trailG.innerHTML = '';
+        trailPos.forEach((p,k)=>{
+          const t = document.createElementNS(SVGNS,'circle');
+          t.setAttribute('cx', p.x); t.setAttribute('cy', p.y);
+          t.setAttribute('r', (0.8 + (k/trailPos.length)*1.4).toFixed(2));
+          t.setAttribute('fill', '#ffd21e');
+          t.setAttribute('opacity', (0.10 + (k/trailPos.length)*0.45).toFixed(2));
+          trailG.appendChild(t);
+        });
+      }
+      // ---- FRENTE A (1): linha de passe tracejada da posição antiga à nova, com seta na ponta ----
       passG.innerHTML = '';
       const passLine = document.createElementNS(SVGNS,'line');
       passLine.setAttribute('x1', fromX); passLine.setAttribute('y1', fromY);
       passLine.setAttribute('x2', tx);    passLine.setAttribute('y2', ty);
       passLine.setAttribute('class','live-pass');
       passG.appendChild(passLine);
+      // ponta de seta na direção do passe
+      const ang = Math.atan2(ty-fromY, tx-fromX);
+      const ah = 3.2; // tamanho da seta
+      const ax1 = tx - ah*Math.cos(ang - Math.PI/7), ay1 = ty - ah*Math.sin(ang - Math.PI/7);
+      const ax2 = tx - ah*Math.cos(ang + Math.PI/7), ay2 = ty - ah*Math.sin(ang + Math.PI/7);
+      const arrow = document.createElementNS(SVGNS,'polygon');
+      arrow.setAttribute('points', `${tx},${ty} ${ax1.toFixed(1)},${ay1.toFixed(1)} ${ax2.toFixed(1)},${ay2.toFixed(1)}`);
+      arrow.setAttribute('class','live-pass-arrow');
+      passG.appendChild(arrow);
       // ---- FRENTE A (2): anel de posse no jogador mais próximo da bola ----
       let nearest=null, nd=1e9;
       playerBase.forEach(pb=>{ const d=(pb.x-tx)*(pb.x-tx)+(pb.y-ty)*(pb.y-ty); if(d<nd){nd=d;nearest=pb;} });
@@ -343,6 +378,10 @@
         ownerRing.setAttribute('cx', nearest.x); ownerRing.setAttribute('cy', nearest.y);
         ownerRing.setAttribute('opacity','0.95');
         ownerRing.setAttribute('class', 'live-ring '+(nearest.you?'live-ring-you':'live-ring-pos'));
+        // CAMADA 1 (5): destaca o JOGADOR específico que tem a posse (label + número)
+        playerBase.forEach(pb=>{ if(pb.label) pb.label.classList.remove('live-has-ball'); if(pb.num) pb.num.classList.remove('live-has-ball'); });
+        if (nearest.label) nearest.label.classList.add('live-has-ball');
+        if (nearest.num) nearest.num.classList.add('live-has-ball');
       }
       // ---- FRENTE A (3): glow da zona do lance ----
       zoneG.innerHTML = '';
@@ -364,6 +403,22 @@
         if (zoneG) zoneG.innerHTML = '';
         cb();
       }, 600);
+    }
+
+    // CAMADA 1 (3): sombra de jogada — rótulo do atributo usado pisca na zona do lance
+    const ATTR_NAMES = { Finalização:'FINALIZAÇÃO', Passe:'PASSE', Visão:'VISÃO', Drible:'DRIBLE', Marcação:'MARCAÇÃO', Posicionamento:'POSICIONAMENTO', Interceptação:'INTERCEPTAÇÃO', Cabeceio:'CABECEIO', Cruzamento:'CRUZAMENTO', Velocidade:'VELOCIDADE', Reflexos:'REFLEXOS', Saída:'SAÍDA DE BOLA', Anticipação:'ANTECIPAÇÃO' };
+    function showShadow(q){
+      if (!shadowG) return;
+      shadowG.innerHTML = '';
+      const zy = (q.zone==='ataque')?40 : (q.zone==='meio')?120 : 178;
+      const zx = (q.zone==='ataque') ? (pts[youIdx]?pts[youIdx].x:50) : 50;
+      const txt = document.createElementNS(SVGNS,'text');
+      txt.setAttribute('x', zx); txt.setAttribute('y', zy);
+      txt.setAttribute('text-anchor','middle');
+      txt.setAttribute('class','live-shadow-txt');
+      txt.textContent = (ATTR_NAMES[q.attr]||q.attr||'JOGADA').toUpperCase();
+      shadowG.appendChild(txt);
+      setTimeout(()=>{ if(shadowG) shadowG.innerHTML=''; }, 1300);
     }
 
     // feedback imediato: flash no campo + texto flutuante
@@ -404,6 +459,7 @@
       if (qi >= qtes.length){ finish(); return; }
       const q = qtes[qi++];
       currentQ = q;
+      showShadow(q); // CAMADA 1 (3): sombra de jogada na zona do lance
       moveBall(q.zone, ()=> runQTE(q, (res)=>{
         // avança relógio virtual
         clock += Math.round(90/totalLances);
