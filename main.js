@@ -514,6 +514,9 @@ function showMatchScreen(r){
   </div>`;
   modal(html);
   $('#ms-ok').onclick = closeModal;
+  // FRENTE C: liga toggles de camada do minimapa (handlers não podem vir de <script> inline em innerHTML)
+  const mm = $('#modal .minimap');
+  if (mm){ mm.querySelectorAll('.mini-layer-chk').forEach(c=>{ c.onclick = ()=>{ mm.classList.toggle('hide-'+c.dataset.layer, !c.checked); }; }); }
 }
 
 // ===== MINIMAPA (campo top-down) + nota de impacto do arquétipo =====
@@ -628,9 +631,7 @@ function renderMinimap(S, r, wkArg){
       <label><input type="checkbox" class="mini-layer-chk" data-layer="lance" checked> Lances</label>
     </div>`;
   const legend = `<div class="mini-legend"><span><i style="background:#ffd21e"></i>Você</span><span><i style="background:#b14bff"></i>Dupla (sinergia)</span><span><i style="background:#2e7bff"></i>Seu time</span><span><i style="background:#ff2740"></i>Adversário</span><span><i style="background:#ffd21e;border-radius:50%"></i>Gol (min)</span><span><i style="background:transparent;color:#ffd21e;font-weight:800">A</i>Assist.</span></div>`;
-  // handlers dos checkboxes: togglam a classe hide-<layer> no container do minimapa
-  const post = `<script>try{ var mm=document.currentScript.previousElementSibling; mm.querySelectorAll('.mini-layer-chk').forEach(function(c){ c.onclick=function(){ mm.classList.toggle('hide-'+c.dataset.layer, !c.checked); }; }); }catch(e){}<\/script>`;
-  return `<div class="ms-card minimap">${toggle}<div class="ms-card-h">MAPA DA PARTIDA (4-3-3)</div>${svg}${legend}${A?`<div class="mini-arch">⚡ ${A.n}: ${A.signature&&A.signature.name||''}</div>`:''}${M?`<div class="mini-arch" style="color:var(--obsession)">🧠 ${M.n}: ${M.signature&&M.signature.name||''}</div>`:''}${post}</div>`;
+  return `<div class="ms-card minimap">${toggle}<div class="ms-card-h">MAPA DA PARTIDA (4-3-3)</div>${svg}${legend}${A?`<div class="mini-arch">⚡ ${A.n}: ${A.signature&&A.signature.name||''}</div>`:''}${M?`<div class="mini-arch" style="color:var(--obsession)">🧠 ${M.n}: ${M.signature&&M.signature.name||''}</div>`:''}</div>`;
 }
 
 // Nota de impacto do arquétipo (estilo Valorant): conta o efeito da assinatura na partida
