@@ -748,7 +748,7 @@ E.advanceWeek = function(S, liveMods){
     if(r.rating>rec.bestRating) rec.bestRating=+r.rating.toFixed(1);
     S.form = Math.max(1, Math.min(5, S.form + (r.res==='V'?1:r.res==='D'?-1:0)));
     S.morale = Math.max(20, Math.min(100, S.morale + (r.res==='V'?8:r.res==='D'?-6:2)));
-    S.career.push(`Sem ${S.calIdx+1}: ${S.teamName} ${r.gf}x${r.ga} ${wk.opp.n} — nota ${r.rating}${r.goals?' · G'+r.goals:''}${r.assists?' A'+r.assists:''}${r.specials&&r.specials.length?' · '+r.specials.map(s=>s.label).join(', '):''}.`);
+    S.career.push(`Sem ${S.calIdx+1}: ${S.teamName} ${r.gf}x${r.ga} ${wk.opp.n} — nota ${+r.rating.toFixed(1)}${r.goals?' · G'+r.goals:''}${r.assists?' A'+r.assists:''}${r.specials&&r.specials.length?' · '+r.specials.map(s=>s.label).join(', '):''}.`);
     // ARQUÉTIPO: verifica marco de mutação (posição) + despertar mental (gating)
     E.checkMutation(S);
     E.checkMentalAwaken(S);

@@ -624,14 +624,14 @@ function _noteForArch(S, r, A){
   let head='', body='';
   if (sig.type==='active'){
     const hadSpecial = (r.specials||[]).some(s=>s.k===A.k);
-    if (sig.specialChance && r.goals>0 && hadSpecial){ head='Instinto Predador'; body=`Você explodeu a rede com um gol de destaque — a assinatura ${A.n} brilhou e inflou sua nota (${r.rating}).`; }
-    else if (sig.missPenalty && r.goals===0){ head='Pressão do Predador'; body=`Sem gol, o risco do ${A.n} pesou: nota um pouco abaixo (${r.rating}). É o preço de jogar no limite.`; }
+    if (sig.specialChance && r.goals>0 && hadSpecial){ head='Instinto Predador'; body=`Você explodeu a rede com um gol de destaque — a assinatura ${A.n} brilhou e inflou sua nota (${r.rating.toFixed(1)}).`; }
+    else if (sig.missPenalty && r.goals===0){ head='Pressão do Predador'; body=`Sem gol, o risco do ${A.n} pesou: nota um pouco abaixo (${r.rating.toFixed(1)}). É o preço de jogar no limite.`; }
     else if (sig.guaranteedAssist && r.assists>0){ head='Bombeiro Regista'; body=`Armou jogadas garantidas pela assinatura ${A.n} (${r.assists} assist.) — o meio campo funcionou.`; }
     else { head='Leitura de jogo'; body=`A assinatura ${A.n} esteve presente, mas o jogo não pediu o momento especial.`; }
   } else if (sig.type==='passive'){
-    head='Visão que decide'; body=`O ${A.n} subiu sua leitura: +assistências e nota (${r.rating}) de forma consistente. Quem vê, joga.`;
+    head='Visão que decide'; body=`O ${A.n} subiu sua leitura: +assistências e nota (${r.rating.toFixed(1)}) de forma consistente. Quem vê, joga.`;
   } else if (sig.type==='hybrid'){
-    head='Domínio Total'; body=`O ${A.n} uniu leitura e instinto: você dominou o espaço e devorou a chance (nota ${r.rating}).`;
+    head='Domínio Total'; body=`O ${A.n} uniu leitura e instinto: você dominou o espaço e devorou a chance (nota ${r.rating.toFixed(1)}).`;
   }
   return `<div class="in-block"><div class="in-h">${head}</div><div class="in-b">${body}</div></div>`;
 }
