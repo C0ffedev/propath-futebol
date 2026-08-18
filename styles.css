@@ -631,8 +631,17 @@ input:focus,select:focus{outline:none;border-color:var(--accent)}
 .live-pnum.you{fill:#ffd21e;stroke:#a8122a;stroke-width:.7px;opacity:1}
 /* CAMADA 1 (4): rastro da bola */
 .live-trail circle{filter:drop-shadow(0 0 1px #ffd21e)}
-/* CAMADA 1 (2): seta de passe na ponta da linha */
-.live-pass-arrow{fill:rgba(255,210,30,.9);animation:livePassFade .6s ease forwards}
+/* CAMADA 4 (12): barra de progresso de jogo no topo do minimapa */
+.live-progress{height:3px;background:rgba(255,255,255,.12);border-radius:2px;margin:4px 2px 2px;overflow:hidden}
+.live-progress-fill{height:100%;width:0;background:linear-gradient(90deg,#2e7bff,#ffd21e);transition:width .4s ease}
+/* CAMADA 4 (9): polyline de passe contínuo (bola->dono->zona) */
+.live-pass{stroke:rgba(255,210,30,.85);stroke-width:1;stroke-dasharray:2 2;fill:none;animation:livePassFade .6s ease forwards}
+/* CAMADA 4 (11): sombra de jogada com resultado */
+.live-shadow-win{font-size:5px;font-weight:900;fill:#7bff9a;stroke:rgba(0,0,0,.7);stroke-width:.8px;paint-order:stroke;letter-spacing:.3px;animation:liveShadow 1.3s ease-in-out infinite}
+.live-shadow-lose{font-size:5px;font-weight:900;fill:#ff7a8a;stroke:rgba(0,0,0,.7);stroke-width:.8px;paint-order:stroke;letter-spacing:.3px;animation:liveShadow 1.3s ease-in-out infinite}
+/* CAMADA 4 (10): rei da posse (aura persistente) */
+.live-posse-king{fill:#ffd21e !important;stroke:#fff !important;stroke-width:1.1px !important;animation:liveKing 1.4s ease-in-out infinite}
+@keyframes liveKing{0%,100%{opacity:.75}50%{opacity:1}}
 /* CAMADA 1 (3): sombra de jogada (rótulo do atributo na zona) */
 .live-shadow-txt{font-size:5px;font-weight:900;fill:#fff;stroke:rgba(0,0,0,.7);stroke-width:.8px;paint-order:stroke;letter-spacing:.3px;animation:liveShadow 1.3s ease-in-out infinite}
 @keyframes liveShadow{0%,100%{opacity:.35}50%{opacity:.95}}

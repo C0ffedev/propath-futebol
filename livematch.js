@@ -216,6 +216,7 @@
           <div class="live-tv-mid"><span id="live-clock">0'</span></div>
           <div class="live-tv-team rev"><span id="live-opp">0</span><b>${UI.esc(opp.n)}</b></div>
         </div>
+        <div class="live-progress"><div class="live-progress-fill" id="live-progress"></div></div>
         <div class="live-top">
           <span class="live-cup">${_cupShort}</span>
           <span class="live-vs">${UI.esc(S.teamName)} <b>×</b> ${UI.esc(opp.n)}</span>
@@ -249,6 +250,7 @@
     const myEl = overlay.querySelector('#live-my');
     const oppEl = overlay.querySelector('#live-opp');
     const clockEl = overlay.querySelector('#live-clock');
+    const progressEl = overlay.querySelector('#live-progress');
     const watchBtn = overlay.querySelector('#live-watch');
     const zoneG = overlay.querySelector('#live-zone');
     const ownerRing = overlay.querySelector('#live-owner-ring');
@@ -287,6 +289,7 @@
     });
     let animRaf=null;
     const trailPos = []; // CAMADA 1 (4): histórico de posições da bola p/ rastro
+    const posseCount = {}; // CAMADA 4 (10): heatmap de posse por jogador (idx -> contagens)
 
     function setAuto(on){
       autoMode = on;
@@ -355,15 +358,19 @@
           trailG.appendChild(t);
         });
       }
-      // ---- FRENTE A (1): linha de passe tracejada da posição antiga à nova, com seta na ponta ----
+      // ---- FRENTE A (2): dono da posse = jogador mais próximo da bola (calculado ANTES da linha p/ encadear) ----
+      let nearest=null, nd=1e9;
+      playerBase.forEach(pb=>{ const d=(pb.x-tx)*(pb.x-tx)+(pb.y-ty)*(pb.y-ty); if(d<nd){nd=d;nearest=pb;} });
+      // ---- FRENTE A (1) + CAMADA 4 (9): linha de passe CONTÍNUA bola→dono→zona, com seta na ponta ----
       passG.innerHTML = '';
-      const passLine = document.createElementNS(SVGNS,'line');
-      passLine.setAttribute('x1', fromX); passLine.setAttribute('y1', fromY);
-      passLine.setAttribute('x2', tx);    passLine.setAttribute('y2', ty);
-      passLine.setAttribute('class','live-pass');
-      passG.appendChild(passLine);
-      // ponta de seta na direção do passe
-      const ang = Math.atan2(ty-fromY, tx-fromX);
+      const passPts = [ {x:fromX,y:fromY}, (nearest?{x:nearest.x,y:nearest.y}:{x:fromX,y:fromY}), {x:tx,y:ty} ];
+      const passPath = document.createElementNS(SVGNS,'polyline');
+      passPath.setAttribute('points', passPts.map(p=>`${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' '));
+      passPath.setAttribute('class','live-pass');
+      passPath.setAttribute('fill','none');
+      passG.appendChild(passPath);
+      // ponta de seta na direção final (zona)
+      const ang = Math.atan2(ty-(nearest?nearest.y:fromY), tx-(nearest?nearest.x:fromX));
       const ah = 3.2; // tamanho da seta
       const ax1 = tx - ah*Math.cos(ang - Math.PI/7), ay1 = ty - ah*Math.sin(ang - Math.PI/7);
       const ax2 = tx - ah*Math.cos(ang + Math.PI/7), ay2 = ty - ah*Math.sin(ang + Math.PI/7);
@@ -371,17 +378,24 @@
       arrow.setAttribute('points', `${tx},${ty} ${ax1.toFixed(1)},${ay1.toFixed(1)} ${ax2.toFixed(1)},${ay2.toFixed(1)}`);
       arrow.setAttribute('class','live-pass-arrow');
       passG.appendChild(arrow);
-      // ---- FRENTE A (2): anel de posse no jogador mais próximo da bola ----
-      let nearest=null, nd=1e9;
-      playerBase.forEach(pb=>{ const d=(pb.x-tx)*(pb.x-tx)+(pb.y-ty)*(pb.y-ty); if(d<nd){nd=d;nearest=pb;} });
       if (nearest){
         ownerRing.setAttribute('cx', nearest.x); ownerRing.setAttribute('cy', nearest.y);
         ownerRing.setAttribute('opacity','0.95');
         ownerRing.setAttribute('class', 'live-ring '+(nearest.you?'live-ring-you':'live-ring-pos'));
         // CAMADA 1 (5): destaca o JOGADOR específico que tem a posse (label + número)
+        // CAMADA 4 (10): acumula heatmap de posse e destaca o "rei da posse"
         playerBase.forEach(pb=>{ if(pb.label) pb.label.classList.remove('live-has-ball'); if(pb.num) pb.num.classList.remove('live-has-ball'); });
         if (nearest.label) nearest.label.classList.add('live-has-ball');
         if (nearest.num) nearest.num.classList.add('live-has-ball');
+        posseCount[nearest.idx] = (posseCount[nearest.idx]||0) + 1;
+        // CAMADA 4 (10): "rei da posse" = jogador com mais posse acumulada (aura persistente)
+        let kingIdx=-1, kingN=0;
+        for (const k in posseCount){ if (posseCount[k]>kingN){ kingN=posseCount[k]; kingIdx=+k; } }
+        playerBase.forEach(pb=>{ if(pb.label) pb.label.classList.remove('live-posse-king'); if(pb.num) pb.num.classList.remove('live-posse-king'); });
+        if (kingIdx>=0 && playerBase[kingIdx]){
+          if (playerBase[kingIdx].label) playerBase[kingIdx].label.classList.add('live-posse-king');
+          if (playerBase[kingIdx].num) playerBase[kingIdx].num.classList.add('live-posse-king');
+        }
       }
       // ---- FRENTE A (3): glow da zona do lance ----
       zoneG.innerHTML = '';
@@ -407,16 +421,19 @@
 
     // CAMADA 1 (3): sombra de jogada — rótulo do atributo usado pisca na zona do lance
     const ATTR_NAMES = { Finalização:'FINALIZAÇÃO', Passe:'PASSE', Visão:'VISÃO', Drible:'DRIBLE', Marcação:'MARCAÇÃO', Posicionamento:'POSICIONAMENTO', Interceptação:'INTERCEPTAÇÃO', Cabeceio:'CABECEIO', Cruzamento:'CRUZAMENTO', Velocidade:'VELOCIDADE', Reflexos:'REFLEXOS', Saída:'SAÍDA DE BOLA', Anticipação:'ANTECIPAÇÃO' };
-    function showShadow(q){
+    function showShadow(q, res){
       if (!shadowG) return;
       shadowG.innerHTML = '';
       const zy = (q.zone==='ataque')?40 : (q.zone==='meio')?120 : 178;
       const zx = (q.zone==='ataque') ? (pts[youIdx]?pts[youIdx].x:50) : 50;
+      const win = res ? res.win : null;
+      const mark = (win===true)?'✓ ' : (win===false)?'✗ ' : '';
+      const cls = (win===true)?'live-shadow-win' : (win===false)?'live-shadow-lose' : 'live-shadow-txt';
       const txt = document.createElementNS(SVGNS,'text');
       txt.setAttribute('x', zx); txt.setAttribute('y', zy);
       txt.setAttribute('text-anchor','middle');
-      txt.setAttribute('class','live-shadow-txt');
-      txt.textContent = (ATTR_NAMES[q.attr]||q.attr||'JOGADA').toUpperCase();
+      txt.setAttribute('class', cls);
+      txt.textContent = mark + ((ATTR_NAMES[q.attr]||q.attr||'JOGADA').toUpperCase());
       shadowG.appendChild(txt);
       setTimeout(()=>{ if(shadowG) shadowG.innerHTML=''; }, 1300);
     }
@@ -459,11 +476,12 @@
       if (qi >= qtes.length){ finish(); return; }
       const q = qtes[qi++];
       currentQ = q;
-      showShadow(q); // CAMADA 1 (3): sombra de jogada na zona do lance
       moveBall(q.zone, ()=> runQTE(q, (res)=>{
+        showShadow(q, res); // CAMADA 4 (11): sombra de jogada com resultado ✓/✗
         // avança relógio virtual
         clock += Math.round(90/totalLances);
         if (clockEl) clockEl.textContent = Math.min(90,clock)+"'";
+        if (progressEl) progressEl.style.width = Math.min(100, Math.round(clock/90*100))+'%'; // CAMADA 4 (12): barra de progresso
         // aplica resultado + feedback
         let popTxt='', popKind='lose', narr='';
         if (res.win){
