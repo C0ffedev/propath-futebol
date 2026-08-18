@@ -558,6 +558,13 @@ input:focus,select:focus{outline:none;border-color:var(--accent)}
 .live-circle{fill:none;stroke:rgba(255,255,255,.3);stroke-width:.5}
 .live-box{fill:rgba(255,255,255,.18)}
 #live-ball{transition:cx .6s ease, cy .6s ease}
+.live-pass{stroke:rgba(255,210,30,.85);stroke-width:1;stroke-dasharray:2 2;animation:livePassFade .6s ease forwards}
+@keyframes livePassFade{0%{opacity:.9}100%{opacity:0}}
+.live-zoneblob{transition:opacity .35s ease;animation:liveZone 1s ease-in-out infinite alternate}
+@keyframes liveZone{0%{opacity:.65}100%{opacity:1}}
+.live-ring{transition:cx .15s ease, cy .15s ease}
+.live-ring.live-ring-pos{stroke:#ffd21e}
+.live-ring.live-ring-you{stroke:#fff;filter:drop-shadow(0 0 1.8px #ffd21e)}
 .live-status{margin-top:8px;font-size:12px;color:var(--muted);min-height:16px}
 .live-qte{margin-top:10px;min-height:120px}
 .qte-label{font-size:13px;font-weight:800;color:var(--gold);margin-bottom:10px;letter-spacing:.5px}

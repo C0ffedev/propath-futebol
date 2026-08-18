@@ -228,7 +228,10 @@
           <circle cx="${W/2}" cy="${H/2}" r="14" class="live-circle"/>
           <rect x="${W/2-12}" y="2" width="24" height="4" class="live-box"/>
           <rect x="${W/2-12}" y="${H-6}" width="24" height="4" class="live-box"/>
+          <g id="live-zone"></g>
           <g id="live-players"></g>
+          <circle id="live-owner-ring" class="live-ring-off" cx="${ball.x}" cy="${ball.y}" r="5" fill="none" stroke="#ffd21e" stroke-width="1.1" opacity="0"/>
+          <g id="live-pass"></g>
           <circle id="live-ball" cx="${ball.x}" cy="${ball.y}" r="2.6" fill="#ffd21e"/>
         </svg>
         <div class="live-status" id="live-status">⚽ Aquecimento…</div>
@@ -246,6 +249,9 @@
     const oppEl = overlay.querySelector('#live-opp');
     const clockEl = overlay.querySelector('#live-clock');
     const watchBtn = overlay.querySelector('#live-watch');
+    const zoneG = overlay.querySelector('#live-zone');
+    const ownerRing = overlay.querySelector('#live-owner-ring');
+    const passG = overlay.querySelector('#live-pass');
 
     // marcadores estáticos em formação (o jogo pausa no QTE, então não há corrida contínua)
     let autoMode = false;
@@ -322,10 +328,43 @@
     function moveBall(zone, cb){
       const ty = zoneY(zone);
       const tx = (zone==='ataque') ? (youIdx>=0?pts[youIdx].x:50) : 50;
+      const fromX = ball.x, fromY = ball.y;
       ball.x = tx; ball.y = ty;
+      // ---- FRENTE A (1): linha de passe tracejada da posição antiga à nova ----
+      passG.innerHTML = '';
+      const passLine = document.createElementNS(SVGNS,'line');
+      passLine.setAttribute('x1', fromX); passLine.setAttribute('y1', fromY);
+      passLine.setAttribute('x2', tx);    passLine.setAttribute('y2', ty);
+      passLine.setAttribute('class','live-pass');
+      passG.appendChild(passLine);
+      // ---- FRENTE A (2): anel de posse no jogador mais próximo da bola ----
+      let nearest=null, nd=1e9;
+      playerBase.forEach(pb=>{ const d=(pb.x-tx)*(pb.x-tx)+(pb.y-ty)*(pb.y-ty); if(d<nd){nd=d;nearest=pb;} });
+      if (nearest){
+        ownerRing.setAttribute('cx', nearest.x); ownerRing.setAttribute('cy', nearest.y);
+        ownerRing.setAttribute('opacity','0.95');
+        ownerRing.setAttribute('class', 'live-ring '+(nearest.you?'live-ring-you':'live-ring-pos'));
+      }
+      // ---- FRENTE A (3): glow da zona do lance ----
+      zoneG.innerHTML = '';
+      const zc = (zone==='ataque')?'rgba(255,210,30,.16)':(zone==='meio')?'rgba(177,75,255,.16)':'rgba(70,160,255,.15)';
+      const zoneBlob = document.createElementNS(SVGNS,'rect');
+      zoneBlob.setAttribute('x','2');
+      zoneBlob.setAttribute('y',(zone==='ataque'?'2':zone==='meio'?'98':'100'));
+      zoneBlob.setAttribute('width', (W-4));
+      zoneBlob.setAttribute('height', (zone==='meio'?'4':(H/2-4)));
+      zoneBlob.setAttribute('fill', zc);
+      zoneBlob.setAttribute('class','live-zoneblob');
+      zoneG.appendChild(zoneBlob);
+      // transição suave da bolinha (CSS #live-ball transition)
       ballEl.setAttribute('cx', tx); ballEl.setAttribute('cy', ty);
       statusEl.textContent = `⚽ Bola no ${zone==='ataque'?'ataque':zone==='meio'?'meio-campo':'campo defensivo'}…`;
-      setTimeout(cb, 350);
+      setTimeout(()=>{
+        // esvazia a linha de passe e o glow depois de a bola chegar (o lance pausa no QTE)
+        if (passG) passG.innerHTML = '';
+        if (zoneG) zoneG.innerHTML = '';
+        cb();
+      }, 600);
     }
 
     // feedback imediato: flash no campo + texto flutuante
