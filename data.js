@@ -17,37 +17,55 @@ const UF_BY_TEAM = {
   'Palmeiras':'SP','Flamengo':'RJ','Botafogo':'RJ','Atlético-MG':'MG','São Paulo':'SP','Fluminense':'RJ','Grêmio':'RS','Internacional':'RS','Corinthians':'SP','Bahia':'BA','Bragantino':'SP','Cruzeiro':'MG','Vasco':'RJ','Fortaleza':'CE','Criciúma':'SC','Vitória':'BA','Juventude':'RS','Cuiabá':'MT',
   'ABC':'RN','Botafogo-PB':'PB','Confiança':'SE','Ferroviário':'CE','Manaus':'AM','Remo':'PA','Volta Redonda':'RJ','Aparecidense':'GO','Atlético-GO':'GO','Ypiranga':'RS','Londrina':'PR','São Bernardo':'SP','Ferroviária':'SP','Caxias':'RS','São Jose':'SP','Brasil de Pelotas':'RS','Tocantinópolis':'TO','Treze':'PB','Sousa':'PB','Humaitá':'AC','River':'PI','Altos':'PI','CPA':'MT','Porto Velho':'RO','Real Noroeste':'ES','Inter de Limeira':'SP','Costa Rica':'MS','Novo Hamburgo':'RS','Santa Cruz':'PE','Penedense':'AL','Cianorte':'PR','Avenida':'RS','São Luiz':'RS','Aimoré':'RS','FC Cascavel':'PR','Iguatu':'CE','Maracanã':'MA','Água Santa':'SP','Portuguesa':'SP','Nova Iguaçu':'RJ','Madureira':'RJ','Volta Redonda':'RJ','Bangu':'RJ','Boavista':'RJ','Audax Rio':'RJ','Nova Iguaçu':'RJ','Tombense':'MG','Pouso Alegre':'MG','Villa Nova':'MG','Caldense':'MG','Uberlândia':'MG','Patrocinense':'MG','Aymorés':'MG','Democrata':'MG','Coimbra':'MG','Caxias':'RS','Ypiranga':'RS','São José':'RS','São Luiz':'RS','Novo Hamburgo':'RS','Avenida':'RS','Santa Cruz':'RS','Pelotas':'RS','Paraná':'PR','Londrina':'PR','Figueirense':'SC','Joinville':'SC','Marcílio Dias':'SC','Toledo':'PR','Maringá':'PR'
 };
-// Times da Série C por UF (nacional, acesso à B). ovr por faixa.
-const SERIE_C_TEAMS = [
-  {n:'ABC',uf:'RN',o:66},{n:'Botafogo-PB',uf:'PB',o:64},{n:'Confiança',uf:'SE',o:64},{n:'Ferroviário',uf:'CE',o:65},{n:'Manaus',uf:'AM',o:65},{n:'Paysandu',uf:'PA',o:68},{n:'Volta Redonda',uf:'RJ',o:67},{n:'Aparecidense',uf:'GO',o:65},{n:'Atlético-GO',uf:'GO',o:66},{n:'Ypiranga',uf:'RS',o:66},{n:'Londrina',uf:'PR',o:67},{n:'São Bernardo',uf:'SP',o:68},{n:'Ferroviária',uf:'SP',o:67},{n:'Caxias',uf:'RS',o:66},{n:'Sampaio Corrêa',uf:'MA',o:65},{n:'Figueirense',uf:'SC',o:67},{n:'Botafogo-SP',uf:'SP',o:68},{n:'Vitória',uf:'BA',o:69},{n:'CSA',uf:'AL',o:65},{n:'Remo',uf:'PA',o:67}
+const UF_2026_GROUPS = [
+  ['AC',['Independência-AC','Galvez','Humaitá']], ['AL',['ASA','CSA','CSE']],
+  ['AM',['Nacional-AM','Manaus','Manauara']], ['AP',['Trem','Oratório']],
+  ['BA',['Jacuipense','Atlético-BA','Juazeirense','Porto-BA']],
+  ['CE',['Ferroviário','Tirol','Atlético-CE','Maracanã-CE','Iguatu','Floresta']],
+  ['DF',['Gama','Brasiliense','Capital-DF','Ceilândia']],
+  ['ES',['Rio Branco-ES','Vitória-ES','Real Noroeste']],
+  ['GO',['Inhumas','Aparecidense','Goiatuba','CRAC','ABECAT','Anápolis']],
+  ['MA',['Imperatriz','Sampaio Corrêa-MA','Moto Club','IAPE','Maranhão']],
+  ['MG',['Uberlândia','Betim','Tombense','Democrata-GV','Pouso Alegre']],
+  ['MS',['Operário-MS','Ivinhema']], ['MT',['Luverdense','Primavera-MT','Mixto','Operário-MT','União-MT']],
+  ['PA',['Tuna Luso','Águia de Marabá']], ['PB',['Sousa','Serra Branca','Treze','Botafogo-PB']],
+  ['PE',['Maguary','Central','Retrô','Decisão','Santa Cruz']], ['PI',['Parnahyba','Altos','Piauí','Fluminense-PI']],
+  ['PR',['Cianorte','FC Cascavel','São Joseense','Azuriz','Maringá']],
+  ['RJ',['Madureira','Portuguesa-RJ','America-RJ','Nova Iguaçu','Sampaio Corrêa-RJ','Maricá','Volta Redonda']],
+  ['RN',['ABC','América-RN','Laguna']], ['RO',['Porto Velho','Guaporé']],
+  ['RR',['GAS-RR','Monte Roraima','São Raimundo-RR']],
+  ['RS',['Guarany de Bagé','São Luiz-RS','São José-RS','Brasil-RS','Caxias','Ypiranga']],
+  ['SC',['Santa Catarina','Joinville','Blumenau','Marcílio Dias','Brusque','Figueirense','Barra-SC']],
+  ['SE',['Lagarto','Sergipe','Confiança','Itabaiana']],
+  ['SP',['Portuguesa-SP','Água Santa','XV de Piracicaba','Noroeste','Velo Clube','Guarani','Ferroviária','Inter de Limeira','Ituano']],
+  ['TO',['Araguaína','Tocantinópolis']]
 ];
-// Série D: 96 clubes em 16 grupos de 6, distribuídos por UF/região.
-const SERIE_D_TEAMS = [
-  // SP (grupo 1)
-  {n:'Água Santa',uf:'SP',o:62},{n:'Portuguesa',uf:'SP',o:63},{n:'Inter de Limeira',uf:'SP',o:60},{n:'São Jose',uf:'SP',o:61},{n:'XV de Piracicaba',uf:'SP',o:60},{n:'Sertãozinho',uf:'SP',o:59},
-  // RJ (grupo 2)
-  {n:'Madureira',uf:'RJ',o:60},{n:'Volta Redonda',uf:'RJ',o:64},{n:'Bangu',uf:'RJ',o:58},{n:'Boavista',uf:'RJ',o:59},{n:'Audax Rio',uf:'RJ',o:58},{n:'Nova Iguaçu',uf:'RJ',o:62},
-  // MG (grupo 3)
-  {n:'Tombense',uf:'MG',o:63},{n:'Pouso Alegre',uf:'MG',o:60},{n:'Villa Nova',uf:'MG',o:62},{n:'Caldense',uf:'MG',o:61},{n:'Uberlândia',uf:'MG',o:60},{n:'Patrocinense',uf:'MG',o:59},
-  // RS (grupo 4)
-  {n:'São Luiz',uf:'RS',o:62},{n:'Novo Hamburgo',uf:'RS',o:61},{n:'Avenida',uf:'RS',o:59},{n:'Pelotas',uf:'RS',o:60},{n:'São Paulo-RS',uf:'RS',o:58},{n:'Esportivo',uf:'RS',o:59},
-  // PR (grupo 5)
-  {n:'Cianorte',uf:'PR',o:61},{n:'FC Cascavel',uf:'PR',o:62},{n:'Maringá',uf:'PR',o:63},{n:'Toledo',uf:'PR',o:60},{n:'Paranavaí',uf:'PR',o:58},{n:'Londrina',uf:'PR',o:64},
-  // SC (grupo 6)
-  {n:'Marcílio Dias',uf:'SC',o:62},{n:'Joinville',uf:'SC',o:63},{n:'Brusque',uf:'SC',o:64},{n:'Figueirense',uf:'SC',o:64},{n:'Concórdia',uf:'SC',o:60},{n:'Hercílio Luz',uf:'SC',o:61},
-  // NE (grupos 7-10)
-  {n:'Treze',uf:'PB',o:60},{n:'Sousa',uf:'PB',o:59},{n:'Campinense',uf:'PB',o:61},{n:'Santa Cruz',uf:'PE',o:63},{n:'Retrô',uf:'PE',o:61},{n:'Central',uf:'PE',o:60},
-  {n:'Altos',uf:'PI',o:60},{n:'River',uf:'PI',o:58},{n:'Fluminense-PI',uf:'PI',o:57},{n:'4 de Julho',uf:'PI',o:58},{n:'Maranhão',uf:'MA',o:59},{n:'Maracanã',uf:'MA',o:58},
-  {n:'Iguatu',uf:'CE',o:60},{n:'Caucaia',uf:'CE',o:58},{n:'Atlético-CE',uf:'CE',o:59},{n:'Fortaleza-CE',uf:'CE',o:57},{n:'Ceará',uf:'CE',o:66},{n:'Ferroviário',uf:'CE',o:65},
-  {n:'CRB',uf:'AL',o:67},{n:'CSA',uf:'AL',o:65},{n:'Penedense',uf:'AL',o:57},{n:'Murici',uf:'AL',o:56},{n:'Sergipe',uf:'SE',o:58},{n:'Confiança',uf:'SE',o:64},
-  // CO (grupos 11-12)
-  {n:'Costa Rica',uf:'MS',o:60},{n:'Operário-MS',uf:'MS',o:58},{n:'Águia Negra',uf:'MS',o:57},{n:'Real Noroeste',uf:'ES',o:59},{n:'Rio Branco-ES',uf:'ES',o:57},{n:'Vilavelhense',uf:'ES',o:56},
-  {n:'Aparecidense',uf:'GO',o:65},{n:'Anápolis',uf:'GO',o:62},{n:'Goianésia',uf:'GO',o:60},{n:'Brasiliense',uf:'DF',o:63},{n:'Ceilândia',uf:'DF',o:61},{n:'União Rondonópolis',uf:'MT',o:59},
-  // N (grupos 13-16)
-  {n:'Tocantinópolis',uf:'TO',o:60},{n:'Palmas',uf:'TO',o:58},{n:'Cametá',uf:'PA',o:57},{n:'Castanhal',uf:'PA',o:56},{n:'Independente-PA',uf:'PA',o:57},{n:'Vitória-PA',uf:'PA',o:56},
-  {n:'Rio Branco-AC',uf:'AC',o:56},{n:'Humaitá',uf:'AC',o:55},{n:'Galvez',uf:'AC',o:55},{n:'Porto Velho',uf:'RO',o:57},{n:'Genus',uf:'RO',o:56},{n:'Vilhena',uf:'RO',o:56},
-  {n:'São Raimundo-RR',uf:'RR',o:54},{n:'Atlético Roraima',uf:'RR',o:53},{n:'Náutico-RR',uf:'RR',o:53},{n:'Manaus',uf:'AM',o:65},{n:'Princesa do Solimões',uf:'AM',o:55},{n:'Nacional-AM',uf:'AM',o:57},
-  {n:'Trem',uf:'AP',o:54},{n:'Santos-AP',uf:'AP',o:53},{n:'Independente-AP',uf:'AP',o:53},{n:'São Francisco-PA',uf:'PA',o:55},{n:'Iporá',uf:'GO',o:59},{n:'Costa Rica',uf:'MS',o:60}
+UF_2026_GROUPS.forEach(([uf,names])=>names.forEach(name=>{ UF_BY_TEAM[name]=uf; }));
+
+function BR_TEAMS(names, baseOvr){
+  return names.map((n,i)=>{
+    const state = UF_BY_TEAM[n] || null;
+    return { n, o:Math.max(58, Math.min(73, baseOvr + (i%5)-2)), c:'BR', state, region:state ? REGION_BY_UF[state] : null, stars:[], honours:{} };
+  });
+}
+
+const SERIE_D_GROUPS_2026 = [
+  ['Nacional-AM','Manaus','Manauara','GAS-RR','Monte Roraima','São Raimundo-RR'],
+  ['Independência-AC','Galvez','Humaitá','Porto Velho','Guaporé','Araguaína'],
+  ['Gama','Brasiliense','Luverdense','Primavera-MT','Inhumas','Aparecidense'],
+  ['Capital-DF','Ceilândia','Mixto','Operário-MT','União-MT','Goiatuba'],
+  ['Trem','Oratório','Tuna Luso','Águia de Marabá','Tocantinópolis','Imperatriz'],
+  ['Sampaio Corrêa-MA','Moto Club','IAPE','Maracanã-CE','Iguatu','Parnahyba'],
+  ['Ferroviário','Tirol','Atlético-CE','Altos','Piauí','Fluminense-PI'],
+  ['ABC','América-RN','Laguna','Sousa','Maguary','Central'],
+  ['Retrô','Decisão','Serra Branca','Treze','Lagarto','Sergipe'],
+  ['ASA','CSA','CSE','Jacuipense','Atlético-BA','Juazeirense'],
+  ['Uberlândia','Betim','CRAC','ABECAT','Operário-MS','Ivinhema'],
+  ['Porto-BA','Rio Branco-ES','Vitória-ES','Real Noroeste','Tombense','Democrata-GV'],
+  ['Madureira','Portuguesa-RJ','America-RJ','Portuguesa-SP','Água Santa','Pouso Alegre'],
+  ['Nova Iguaçu','Sampaio Corrêa-RJ','Maricá','XV de Piracicaba','Noroeste','Velo Clube'],
+  ['Cianorte','FC Cascavel','Santa Catarina','Joinville','Guarany de Bagé','São Luiz-RS'],
+  ['Blumenau','Marcílio Dias','São Joseense','Azuriz','São José-RS','Brasil-RS']
 ];
 const TIERS = [
   // ---------- BRASIL ----------
@@ -59,11 +77,13 @@ const TIERS = [
       {n:'Riacho FC', o:55, c:'BR', stars:['Tatu do Brejo','Sombra']}, {n:'Vila Oculta', o:58, c:'BR', stars:['Zé do Escuro','Caolho']},
       {n:'Juventude do Vale', o:54, c:'BR', stars:['Valentinho','Pé de Chumbo']}, {n:'União Soturna', o:57, c:'BR', stars:['Meia-Noite','Bruxo']}
     ] },
-  { id:'bra-sd', country:'Brasil', code:'BR', continent:'SAM', tier:1, name:'Brasileirão Série D', short:'SÉRIE D', cup:'bra-copa',
-    desc:'A base da pirâmide. 96 clubes em 16 grupos de 6, mata-mata pelo acesso.', teams:[] },
-  { id:'bra-sc', country:'Brasil', code:'BR', continent:'SAM', tier:2, name:'Brasileirão Série C', short:'SÉRIE C', cup:'bra-copa',
-    desc:'Divisão de acesso à Série B. 20 clubes, pontos corridos.', teams:[] },
-  { id:'bra-sb', country:'Brasil', code:'BR', continent:'SAM', tier:3, name:'Brasileirão Série B', short:'SÉRIE B', cup:'bra-copa',
+  { id:'bra-sd', country:'Brasil', code:'BR', continent:'SAM', tier:1, name:'Brasileirão Série D', short:'SÉRIE D', cup:'bra-copa', format:'serie-d', groups:SERIE_D_GROUPS_2026,
+    desc:'96 clubes em 16 grupos regionais; quatro por grupo avançam ao mata-mata e seis conquistam o acesso.',
+    teams:BR_TEAMS(SERIE_D_GROUPS_2026.flat(), 62) },
+  { id:'bra-sc', country:'Brasil', code:'BR', continent:'SAM', tier:2, name:'Brasileirão Série C', short:'SÉRIE C', cup:'bra-copa', format:'serie-c',
+    desc:'20 clubes em turno único; oito avançam aos quadrangulares e quatro sobem.',
+    teams:BR_TEAMS(['Guarani','Brusque','Caxias','Maringá','Ferroviária','Botafogo-PB','Inter de Limeira','Floresta','Ituano','Anápolis','Confiança','Amazonas','Volta Redonda','Paysandu','Ypiranga','Figueirense','Santa Cruz','Itabaiana','Maranhão','Barra-SC'], 67) },
+  { id:'bra-sb', country:'Brasil', code:'BR', continent:'SAM', tier:3, name:'Brasileirão Série B', short:'SÉRIE B', cup:'bra-copa', format:'double-round-robin',
     desc:'O caldeirão da Série B. Um ponto separa o sonho do pesadelo. Subir é tudo.',
     teams:[
       {n:'CRB', o:70, c:'BR', stars:['Wesley Phelps','Anselmo'], honours:{}},
@@ -87,7 +107,7 @@ const TIERS = [
       {n:'Santos', o:76, c:'BR', stars:['Neymar','Guilherme'], honours:{ligas:8, copasInt:1}},
       {n:'Athletico-PR', o:79, c:'BR', stars:['Pablo','Vitinho'], honours:{ligas:1, copasInt:2}}
     ] },
-  { id:'bra-sa', country:'Brasil', code:'BR', continent:'SAM', tier:4, name:'Brasileirão Série A', short:'SÉRIE A', cup:'bra-copa',
+  { id:'bra-sa', country:'Brasil', code:'BR', continent:'SAM', tier:4, name:'Brasileirão Série A', short:'SÉRIE A', cup:'bra-copa', format:'double-round-robin',
     desc:'A elite nacional. Estrelas, televisão e a obrigação de ser campeão.',
     teams:[
       {n:'Palmeiras', o:82, c:'BR', stars:['Estêvão','Paulinho'], honours:{ligas:12, copasInt:3, copasNac:1}},
@@ -109,7 +129,7 @@ const TIERS = [
       {n:'Criciúma', o:68, c:'BR', stars:['Éder','Marcelinho'], honours:{copasNac:1}},
       {n:'Vitória', o:73, c:'BR', stars:['Léo','Osvaldo'], honours:{ligas:1, copasNac:1}},
       {n:'Juventude', o:72, c:'BR', stars:['Erick','Rodrigo'], honours:{}},
-      {n:'Cuiabá', o:71, c:'BR', stars:['Clayson','Walter'], honours:{}}
+      {n:'Remo', o:71, c:'BR', stars:['Pedro Rocha','Pavani'], honours:{}}
     ] },
   // ---------- INGLATERRA ----------
   { id:'eng-pl', country:'Inglaterra', code:'ENG', continent:'UEFA', tier:1, name:'Premier League', short:'PREMIER', cup:'eng-facup',
@@ -357,31 +377,49 @@ const SPECIAL_GOALS = [
 const COMP_LEVEL = { estadual:0, regional:1, nacional:2, continental:3, mundial:4 };
 const COMPETITIONS = [
   // ---- ESTADUAIS (BR) ----
-  { id:'bra-paulista', name:'Campeonato Paulista', short:'PAULISTA', level:'estadual', type:'pontos', scope:'BR', state:'SP', teams:12, desc:'O mais disputado estadual do país.' },
-  { id:'bra-carioca',  name:'Campeonato Carioca',  short:'CARIOCA',  level:'estadual', type:'pontos', scope:'BR', state:'RJ', teams:12, desc:'A rivalidade fluminense em campo.' },
-  { id:'bra-mineiro',  name:'Campeonato Mineiro',  short:'MINEIRO',  level:'estadual', type:'pontos', scope:'BR', state:'MG', teams:12, desc:'Tradicionalíssimo. O galo e a massa.' },
-  { id:'bra-gaucho',   name:'Campeonato Gaúcho',   short:'GAÚCHO',   level:'estadual', type:'pontos', scope:'BR', state:'RS', teams:12, desc:'Gre-Nal e muito mais.' },
+  { id:'bra-paulista', name:'Campeonato Paulista', short:'PAULISTA', level:'estadual', type:'pontos', scope:'BR', state:'SP', teams:12, desc:'Fase classificatória estadual; a campanha também pode abrir vagas nacionais.' },
+  { id:'bra-carioca',  name:'Campeonato Carioca',  short:'CARIOCA',  level:'estadual', type:'pontos', scope:'BR', state:'RJ', teams:12, desc:'Fase classificatória estadual; a campanha também pode abrir vagas nacionais.' },
+  { id:'bra-mineiro',  name:'Campeonato Mineiro',  short:'MINEIRO',  level:'estadual', type:'pontos', scope:'BR', state:'MG', teams:12, desc:'Fase classificatória estadual; a campanha também pode abrir vagas nacionais.' },
+  { id:'bra-gaucho',   name:'Campeonato Gaúcho',   short:'GAÚCHO',   level:'estadual', type:'pontos', scope:'BR', state:'RS', teams:12, desc:'Fase classificatória estadual; a campanha também pode abrir vagas nacionais.' },
   // ---- REGIONAIS (BR) ----
-  { id:'bra-nordeste', name:'Copa do Nordeste',   short:'NORDESTE', level:'regional', type:'mata', scope:'BR', region:'NE', teams:16, desc:'O Nordeste unido em jogo.' },
-  { id:'bra-verde',    name:'Copa Verde',          short:'VERDE',    level:'regional', type:'mata', scope:'BR', region:'NC', teams:16, desc:'Norte + Centro-Oeste brigando.' },
-  { id:'bra-sulse',    name:'Copa Sul-Sudeste',   short:'SUL-SUD',  level:'regional', type:'mata', scope:'BR', region:'SS', teams:16, desc:'As duas regiões mais fortes.' },
+  { id:'bra-nordeste', name:'Copa do Nordeste', short:'NORDESTE', level:'regional', type:'grupos_mata', scope:'BR', region:'NE', teams:20, groupGames:5, knockoutPhases:3, desc:'20 clubes; vagas estaduais/RNF, grupos e mata-mata. Campeão entra na 3ª fase da Copa do Brasil seguinte.' },
+  { id:'bra-verde', name:'Copa Verde', short:'VERDE', level:'regional', type:'grupos_mata', scope:'BR', region:'NC', teams:24, groupGames:5, knockoutPhases:3, desc:'Copa Norte e Copa Centro-Oeste; os campeões entram na 3ª fase da Copa do Brasil seguinte.' },
+  { id:'bra-sulse', name:'Copa Sul-Sudeste', short:'SUL-SUD', level:'regional', type:'grupos_mata', scope:'BR', region:'SS', teams:12, groupGames:5, knockoutPhases:3, desc:'Clubes classificados pelos estaduais; campeão entra na 3ª fase da Copa do Brasil seguinte.' },
   // ---- NACIONAIS (pirâmide SÉRIES + COPA + SUPERCOPA) ----
-  { id:'bra-sa', name:'Brasileirão Série A', short:'SÉRIE A', level:'nacional', type:'pontos', scope:'BR', desc:'A elite. 20 clubes, pontos corridos.' },
-  { id:'bra-sb', name:'Brasileirão Série B', short:'SÉRIE B', level:'nacional', type:'pontos', scope:'BR', desc:'O caldeirão. Subir é tudo.' },
-  { id:'bra-sc', name:'Brasileirão Série C', short:'SÉRIE C', level:'nacional', type:'pontos', scope:'BR', desc:'Divisão de acesso à Série B.' },
-  { id:'bra-sd', name:'Brasileirão Série D', short:'SÉRIE D', level:'nacional', type:'pontos', scope:'BR', desc:'A base da pirâmide. Grupos + mata-mata.' },
-  { id:'bra-copa', name:'Copa do Brasil', short:'COPA BR', level:'nacional', type:'mata', scope:'BR', desc:'Mata-mata nacional. Campeão vai à Libertadores.' },
-  { id:'bra-super', name:'Supercopa do Brasil', short:'SUPERCOPA', level:'nacional', type:'decisao', scope:'BR', needs:['bra-sa','bra-copa'], desc:'Campeão do Brasileirão × Campeão da Copa do Brasil.' },
+  { id:'bra-sa', name:'Brasileirão Série A', short:'SÉRIE A', level:'nacional', type:'pontos', scope:'BR', teams:20, desc:'20 clubes, turno e returno (38 rodadas). Os quatro últimos caem; os cinco melhores abrem vagas à Libertadores.' },
+  { id:'bra-sb', name:'Brasileirão Série B', short:'SÉRIE B', level:'nacional', type:'pontos', scope:'BR', teams:20, desc:'38 rodadas. 1º e 2º sobem; 3º×6º e 4º×5º disputam as outras vagas. Os quatro últimos caem.' },
+  { id:'bra-sc', name:'Brasileirão Série C', short:'SÉRIE C', level:'nacional', type:'pontos', scope:'BR', teams:20, desc:'19 rodadas; os oito melhores vão a dois quadrangulares. Os dois melhores de cada chave sobem e os dois últimos da primeira fase caem.' },
+  { id:'bra-sd', name:'Brasileirão Série D', short:'SÉRIE D', level:'nacional', type:'pontos', scope:'BR', teams:96, desc:'16 grupos de seis e mata-mata em ida e volta. Semifinalistas e dois vencedores do playoff das quartas sobem.' },
+  { id:'bra-copa', name:'Copa do Brasil', short:'COPA BR', level:'nacional', type:'mata', scope:'BR', phases:9, twoLeggedUntilFinal:true, desc:'126 clubes e nove fases nacionais. Clubes da Série A entram na 5ª fase; campeão vai à fase de grupos e vice à pré-Libertadores.' },
+  { id:'bra-super', name:'Supercopa Rei', short:'SUPERCOPA', level:'nacional', type:'decisao', scope:'BR', needs:['bra-sa','bra-copa'], desc:'Jogo único entre os campeões do Brasileirão e da Copa do Brasil da temporada anterior.' },
   // ---- CONTINENTAIS ----
-  { id:'sam-lib', name:'Copa Libertadores', short:'LIBERTADORES', level:'continental', type:'mata', scope:'SAM', desc:'O continente inteiro. O campeão da América.' },
-  { id:'sam-sula', name:'Copa Sul-Americana', short:'SUL-AMERICANA', level:'continental', type:'mata', scope:'SAM', desc:'A segunda principal da CONMEBOL.' },
-  { id:'sam-recopa', name:'Recopa Sul-Americana', short:'RECOPA', level:'continental', type:'decisao', scope:'SAM', needs:['sam-lib','sam-sula'], desc:'Libertadores × Sul-Americana.' },
+  { id:'sam-lib', name:'Copa Libertadores', short:'LIBERTADORES', level:'continental', type:'grupos_mata', scope:'SAM', groupGames:6, knockoutPhases:4, desc:'47 clubes nas fases preliminares; 32 na fase de grupos. O campeão disputa Recopa, Intercontinental e se credencia ao Mundial do ciclo.' },
+  { id:'sam-sula', name:'Copa Sul-Americana', short:'SUL-AMERICANA', level:'continental', type:'grupos_mata', scope:'SAM', groupGames:6, knockoutPhases:4, desc:'Segunda competição da CONMEBOL: grupos, playoff com eliminados da Libertadores e mata-mata. O campeão vai à Libertadores e à Recopa.' },
+  { id:'sam-recopa', name:'Recopa Sul-Americana', short:'RECOPA', level:'continental', type:'decisao', scope:'SAM', legs:2, needs:['sam-lib','sam-sula'], desc:'Campeão da Libertadores contra campeão da Sul-Americana, em ida e volta.' },
   // ---- MUNDIAIS ----
-  { id:'world-inter', name:'Copa Intercontinental da FIFA', short:'INTERCONTINENTAL', level:'mundial', type:'decisao', scope:'ALL', needs:['sam-lib'], desc:'Campeão continental vs campeões do mundo.' },
-  { id:'world-club', name:'Mundial de Clubes da FIFA', short:'MUNDIAL', level:'mundial', type:'mata', scope:'ALL', desc:'32 clubes. Ciclo de 4 anos.' }
+  { id:'world-inter', name:'Copa Intercontinental da FIFA', short:'INTERCONTINENTAL', level:'mundial', type:'mata', scope:'ALL', phases:3, needs:['sam-lib'], desc:'Anual. O campeão sul-americano entra no Dérbi das Américas e busca a final contra o campeão europeu.' },
+  { id:'world-club', name:'Mundial de Clubes da FIFA', short:'MUNDIAL', level:'mundial', type:'grupos_mata', scope:'ALL', groupGames:3, knockoutPhases:4, desc:'32 clubes a cada quatro anos: oito grupos de quatro e mata-mata a partir das oitavas.' }
 ];
 function COMP_BY_ID(id){ return COMPETITIONS.find(c=>c.id===id); }
 function COMPS_OF_LEVEL(level){ return COMPETITIONS.filter(c=>c.level===level); }
+
+const CONMEBOL_ACCESS_2026 = [
+  {country:'Argentina',lib:6,sula:6},{country:'Brasil',lib:7,sula:6},
+  {country:'Bolívia',lib:4,sula:4},{country:'Chile',lib:4,sula:4},
+  {country:'Colômbia',lib:4,sula:4},{country:'Equador',lib:4,sula:4},
+  {country:'Paraguai',lib:4,sula:4},{country:'Peru',lib:4,sula:4},
+  {country:'Uruguai',lib:4,sula:4},{country:'Venezuela',lib:4,sula:4}
+];
+const BRAZIL_ACCESS_2026 = [
+  ['Série A → Libertadores','Cinco vagas pelo Brasileirão; no jogo, 1º ao 5º.'],
+  ['Copa do Brasil → Libertadores','Campeão na fase de grupos e vice na fase preliminar.'],
+  ['Série A → Sul-Americana','Seis melhores clubes seguintes que não estejam na Libertadores.'],
+  ['Série B → Série A','1º e 2º direto; playoffs 3º×6º e 4º×5º pelas outras duas vagas.'],
+  ['Série C → Série B','Oito vão aos quadrangulares; os dois primeiros de cada chave sobem.'],
+  ['Série D → Série C','Quatro semifinalistas e dois vencedores do playoff das quartas sobem.'],
+  ['Estaduais/regionais → Copa do Brasil','Vagas das federações; campeões regionais entram na 3ª fase seguinte.'],
+  ['Libertadores → mundo','Campeão joga a Intercontinental anual e entra no ciclo do Mundial de Clubes.']
+];
 
 // Liga/copa "real" correspondente em TIERS/CUPS (quando existir elenco real).
 function COMP_LEAGUE_ID(comp){
@@ -392,29 +430,15 @@ function COMP_LEAGUE_ID(comp){
   return null;
 }
 
-// ===== Camada 1: pós-processamento — região/UF + pirâmide C/D por região =====
+// Completa região/UF nos elencos brasileiros definidos manualmente.
 (function buildPyramid(){
-  // 1) infere state/region em todos os times BR das TIERS
   TIERS.forEach(lg => {
     if (lg.code !== 'BR' || !lg.teams) return;
-    lg.teams.forEach(t => {
-      if (t.state) return; // já definido
+    lg.teams.forEach((t,idx) => {
       const uf = UF_BY_TEAM[t.n];
       if (uf){ t.state = uf; t.region = REGION_BY_UF[uf]; }
+      if (lg.id === 'bra-sd') t.group = Math.floor(idx/6)+1;
     });
   });
-  // 2) Série C: 20 times por região
-  const sc = TIERS.find(t=>t.id==='bra-sc');
-  if (sc){
-    sc.teams = SERIE_C_TEAMS.map(t=>({ n:t.n, o:t.o, c:'BR', state:t.uf, region:REGION_BY_UF[t.uf], stars:[] }));
-  }
-  // 3) Série D: 96 times em 16 grupos de 6 por região/UF
-  const sd = TIERS.find(t=>t.id==='bra-sd');
-  if (sd){
-    const groups = [];
-    for (let i=0;i<SERIE_D_TEAMS.length;i+=6) groups.push(SERIE_D_TEAMS.slice(i,i+6));
-    sd.groups = groups.length; // 16 grupos
-    sd.teams = SERIE_D_TEAMS.map((t,idx)=>({ n:t.n, o:t.o, c:'BR', state:t.uf, region:REGION_BY_UF[t.uf], group: Math.floor(idx/6)+1, stars:[] }));
-  }
 })();
 

@@ -444,6 +444,7 @@ function showMatchScreen(r){
   const feed = r.feed.map(f=>'<p class="f'+(f.c?' '+f.c:'')+'"><span class="min">'+f.min+'\'</span><span>'+UI.esc(f.t)+'</span></p>').join('');
   const perfRow = (label, main, detail) => '<div class="ms-perf"><span class="ms-perf-lab">'+label+'</span><span class="ms-perf-val"><b>'+main+'</b> <i>'+detail+'</i></span></div>';
   const specialsTxt = (r.specials&&r.specials.length)? '<div class="ms-specials">🌟 '+r.specials.map(s=>s.label).join(' · ')+'</div>' : '';
+  const penaltiesTxt = r.penalties ? `<div class="muted" style="text-align:center;margin-top:6px">Decisão: <b>${UI.esc(r.penalties)}</b></div>` : '';
   // placar de domínio: quantas estatísticas cada time venceu
   const domPairs = [[st.myShots,st.oppShots],[st.myOnTarget,st.oppOnTarget],[st.myPasses,st.oppPasses],[st.myAcc,st.oppAcc],[st.myCorners,st.oppCorners],[st.myFouls,st.oppFouls],[st.myYellow,st.oppYellow],[st.myOffsides,st.oppOffsides],[st.mySaves,st.oppSaves]];
   let domMe=0, domOpp=0; domPairs.forEach(([a,b])=>{ if(a>b) domMe++; else if(b>a) domOpp++; });
@@ -475,6 +476,7 @@ function showMatchScreen(r){
       <div class="ms-num">${r.gf}<span class="ms-x">x</span>${r.ga}</div>
       <div class="ms-team"><div class="ms-nm">${UI.esc(oppName)}</div><div class="ms-ovr">OVR ${opp?opp.o:'—'}</div></div>
     </div>
+    ${penaltiesTxt}
     <div class="ms-body">
       <div class="ms-card perf">
         <div class="ms-card-h">SEU DESEMPENHO</div>
@@ -621,11 +623,14 @@ function archetypeImpactNote(S, r){
 function showSeasonSummary(sum){
   const s=sum;
   const situ = s.champ ? '<div class="ss-champ">🏆 CAMPEÃO!</div>'
-    : (s.relegated ? '<div class="ss-rel">⬇️ REBAIXADO</div>' : '');
+    : (s.promoted ? '<div class="ss-champ">⬆ ACESSO CONQUISTADO!</div>' : (s.relegated ? '<div class="ss-rel">⬇️ REBAIXADO</div>' : ''));
+  const decision=s.accessDecision?`<div class="muted" style="text-align:center;margin:8px 0">${UI.esc(s.accessDecision)}</div>`:'';
+  const qualified=(s.qualifiedNext||[]).map(id=>{const c=COMP_BY_ID(id);return c?(c.short||c.name):id;});
+  const next=qualified.length?`<div class="muted" style="text-align:center;margin:8px 0"><b>Vagas da próxima temporada:</b> ${qualified.map(UI.esc).join(' · ')}</div>`:'';
   const html = `<div class="seas-summary">
     <h2>🏁 Fim da Temporada ${s.season}</h2>
     <div class="ss-league">${UI.esc(s.league)} · ${UI.esc(s.team)}</div>
-    ${situ}
+    ${situ}${decision}${next}
     <div class="ss-grid">
       <div><span>Posição final</span><b>${s.pos}º</b></div>
       <div><span>Campanha</span><b>${s.w}V ${s.d}E ${s.l}D</b></div>

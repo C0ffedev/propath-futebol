@@ -462,12 +462,14 @@ input:focus,select:focus{outline:none;border-color:var(--accent)}
 /* ===== COMPETIÇÕES (pirâmide paralela) ===== */
 .comp-level{margin-bottom:18px}
 .comp-level-h{font-size:12px;text-transform:uppercase;letter-spacing:1.5px;color:var(--obsession);margin:14px 0 8px;border-bottom:1px solid var(--line);padding-bottom:5px}
-.comp-card{background:linear-gradient(160deg,var(--bg3),var(--bg2));border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.comp-card{background:linear-gradient(160deg,var(--bg3),var(--bg2));border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:10px;overflow-x:auto}
 .comp-card.champ{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset}
 .comp-card-h{font-size:15px;font-weight:800;color:var(--txt);margin-bottom:8px}
 .comp-card-h .muted{font-size:11px;font-weight:400;margin-left:6px}
 .comp-cup-status{font-size:14px;font-weight:800;color:var(--accent);padding:6px 0}
 .comp-card.champ .comp-cup-status{color:var(--gold)}
+.comp-rule{margin:6px 0 10px;line-height:1.45}
+@media(max-width:760px){.comp-card .tbl{min-width:620px}.comp-card{padding:10px}}
 
 /* ===== LANDING (página inicial pública) ===== */
 #landing{position:fixed;inset:0;overflow-y:auto;z-index:50;background:var(--bg);padding:34px 16px 60px}

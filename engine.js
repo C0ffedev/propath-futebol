@@ -20,6 +20,8 @@ E.potential = function(age, startOvr){
 E.leagueForPotential = function(pot){
   if (pot >= 82) return 'bra-sa';
   if (pot >= 74) return 'bra-sb';
+  if (pot >= 68) return 'bra-sc';
+  if (pot >= 62) return 'bra-sd';
   return 'bra-varzea';
 };
 
@@ -61,9 +63,14 @@ E.genSquad = function(teamName, teamO, stars){
 // times da liga: usa elenco evoluído (S.leagueTeams) se houver, senão o catálogo base
 E.leagueTeams = function(S){ return (S && S.leagueTeams && S.leagueTeams.length) ? S.leagueTeams : LEAGUE_BY_ID(S.leagueId).teams; };
 // faz uma cópia profunda dos times da liga para o save (base da evolução)
-function _copyLeagueTeams(leagueId){
+function _copyLeagueTeams(leagueId, teamName){
   const lg = LEAGUE_BY_ID(leagueId); if (!lg) return [];
-  return lg.teams.map(t=>({ n:t.n, o:t.o, c:t.c, code:t.code, stars:(t.stars||[]).map(s=> (typeof s==='string'? s : {n:s.n,o:s.o})), honours:t.honours||{} }));
+  let teams = lg.teams;
+  if (lg.id === 'bra-sd' && lg.groups){
+    const group = lg.groups.find(g=>g.includes(teamName)) || lg.groups[0];
+    teams = group.map(n=>lg.teams.find(t=>t.n===n)).filter(Boolean);
+  }
+  return teams.map(t=>({ n:t.n, o:t.o, c:t.c, code:t.code, stars:(t.stars||[]).map(s=> (typeof s==='string'? s : {n:s.n,o:s.o})), honours:t.honours||{} }));
 }
 
 // atributos iniciais a partir de archetype (ou distribuição personalizada)
@@ -126,6 +133,7 @@ E.createPlayer = function(o){
     mental: null, mentalAwakened: [],
     leagueId: tierDef.id, tierIndex: TIERS.indexOf(tierDef), teamName: team.n,
     teamOvr: team.o, salary: 1500,
+    leagueTeams: _copyLeagueTeams(tierDef.id, team.n),
     week: 1, season: 1, morale: 70, form: 3,
     table: {p:0,w:0,d:0,l:0,gf:0,ga:0},
     seasonMatches: [], calendar: [], calIdx: 0,
@@ -180,7 +188,7 @@ E.normalizeSave = function(S){
     if (idx >= 0) S.tierIndex = idx;
   }
   // elenco evoluível da liga (cópia dos times base); alimenta evolução ano a ano
-  if (!S.leagueTeams || !S.leagueTeams.length) S.leagueTeams = _copyLeagueTeams(S.leagueId);
+  if (!S.leagueTeams || !S.leagueTeams.length || (S.leagueId==='bra-sd' && S.leagueTeams.length!==6)) S.leagueTeams = _copyLeagueTeams(S.leagueId, S.teamName);
   if (!S.sMeEvo) S.sMeEvo = [];
   if (!S.trophies) S.trophies = [];
   if (!S.offers) S.offers = [];
@@ -192,7 +200,10 @@ E.normalizeSave = function(S){
   if (!S.trainPlan) S.trainPlan = {k:'tecnico', n:'Técnica Obsessiva'};
   // Liga: garante tabela + sincroniza com os jogos já disputados (corrige saves antigos desbalanceados)
   E.recomputeLeague(S);
-  S.version = 2;
+  if (!S.nextComps) S.nextComps = [];
+  if (!S.compReasons) S.compReasons = {};
+  if (!S.worldQualificationHistory) S.worldQualificationHistory = [];
+  S.version = 3;
   return S;
 };
 
@@ -323,13 +334,14 @@ E.addScorer = function(S, name, goals, team, you){
   e.goals += goals;
 };
 
-// Tabela ordenada (critério: pts, depois saldo, depois gf)
+// CBF: pontos, vitórias, saldo e gols pró. Disciplina e sorteio ficam fora
+// da simulação porque o motor não registra cartões de todos os clubes.
 E.getLeagueTable = function(S){
   if (!S.leagueTable) E.initLeague(S);
   return Object.values(S.leagueTable).map(r => ({
     n:r.n, p:r.p, w:r.w, d:r.d, l:r.l, gf:r.gf, ga:r.ga,
     sg:r.gf-r.ga, pts:r.pts, me: r.n===S.teamName
-  })).sort((a,b) => b.pts-a.pts || (b.sg-a.sg) || (b.gf-a.gf));
+  })).sort((a,b) => b.pts-a.pts || (b.w-a.w) || (b.sg-a.sg) || (b.gf-a.gf) || a.n.localeCompare(b.n));
 };
 
 E.getTopScorers = function(S){
@@ -689,16 +701,15 @@ E.advanceWeek = function(S, liveMods){
       if (r.goals > 0) E.addScorer(S, S.name, r.goals, S.teamName, true);
     } else {
       // COMPETIÇÃO PARALELA (estadual/copa/continental/etc): aplica na tabela/fase da comp
-      E.applyCompResult(S, wk.comp, S.teamName, wk.opp.n, r.gf, r.ga);
-      const won = (r.res==='V');
-      E.advanceCompPhase(S, wk.comp, won);
+      E.applyCompResult(S, wk.comp, S.teamName, wk.opp.n, r.gf, r.ga, wk);
+      E.advanceCompPhase(S, wk.comp, wk, r);
       if (r.goals > 0) E.addScorer(S, S.name, r.goals, S.teamName, true);
     }
-    const sm = {opp:wk.opp.n, ovr:wk.opp.o, gf:r.gf, ga:r.ga, res:r.res, rating:r.rating, goals:r.goals, assists:r.assists, mom:r.mom, cup:isCup, comp:wk.comp||null, specials:r.specials?r.specials.map(s=>s.label):[]};
+    const sm = {opp:wk.opp.n, ovr:wk.opp.o, gf:r.gf, ga:r.ga, res:r.res, rating:r.rating, goals:r.goals, assists:r.assists, mom:r.mom, cup:isCup, comp:wk.comp||null, penalties:r.penalties||null, specials:r.specials?r.specials.map(s=>s.label):[]};
     S.seasonMatches.push(sm);
     // acumula TEMPORADA
     const ss = S.seasonStats;
-    ss.games++; if(wk.cup) ss.cupGames++;
+    ss.games++; if(isCup) ss.cupGames++;
     if(r.res==='V'){ss.wins++; const diff=r.gf-r.ga; if(diff>ss.biggestWin)ss.biggestWin=diff;}
     else if(r.res==='E')ss.draws++; else ss.losses++;
     ss.goals += r.goals; ss.assists += r.assists; ss.goalsConceded += r.ga;
@@ -708,7 +719,7 @@ E.advanceWeek = function(S, liveMods){
     if(r.rating<ss.worstRating) ss.worstRating=+r.rating.toFixed(1);
     // acumula CARREIRA
     const cs = S.careerStats;
-    cs.games++; if(wk.cup) cs.cupGames++;
+    cs.games++; if(isCup) cs.cupGames++;
     if(r.res==='V'){cs.wins++; const diff=r.gf-r.ga; if(diff>cs.biggestWin)cs.biggestWin=diff;}
     else if(r.res==='E')cs.draws++; else cs.losses++;
     cs.goals += r.goals; cs.assists += r.assists; cs.goalsConceded += r.ga;
@@ -766,47 +777,81 @@ E.evolveLeague = function(S){
   if (myTeam) S.teamOvr = myTeam.o;
 };
 
-E.endSeason = function(S){
-  E.maintainGodMode(S); // god mode: mantém teto mesmo com troca de time/promoção
-  const league = LEAGUE_BY_ID(S.leagueId);
-  const table = E.getLeagueTable(S);
-  const pos = table.findIndex(r => r.me) + 1; // 1-based
-  const leader = table[0];
-  const champ = leader.me; // campeão = quem lidera a tabela real
-  const nTeams = table.length;
-  const relegationZone = pos > nTeams - 2; // últimas 2 posições caem
-  // resumo de temporada
-  const ss = S.seasonStats;
-  const summary = {
-    season: S.season, league: league.name, team: S.teamName,
-    w:S.table.w, d:S.table.d, l:S.table.l, pts:S.table.p, gf:S.table.gf, ga:S.table.ga,
-    games:ss.games, goals:ss.goals, assists:ss.assists, mom:ss.mom, best:+(ss.bestRating||0).toFixed(1), worst:+(ss.worstRating||10).toFixed(1),
-    champ, pos, ovrEnd:S.ovr, pot:S.pot, relegated:relegationZone
-  };
-  S.seasonSummary = summary;
-  S.career.push(`FIM DA TEMP ${S.season}: ${S.table.w}V ${S.table.d}E ${S.table.l}D (${S.table.p} pts) — ${pos}º na ${league.name} — gols ${ss.goals}, assist ${ss.assists}.`);
-  if (champ){
-    const t = `🏆 Campeão: ${league.name} (Temp ${S.season})`;
-    if (!S.trophies.includes(t)) S.trophies.push(t);
-    S.career.push(`CAMPEÃO da ${league.name}!`);
-    const adj = ADJ_LEAGUE(league, +1);
-    if (adj){ const nt = adj.teams[Math.floor(Math.random()*adj.teams.length)]; S.leagueId = adj.id; S.tierIndex = TIERS.indexOf(adj); S.teamName = nt.n; S.teamOvr = nt.o; S.salary = Math.round(S.salary*1.8); S.career.push(`PROMOVIDO! Agora joga no ${nt.n} (${adj.name}).`); }
-  } else if (relegationZone){
-    S.career.push(`REBAIXADO da ${league.name} (${pos}º). Cai pra divisão inferior.`);
-    const adj = ADJ_LEAGUE(league, -1);
-    if (adj){ const nt = adj.teams[Math.floor(Math.random()*adj.teams.length)]; S.leagueId = adj.id; S.tierIndex = TIERS.indexOf(adj); S.teamName = nt.n; S.teamOvr = nt.o; S.salary = Math.round(S.salary*0.7); S.career.push(`REBAIXADO! Volta pro ${nt.n} (${adj.name}).`); }
+function _leagueTieWin(S, opponentOvr){
+  return Math.random() < _clamp(.5 + ((S.teamOvr||70)-(opponentOvr||70))*.018, .22, .78);
+}
+
+E.resolveLeagueOutcome = function(S, league, table, pos){
+  const n=table.length, out={champion:false,promoted:false,relegated:false,decision:''};
+  if(league.id==='bra-sa'){
+    out.champion=pos===1;out.relegated=pos>n-4;
+  }else if(league.id==='bra-sb'){
+    out.champion=pos===1;out.relegated=pos>n-4;
+    if(pos<=2){out.promoted=true;out.decision='acesso direto pelo G2';}
+    else if(pos>=3&&pos<=6){
+      const rivalPos=pos===3?6:pos===4?5:pos===5?4:3;
+      out.promoted=_leagueTieWin(S,(table[rivalPos-1]||{}).o||S.teamOvr);
+      out.decision=`playoff ${pos}º x ${rivalPos}º em ida e volta: ${out.promoted?'classificado':'eliminado'}`;
+    }
+  }else if(league.id==='bra-sc'){
+    out.relegated=pos>n-2;
+    if(pos<=8){
+      const chance=_clamp(.72-(pos-1)*.055+((S.teamOvr||68)-68)*.015,.25,.82);
+      out.promoted=Math.random()<chance;out.decision=`quadrangular final: ${out.promoted?'terminou no G2 e subiu':'ficou fora do G2'}`;
+      out.champion=out.promoted&&Math.random()<.25;
+    }
+  }else if(league.id==='bra-sd'){
+    if(pos<=4){
+      let reachedQuarter=true;
+      for(let tie=0;tie<3;tie++)if(!_leagueTieWin(S,66+tie)){reachedQuarter=false;break;}
+      if(reachedQuarter){
+        const wonQuarter=_leagueTieWin(S,70);
+        out.promoted=wonQuarter||_leagueTieWin(S,70);
+        out.decision=wonQuarter?'semifinalista: acesso direto':(out.promoted?'venceu o playoff dos eliminados nas quartas':'perdeu o playoff dos eliminados nas quartas');
+        out.champion=wonQuarter&&_leagueTieWin(S,72)&&_leagueTieWin(S,73);
+      }else out.decision='eliminado antes das quartas de final';
+    }else out.decision='eliminado na fase de grupos';
+  }else if(league.id==='bra-varzea'){
+    out.champion=pos===1;out.promoted=out.champion;out.decision=out.promoted?'classificado à Série D':'';
+  }else{
+    out.champion=pos===1;out.relegated=pos>n-2;
   }
-  // ---- COMPETIÇÕES PARALELAS: processa títulos conquistados nesta temporada ----
-  (S.comps||[]).forEach(c => {
-    if (c.status === 'campeao'){
-      const def = COMP_BY_ID(c.compId) || { name:c.compId };
-      const t = `🏆 ${def.name} (Temp ${S.season})`;
-      if (!S.trophies.includes(t)) S.trophies.push(t);
-      S.career.push(`CAMPEÃO da ${def.name}!`);
+  return out;
+};
+
+E.moveClubDivision = function(S, targetLeague){
+  const current=(S.leagueTeams||[]).find(t=>t.n===S.teamName)||{n:S.teamName,o:S.teamOvr,c:targetLeague.code,stars:[],honours:{}};
+  let target=_copyLeagueTeams(targetLeague.id,S.teamName), expected=target.length;
+  const alreadyListed=target.some(t=>t.n===S.teamName);
+  target=target.filter(t=>t.n!==S.teamName);
+  if(target.length){if(!alreadyListed&&target.length>=expected)target.pop();target.push({n:current.n,o:current.o,c:targetLeague.code,stars:current.stars||[],honours:current.honours||{}});}
+  else target=[current];
+  S.leagueId=targetLeague.id;S.tierIndex=TIERS.indexOf(targetLeague);S.leagueTeams=target;S.teamOvr=current.o;
+};
+
+E.endSeason = function(S){
+  E.maintainGodMode(S);
+  const league=LEAGUE_BY_ID(S.leagueId),table=E.getLeagueTable(S),pos=table.findIndex(r=>r.me)+1;
+  const outcome=E.resolveLeagueOutcome(S,league,table,pos);
+  const leagueComp=(S.comps||[]).find(c=>c.compId===league.id);
+  if(leagueComp&&outcome.champion)leagueComp.status='campeao';
+  if(typeof E.finishCompetitions==='function')E.finishCompetitions(S,pos);
+  const ss=S.seasonStats;
+  const summary={season:S.season,league:league.name,team:S.teamName,w:S.table.w,d:S.table.d,l:S.table.l,pts:S.table.p,gf:S.table.gf,ga:S.table.ga,
+    games:ss.games,goals:ss.goals,assists:ss.assists,mom:ss.mom,best:+(ss.bestRating||0).toFixed(1),worst:+(ss.worstRating||10).toFixed(1),
+    champ:outcome.champion,pos,ovrEnd:S.ovr,pot:S.pot,promoted:outcome.promoted,relegated:outcome.relegated,accessDecision:outcome.decision,qualifiedNext:(S.nextComps||[]).slice()};
+  S.seasonSummary=summary;
+  S.career.push(`FIM DA TEMP ${S.season}: ${S.table.w}V ${S.table.d}E ${S.table.l}D (${S.table.p} pts) — ${pos}º na ${league.name} — gols ${ss.goals}, assist ${ss.assists}.`);
+  if(outcome.decision)S.career.push(outcome.decision+'.');
+  (S.comps||[]).forEach(c=>{
+    if(c.status==='campeao'){
+      const def=COMP_BY_ID(c.compId)||LEAGUE_BY_ID(c.compId)||{name:c.compId};const t=`🏆 ${def.name} (Temp ${S.season})`;
+      if(!S.trophies.includes(t))S.trophies.push(t);S.career.push(`CAMPEÃO da ${def.name}!`);
     }
   });
-  // evolução da liga: times sobem/descem de OVR conforme a campanha (ano a ano)
   E.evolveLeague(S);
+  if(outcome.promoted){const adj=ADJ_LEAGUE(league,+1);if(adj){E.moveClubDivision(S,adj);S.salary=Math.round(S.salary*1.5);S.career.push(`ACESSO! O ${S.teamName} disputará a ${adj.name}.`);}}
+  else if(outcome.relegated){const adj=ADJ_LEAGUE(league,-1);if(adj){E.moveClubDivision(S,adj);S.salary=Math.round(S.salary*.75);S.career.push(`REBAIXADO! O ${S.teamName} disputará a ${adj.name}.`);}}
   S.season++; S.week=1; S.calIdx=0; S.table={p:0,w:0,d:0,l:0,gf:0,ga:0};
   // recorde de gols em uma temporada
   if (S.seasonStats.goals > (S.records.bestSeasonGoals||0)) S.records.bestSeasonGoals = S.seasonStats.goals;
@@ -853,7 +898,10 @@ E.genOffers = function(S){
 // Evita o bug "CRB contra o próprio CRB" (calendário antigo com o time velho como rival).
 E.joinTeam = function(S, tier, team, ovr, reason){
   S.leagueId = tier; S.tierIndex = TIERS.findIndex(t=>t.id===tier); S.teamName = team; S.teamOvr = ovr;
-  S.leagueTeams = _copyLeagueTeams(tier); // novo elenco evoluível da liga destino
+  // As vagas pertencem ao clube que as conquistou, não ao jogador transferido.
+  if (S.qualificationClub && S.qualificationClub!==team){S.nextComps=[];S.compReasons={};S.qualificationClub=team;}
+  S.leagueTeams = _copyLeagueTeams(tier, team); // novo elenco evoluível da liga destino
+  S.comps = null;
   S.calendar = E.genCalendar(S);
   E.initLeague(S);
   S.seasonMatches = [];

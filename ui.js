@@ -394,19 +394,31 @@ UI.competicoes = function(){
     comps.forEach(c=>{
       const def = COMP_BY_ID(c.compId) || { name:c.compId, short:c.short };
       let body='';
-      if (c.type==='pontos' && c.table){
-        const rows = E.getCompTable(S, c.compId);
+      if ((c.type==='pontos' || c.type==='grupos_mata') && c.table){
+        const rows = c.isLeague ? E.getLeagueTable(S) : E.getCompTable(S, c.compId);
         body = `<table class="tbl"><tr><th>#</th><th class="l">Clube</th><th>J</th><th>V</th><th>E</th><th>D</th><th>GP</th><th>GC</th><th>SG</th><th>Pts</th></tr>` +
           rows.map((r,i)=>`<tr class="${r.me?'me':''}"><td>${i+1}</td><td class="l">${UI.esc(r.n)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gf}</td><td>${r.ga}</td><td>${r.sg>0?'+'+r.sg:r.sg}</td><td><b>${r.pts}</b></td></tr>`).join('') + '</table>';
+        if(c.type==='grupos_mata'){
+          const st=c.status==='campeao'?'🏆 CAMPEÃO':c.status==='eliminado'?'Eliminado':c.phase?`Mata-mata · fase ${c.phase}/${c.maxPhase}`:`Fase de grupos · ${c.groupPlayed||0}/${c.groupGames}`;
+          body=`<div class="comp-cup-status">${st}${c.lastDecision?' · '+UI.esc(c.lastDecision):''}</div>`+body;
+        }
       } else if (c.type==='mata' || c.type==='decisao'){
         const st = c.status==='campeao'?'🏆 CAMPEÃO': c.status==='eliminado'?'❌ Eliminado':`Fase ${c.phase}/${c.maxPhase}`;
-        body = `<div class="comp-cup-status">${st}</div>`;
+        body = `<div class="comp-cup-status">${st}${c.lastDecision?' · '+UI.esc(c.lastDecision):''}</div>`;
       }
       const tag = c.status==='campeao'?' champ':'';
-      html += `<div class="comp-card${tag}"><div class="comp-card-h">${UI.esc(def.name)} <span class="muted">${def.short||''}</span></div>${body}</div>`;
+      const reason=c.reason?`<div class="muted comp-rule"><b>Classificação:</b> ${UI.esc(c.reason)}</div>`:'';
+      const rule=def.desc?`<div class="muted comp-rule">${UI.esc(def.desc)}</div>`:'';
+      html += `<div class="comp-card${tag}"><div class="comp-card-h">${UI.esc(def.name)} <span class="muted">${def.short||''}</span></div>${reason}${rule}${body}</div>`;
     });
     html += `</div>`;
   });
+  const brRules=(typeof BRAZIL_ACCESS_2026!=='undefined'?BRAZIL_ACCESS_2026:[]).map(r=>`<tr><td class="l"><b>${UI.esc(r[0])}</b></td><td class="l">${UI.esc(r[1])}</td></tr>`).join('');
+  const slots=(typeof CONMEBOL_ACCESS_2026!=='undefined'?CONMEBOL_ACCESS_2026:[]).map(r=>`<tr><td class="l">${UI.esc(r.country)}</td><td>${r.lib}</td><td>${r.sula}</td></tr>`).join('');
+  html += `<div class="comp-level"><h3 class="comp-level-h">Como conquistar vagas (regra-base 2026)</h3>
+    <div class="comp-card"><table class="tbl"><tr><th class="l">Caminho</th><th class="l">Critério aplicado</th></tr>${brRules}</table></div>
+    <div class="comp-card"><div class="comp-card-h">Vagas das associações na CONMEBOL</div><table class="tbl"><tr><th class="l">País</th><th>Libertadores</th><th>Sul-Americana</th></tr>${slots}</table>
+    <div class="muted comp-rule">Os campeões vigentes da Libertadores e da Sul-Americana também entram na Libertadores seguinte. Cada associação define a ordem de suas vagas por suas competições nacionais.</div></div></div>`;
   html += `</div>`;
   return html;
 };

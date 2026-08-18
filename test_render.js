@@ -6,11 +6,14 @@ const http = require('http');
 function get(url){return new Promise((res,rej)=>{http.get(url,r=>{let d='';r.on('data',c=>d+=c);r.on('end',()=>res(d));}).on('error',rej);});}
 
 (async()=>{
-  const base='http://localhost:4407';
+  const base=process.env.TEST_BASE||'http://localhost:4407';
   const jsons=[]; // captura erros
   const dom = await JSDOM.fromURL(base+'/index.html', {
     runScripts:'dangerously', resources:'usable',
-    beforeParse(w){ w.addEventListener('error', e=>jsons.push('ERR: '+(e.error&&e.error.stack||e.message))); }
+    beforeParse(w){
+      w.fetch=(url,opts)=>fetch(new URL(url,base),opts);
+      w.addEventListener('error', e=>jsons.push('ERR: '+(e.error&&e.error.stack||e.message)));
+    }
   });
   // espera scripts externos carregarem
   await new Promise(r=>setTimeout(r,1500));
@@ -23,7 +26,7 @@ function get(url){return new Promise((res,rej)=>{http.get(url,r=>{let d='';r.on(
   const onboard = w.document.getElementById('onboard');
   console.log('onboard presente:', !!onboard, '| html tem conteúdo?', (onboard&&onboard.innerHTML.length>50));
   // força criação de player sem UI (testa engine já validada)
-  console.log('SEM ERROS CAPTURADOS:', errs.length===0, errs.slice(0,3));
+  console.log('SEM ERROS CAPTURADOS:', jsons.length===0, jsons.slice(0,3));
   console.log('jsdom globais OK');
-  process.exit(0);
+  process.exit(jsons.length?1:0);
 })().catch(e=>{console.error('FALHA:',e.message);process.exit(1);});

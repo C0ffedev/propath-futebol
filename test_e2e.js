@@ -7,7 +7,7 @@ const http = require('http');
 function get(url){return new Promise((res,rej)=>{http.get(url,r=>{let d='';r.on('data',c=>d+=c);r.on('end',()=>res(d));}).on('error',rej);});}
 
 (async()=>{
-  const base='http://127.0.0.1:4411';
+  const base=process.env.TEST_BASE||'http://127.0.0.1:4411';
   const errors=[];
   // estado "servidor" em memória (por dono)
   const mem={ saves:{}, accounts:{} };
@@ -95,7 +95,7 @@ function get(url){return new Promise((res,rej)=>{http.get(url,r=>{let d='';r.on(
   let compHtml='';
   ['ficha','temporada','liga','ligas','competicoes','mercado','conquistas','ranking'].forEach(t=>{ w.UI.tab=t; w.UI.render(); if(t==='competicoes') compHtml = d.getElementById('app').innerHTML; });
   console.log('todas abas renderizaram');
-  const compOk = compHtml.includes('Competi') && compHtml.includes('class="comp-card"');
+  const compOk = compHtml.includes('Competi') && compHtml.includes('class="comp-card"') && compHtml.includes('Como conquistar vagas') && compHtml.includes('Libertadores');
   console.log('aba Competições renderizou cards?', compOk);
 
   // 7) logout volta p/ landing (não mais direto p/ login)

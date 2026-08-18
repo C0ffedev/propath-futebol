@@ -3,7 +3,7 @@ const http=require('http'); const {JSDOM}=require('jsdom');
 function get(url){return new Promise((res,rej)=>{http.get(url,r=>{let d='';r.on('data',c=>d+=c);r.on('end',()=>res(d));}).on('error',rej);});}
 
 (async()=>{
-  const base='http://127.0.0.1:4411';
+  const base=process.env.TEST_BASE||'http://127.0.0.1:4411';
   const errors=[];
   const mem={ saves:{}, accounts:{} };
   // stub fetch (memória, por dono)
@@ -69,17 +69,15 @@ function get(url){return new Promise((res,rej)=>{http.get(url,r=>{let d='';r.on(
   const onboardVisible = !d.getElementById('onboard').classList.contains('hidden');
   console.log('5) Nova carreira abre onboarding?', onboardVisible, '(deve ser true)');
 
-  // 6) premissa abre (volta pro hub e clica A Premissa)
-  // recarrega hub
+  // 6) ranking abre pelo menu do hub
   if (w.UI && w.UI.hub) w.UI.hub();
   await new Promise(r=>setTimeout(r,150));
-  const premBtn = d.getElementById('hub-premise');
-  console.log('6) botão A Premissa existe no hub?', !!premBtn);
-  if (premBtn) premBtn.click();
+  const rankingBtn = d.getElementById('hub-ranking');
+  console.log('6) botão Ranking existe no hub?', !!rankingBtn);
+  if (rankingBtn) rankingBtn.click();
   await new Promise(r=>setTimeout(r,150));
-  const modalVisible = !d.getElementById('modal').classList.contains('hidden');
-  const premiseOk = modalVisible && d.getElementById('modal-box').textContent.includes('PREMISSA');
-  console.log('   premissa abre modal?', premiseOk, '(deve ser true)');
+  const rankingOk = d.getElementById('app').textContent.includes('Ranking');
+  console.log('   ranking renderiza?', rankingOk, '(deve ser true)');
 
   // 7) DASHBOARD: cria jogador via engine e renderiza a "casa" (hubDashboard)
   if (w.E && w.UI){
@@ -94,7 +92,7 @@ function get(url){return new Promise((res,rej)=>{http.get(url,r=>{let d='';r.on(
     var dashPass = dashOk && pillsOk;
   } else { var dashPass=false; console.log('7) engine/ui indisponíveis'); }
 
-  const pass = errors.length===0 && landingVisible && authVisible && topUser.includes('karla') && hubVisible && onboardVisible && premiseOk && dashPass;
+  const pass = errors.length===0 && landingVisible && authVisible && topUser.includes('karla') && hubVisible && onboardVisible && rankingOk && dashPass;
   console.log('ERROS CAPTURADOS:', errors.length, errors.slice(0,3));
   console.log(pass ? 'HOME E2E PASS ✅' : 'HOME E2E FAIL ❌');
   process.exit(pass?0:1);

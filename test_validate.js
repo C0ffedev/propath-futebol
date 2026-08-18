@@ -5,7 +5,8 @@ const { JSDOM } = require('jsdom');
 const dom = new JSDOM(`<!DOCTYPE html><html><body></body></html>`, { runScripts:'outside-only', pretendToBeVisual:true });
 const { window } = dom;
 
-const code = fs.readFileSync('data.js','utf8') + '\n' + fs.readFileSync('engine.js','utf8');
+const code = fs.readFileSync('data.js','utf8') + '\n' + fs.readFileSync('archetypes.js','utf8') + '\n' +
+  fs.readFileSync('engine.js','utf8') + '\n' + fs.readFileSync('comps.js','utf8');
 window.eval(code + '\n;window.__E=E;window.__TIERS=TIERS;window.__POS=POSITIONS;');
 
 const E = window.__E, TIERS = window.__TIERS, POSITIONS = window.__POS;
