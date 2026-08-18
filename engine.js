@@ -342,6 +342,8 @@ E.addScorer = function(S, name, goals, team, you){
 // CBF: pontos, vitórias, saldo e gols pró. Disciplina e sorteio ficam fora
 // da simulação porque o motor não registra cartões de todos os clubes.
 E.getLeagueTable = function(S){
+  // Série D é disputada em formato de grupos (grupos_mata); a tabela real é a do grupo na comp.
+  if (S.leagueId==='bra-sd'){ const c=(S.comps||[]).find(x=>x.compId==='bra-sd'); if(c&&c.table) return E.getCompTable(S,'bra-sd'); }
   if (!S.leagueTable) E.initLeague(S);
   return Object.values(S.leagueTable).map(r => ({
     n:r.n, p:r.p, w:r.w, d:r.d, l:r.l, gf:r.gf, ga:r.ga,
@@ -694,7 +696,7 @@ E.advanceWeek = function(S, liveMods){
     }
     E.applyGodMode(S, r); // god mode: força vitória/placar (após QTEs)
     matchRes = r;
-    const isCup = !!wk.comp && wk.comp !== S.leagueId; // qualquer comp que não seja a liga principal
+    const isCup = !!wk.comp && (wk.comp !== S.leagueId || ((S.comps||[]).find(c=>c.compId===wk.comp)||{}).type !== 'pontos');
     if (!isCup){
       S.table.gf += r.gf; S.table.ga += r.ga;
       if (r.res==='V'){S.table.w++;S.table.p+=3;} else if (r.res==='E'){S.table.d++;S.table.p+=1;} else S.table.l++;
@@ -806,16 +808,17 @@ E.resolveLeagueOutcome = function(S, league, table, pos){
       out.champion=out.promoted&&Math.random()<.25;
     }
   }else if(league.id==='bra-sd'){
-    if(pos<=4){
-      let reachedQuarter=true;
-      for(let tie=0;tie<3;tie++)if(!_leagueTieWin(S,66+tie)){reachedQuarter=false;break;}
-      if(reachedQuarter){
-        const wonQuarter=_leagueTieWin(S,70);
-        out.promoted=wonQuarter||_leagueTieWin(S,70);
-        out.decision=wonQuarter?'semifinalista: acesso direto':(out.promoted?'venceu o playoff dos eliminados nas quartas':'perdeu o playoff dos eliminados nas quartas');
-        out.champion=wonQuarter&&_leagueTieWin(S,72)&&_leagueTieWin(S,73);
-      }else out.decision='eliminado antes das quartas de final';
-    }else out.decision='eliminado na fase de grupos';
+    // Série D real: fase de grupos (6 times, ida/volta) + mata-mata (idas/voltas). 6 sobem.
+    const comp=(S.comps||[]).find(c=>c.compId==='bra-sd');
+    const tbl=comp?E.getCompTable(S,'bra-sd'):[];
+    const groupPos=tbl.findIndex(r=>r.me)+1;
+    const passedGroup=groupPos>0&&groupPos<=4;
+    out.champion=!!(comp&&comp.status==='campeao');
+    if(out.champion){out.promoted=true;out.decision='campeão da Série D: acesso direto à Série C';}
+    else if(comp&&comp.phase>=3){out.promoted=true;out.decision='semifinalista da Série D: acesso à Série C';}
+    else if(comp&&comp.phase===2){out.promoted=_leagueTieWin(S,70);out.decision=out.promoted?'venceu o playoff de acesso à Série C (eliminado nas quartas)':'perdeu o playoff de acesso à Série C';}
+    else if(passedGroup){out.decision='classificado ao mata-mata (oitavas de final)';}
+    else{out.decision='eliminado na fase de grupos da Série D';}
   }else if(league.id==='bra-varzea'){
     out.champion=pos===1;out.promoted=out.champion;out.decision=out.promoted?'classificado à Série D':'';
   }else{

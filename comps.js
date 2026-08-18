@@ -117,7 +117,19 @@
       const cupDef=CUPS.find(x=>x.id===en.compId);
       const def=COMP_BY_ID(en.compId)||(cupDef?Object.assign({},cupDef,{level:cupDef.type==='national'?'nacional':'continental',type:'mata',phases:5}):null)||Object.assign({id:en.compId,name:en.compId,short:en.compId,level:'nacional',type:'pontos'},LEAGUE_BY_ID(en.compId)||{});
       const c={compId:def.id,name:def.name,short:def.short,level:def.level||'nacional',type:def.type||'pontos',status:'active',round:1,phase:0,myTeam:S.teamName,isLeague:!!en.isLeague,reason:en.reason||''};
-      if(c.type==='pontos'){
+      const fmt=(LEAGUE_BY_ID(en.compId)||{}).format;
+      if(fmt==='serie-d'){
+        // Série D: 16 grupos de 6; fase de grupos (ida/volta) + mata-mata (idas e voltas). 6 sobem.
+        const sdLeague=LEAGUE_BY_ID('bra-sd');
+        const allGroups=sdLeague.groups||[];
+        const myGroupNames=allGroups.find(g=>g.includes(S.teamName))||allGroups[0]||[];
+        const group=myGroupNames.map(n=>{ const t=(sdLeague.teams||[]).find(x=>x.n===n); return t||{n,o:62,c:'BR',stars:[]}; });
+        c.type='grupos_mata'; c.groupGames=10; c.maxPhase=4; c.groupAdvance=4; c.isLeague=true;
+        c.teams=group.map(t=>({n:t.n,o:t.o,c:t.c||'BR',stars:t.stars||[]})).filter((t,i,a)=>a.findIndex(x=>x.n===t.n)===i);
+        if(!c.teams.find(t=>t.n===S.teamName)) c.teams.unshift({n:S.teamName,o:S.teamOvr,c:'BR',stars:[]});
+        c.table={}; c.teams.forEach(t=>c.table[t.n]={n:t.n,p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0});
+        c.opponents=chooseOpponents(S,def,8); // adversários do mata-mata (times da D fora do grupo)
+      } else if(c.type==='pontos'){
         let teams=compTeams(S,def);if(!c.isLeague)teams=teams.slice(0,def.teams||12);
         teams=teams.filter(t=>t.n!==S.teamName);teams.unshift(team(S.teamName,S.teamOvr,'BR'));c.teams=uniqueTeams(teams);
         c.table={};c.teams.forEach(t=>c.table[t.n]={n:t.n,p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0});
@@ -237,7 +249,7 @@
     const c=(S.comps||[]).find(x=>x.compId===id);if(!c)return null;
     if((c.type==='grupos_mata'||c.type==='pontos_mata')&&wk.stage==='group'){
       c.groupPlayed=(c.groupPlayed||0)+1;
-      if(c.groupPlayed>=c.groupGames){const pos=E.getCompTable(S,id).findIndex(r=>r.me)+1;c.groupPosition=pos;c.phase=1;if(pos>(c.qualify||2)){c.status='eliminado';dropFuture(S,id);return{qualified:false,group:true};}}
+      if(c.groupPlayed>=c.groupGames){const pos=E.getCompTable(S,id).findIndex(r=>r.me)+1;c.groupPosition=pos;c.phase=1;const adv=c.groupAdvance||c.qualify||2;if(pos>adv){c.status='eliminado';dropFuture(S,id);return{qualified:false,group:true};}}
       return null;
     }
     if(wk.stage!=='knockout')return null;
