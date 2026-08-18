@@ -6,6 +6,8 @@ primary_region = "gru"
 
 [env]
   PORT = "4321"
+  # banco SQLite persiste no volume montado em /data (sobrevive a redeploys frios)
+  DB_PATH = "/data/carreira.db"
 
 [http_service]
   internal_port = 4321
@@ -13,6 +15,10 @@ primary_region = "gru"
   auto_stop_machines = true
   auto_start_machines = true
   min_machines_running = 0
+
+[mounts]
+  source = "propath_data"
+  destination = "/data"
 
 [[vm]]
   cpu_kind = "shared"
