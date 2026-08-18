@@ -3,16 +3,31 @@
   if (typeof E === 'undefined') { console.error('comps.js precisa vir após engine.js'); return; }
 
   const STATE_TEAMS = {
-    'bra-paulista':['Corinthians','Palmeiras','São Paulo','Santos','Red Bull Bragantino','Guarani','Ponte Preta','Ituano','Mirassol','Novorizontino','São Bernardo','Água Santa'],
-    'bra-carioca':['Flamengo','Vasco','Fluminense','Botafogo','Madureira','Volta Redonda','Bangu','Boavista','Portuguesa-RJ','Nova Iguaçu','Sampaio Corrêa-RJ','America-RJ'],
+    'bra-paulista':['Corinthians','Palmeiras','São Paulo','Santos','Bragantino','Guarani','Ponte Preta','Mirassol','Novorizontino','São Bernardo','Portuguesa-SP','Botafogo-SP','Noroeste','Velo Clube','Capivariano','Primavera-SP'],
+    'bra-carioca':['Flamengo','Vasco','Fluminense','Botafogo','Madureira','Volta Redonda','Boavista','Portuguesa-RJ','Nova Iguaçu','Sampaio Corrêa-RJ','Maricá','Bangu'],
     'bra-mineiro':['Atlético-MG','Cruzeiro','América-MG','Tombense','Pouso Alegre','Villa Nova','Uberlândia','Aymorés','Democrata-GV','Betim','Athletic','Itabirito'],
-    'bra-gaucho':['Grêmio','Internacional','Juventude','Caxias','Ypiranga','Brasil-RS','São José-RS','São Luiz-RS','Novo Hamburgo','Avenida','Guarany de Bagé','Pelotas']
+    'bra-paranaense':['Athletico-PR','FC Cascavel','Foz do Iguaçu','Londrina','Maringá','São Joseense','Andraus','Azuriz','Cianorte','Coritiba','Galo Maringá','Operário-PR'],
+    'bra-gaucho':['Grêmio','Internacional','Juventude','Caxias','Ypiranga','São José-RS','São Luiz-RS','Novo Hamburgo','Avenida','Guarany de Bagé','Inter-SM','Monsoon']
   };
-  const REGIONAL_TEAMS = {
-    'bra-nordeste':['Bahia','Sport Recife','Ceará','Fortaleza','Vitória','Náutico','CRB','CSA','ABC','Treze','Sampaio Corrêa-MA','Ferroviário','Confiança','Altos','Botafogo-PB','Moto Club','América-RN','ASA','Sousa','Retrô'],
-    'bra-verde':['Paysandu','Remo','Vila Nova','Brasiliense','Cuiabá','Luverdense','Operário-MT','Aparecidense','Gama','Manaus','Águia de Marabá','Tocantinópolis','Rio Branco-ES','Porto Velho','Nacional-AM','Ceilândia','Trem','Manauara','Mixto','Goiatuba','Capital-DF','Real Noroeste','Guaporé','Inhumas'],
-    'bra-sulse':['Athletico-PR','Coritiba','Londrina','Maringá','Ponte Preta','Guarani','Brusque','Figueirense','Chapecoense','Criciúma','Joinville','Avaí']
+  const REGIONAL_GROUPS_2026 = {
+    'bra-nordeste':[
+      ['Vitória','ASA','Sousa','Itabaiana','Fluminense-PI'],
+      ['Juazeirense','CRB','Botafogo-PB','Confiança','Piauí'],
+      ['Ceará','Sport Recife','América-RN','Imperatriz','Ferroviário'],
+      ['Fortaleza','Retrô','ABC','Maranhão','Jacuipense']
+    ],
+    'bra-verde':[
+      ['Nacional-AM','Paysandu','Independência-AC','Guaporé','Trem','GAS-RR'],
+      ['Amazonas','Remo','Galvez','Porto Velho','Águia de Marabá','Monte Roraima'],
+      ['Primavera-MT','Vila Nova','Capital-DF','Rio Branco-ES','Araguaína','Operário-MS'],
+      ['Cuiabá','Atlético-GO','Gama','Porto Vitória','Tocantinópolis','Anápolis']
+    ],
+    'bra-sulse':[
+      ['Sampaio Corrêa-RJ','Novorizontino','Caxias','Tombense','Cianorte','Chapecoense'],
+      ['Volta Redonda','São Bernardo','Juventude','América-MG','Operário-PR','Avaí']
+    ]
   };
+  const REGIONAL_TEAMS = Object.fromEntries(Object.entries(REGIONAL_GROUPS_2026).map(([id,groups])=>[id,groups.flat()]));
   const SOUTH_AMERICAN_TEAMS = [
     ['River Plate','AR',84],['Boca Juniors','AR',84],['Racing','AR',81],['Estudiantes','AR',80],['Rosario Central','AR',78],['Lanús','AR',79],
     ['Nacional','UY',79],['Peñarol','UY',80],['Liverpool-URU','UY',74],['Defensor Sporting','UY',74],
@@ -33,23 +48,32 @@
 
   function team(n,base,code){
     const known=TIERS.flatMap(t=>t.teams).find(t=>t.n===n);
-    return known?{n:known.n,o:known.o,c:known.c,stars:known.stars||[]}:{n,o:base||70,c:code||'BR',stars:[]};
+    const state=(known&&(known.state||known.uf))||(typeof UF_BY_TEAM!=='undefined'&&UF_BY_TEAM[n])||stateOf(n)||null;
+    return known?{n:known.n,o:known.o,c:known.c,state,region:known.region||null,stars:known.stars||[]}:{n,o:base||70,c:code||'BR',state,region:state&&REGION_BY_UF[state],stars:[]};
   }
   function uniqueTeams(list){const seen=new Set();return list.filter(t=>t&&!seen.has(t.n)&&seen.add(t.n));}
   function stateOf(name){
+    const known=TIERS.flatMap(t=>t.teams).find(t=>t.n===name);
+    if(known&&(known.state||known.uf))return known.state||known.uf;
+    if(typeof UF_BY_TEAM!=='undefined'&&UF_BY_TEAM[name])return UF_BY_TEAM[name];
     for(const id in STATE_TEAMS)if(STATE_TEAMS[id].includes(name))return COMP_BY_ID(id).state;
-    if(REGIONAL_TEAMS['bra-nordeste'].includes(name))return'NE';
-    if(REGIONAL_TEAMS['bra-verde'].includes(name))return'NC';
     return null;
   }
-  function stateComp(state){return({SP:'bra-paulista',RJ:'bra-carioca',MG:'bra-mineiro',RS:'bra-gaucho'})[state]||null;}
-  function regionalComp(state){if(state==='NE'||['AL','BA','CE','MA','PB','PE','PI','RN','SE'].includes(state))return'bra-nordeste';if(state==='NC')return'bra-verde';return'bra-sulse';}
+  function stateComp(state){const def=(typeof STATE_CHAMPIONSHIPS_2026!=='undefined'?STATE_CHAMPIONSHIPS_2026:[]).find(c=>c.state===state);return def&&def.id;}
+  function regionalForTeam(name){return Object.keys(REGIONAL_TEAMS).find(id=>REGIONAL_TEAMS[id].includes(name))||null;}
+  function regionalForState(state){if(['AL','BA','CE','MA','PB','PE','PI','RN','SE'].includes(state))return'bra-nordeste';if(['AC','AM','AP','DF','ES','GO','MT','MS','PA','RO','RR','TO'].includes(state))return'bra-verde';if(['MG','PR','RJ','RS','SC','SP'].includes(state))return'bra-sulse';return null;}
+  function statePool(def){
+    const fixed=STATE_TEAMS[def.id]||[];
+    const catalog=TIERS.filter(l=>l.code==='BR').flatMap(l=>l.teams).filter(t=>(t.state||t.uf||stateOf(t.n))===def.state).map(t=>t.n);
+    const mapped=typeof UF_BY_TEAM==='undefined'?[]:Object.keys(UF_BY_TEAM).filter(n=>UF_BY_TEAM[n]===def.state);
+    return uniqueTeams(fixed.concat(catalog,mapped).map(n=>team(n,66))).slice(0,def.teams||12);
+  }
   function hasInitial(id,name){return(INITIAL_2026[id]||[]).includes(name);}
   function qualificationReason(S,id){if(S.compReasons&&S.compReasons[id])return S.compReasons[id];if(S.season===1&&hasInitial(id,S.teamName))return'vaga oficial da temporada inicial de 2026';return'';}
   function isQualified(S,id){return(S.nextComps||[]).includes(id)||(S.season===1&&hasInitial(id,S.teamName));}
   function compTeams(S,def){
     if(def.id===S.leagueId)return E.leagueTeams(S);
-    if(STATE_TEAMS[def.id])return STATE_TEAMS[def.id].map(n=>team(n,68));
+    if(def.level==='estadual')return statePool(def);
     if(REGIONAL_TEAMS[def.id])return REGIONAL_TEAMS[def.id].map(n=>team(n,69));
     if(def.id==='bra-copa'){
       // Copa do Brasil: exatamente 126 clubes (Séries A/B/C + complemento da Série D por classificação)
@@ -67,7 +91,11 @@
   }
   function chooseOpponents(S,def,count){return compTeams(S,def).filter(t=>t.n!==S.teamName).sort(()=>Math.random()-.5).slice(0,count);}
 
-  E.ensureComps=function(S){if(S.comps&&S.comps.length&&S.comps.every(c=>c.type!=='pontos'||(c.table&&Object.keys(c.table).length)))return S.comps;return E.buildComps(S);};
+  const COMP_RULES_VERSION=4;
+  E.ensureComps=function(S){
+    if(S.compRulesVersion===COMP_RULES_VERSION&&S.comps&&S.comps.length&&S.comps.every(c=>!['pontos','pontos_mata'].includes(c.type)||(c.table&&Object.keys(c.table).length)))return S.comps;
+    const comps=E.buildComps(S);S.compRulesVersion=COMP_RULES_VERSION;return comps;
+  };
   E.enrollComps=function(S){
     const lg=LEAGUE_BY_ID(S.leagueId),out=[];if(!lg)return out;
     out.push({compId:lg.id,isLeague:true,reason:'divisão atual do clube'});
@@ -76,9 +104,10 @@
       return out;
     }
     if(lg.id==='bra-varzea')return out;
-    const st=stateOf(S.teamName),est=stateComp(st),reg=regionalComp(st);
+    const st=stateOf(S.teamName),est=stateComp(st),reg=regionalForTeam(S.teamName)||['bra-nordeste','bra-verde','bra-sulse'].find(id=>isQualified(S,id));
     if(est)out.push({compId:est,reason:'clube filiado à federação estadual'});
-    if(!(reg==='bra-nordeste'&&(isQualified(S,'sam-lib')||isQualified(S,'sam-sula'))))out.push({compId:reg,reason:'classificação regional/estadual'});
+    const continental=isQualified(S,'sam-lib')||isQualified(S,'sam-sula');
+    if(reg&&!continental&&(S.season===1||isQualified(S,reg)))out.push({compId:reg,reason:S.season===1?'classificação oficial para a edição de 2026':'vaga conquistada no estadual anterior'});
     if(lg.id==='bra-sa'||isQualified(S,'bra-copa')||S.season===1)out.push({compId:'bra-copa',reason:lg.id==='bra-sa'?'Série A: entrada na 5ª fase':'vaga estadual ou nacional'});
     ['bra-super','sam-lib','sam-sula','sam-recopa','world-inter','world-club'].forEach(id=>{if(isQualified(S,id))out.push({compId:id,reason:qualificationReason(S,id)});});
     return out;
@@ -92,11 +121,32 @@
         let teams=compTeams(S,def);if(!c.isLeague)teams=teams.slice(0,def.teams||12);
         teams=teams.filter(t=>t.n!==S.teamName);teams.unshift(team(S.teamName,S.teamOvr,'BR'));c.teams=uniqueTeams(teams);
         c.table={};c.teams.forEach(t=>c.table[t.n]={n:t.n,p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0});
+      }else if(c.type==='pontos_mata'){
+        let teams=compTeams(S,def).filter(t=>t.n!==S.teamName);teams.unshift(team(S.teamName,S.teamOvr,'BR'));
+        c.teams=uniqueTeams(teams);const eligibleRounds=E._roundPairs(c.teams).filter(r=>r.some(p=>p[0].n===S.teamName||p[1].n===S.teamName));
+        c.groupGames=Math.min(def.groupGames||8,eligibleRounds.length);c.qualify=Math.min(def.qualify||8,c.teams.length);
+        c.maxPhase=def.knockoutPhases||3;c.phaseLegs=def.phaseLegs||[1,1,1];c.rounds=eligibleRounds.slice(0,c.groupGames);
+        c.table={};c.teams.forEach(t=>c.table[t.n]={n:t.n,p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0});c.opponents=chooseOpponents(S,def,c.maxPhase);
       }else if(c.type==='grupos_mata'){
         c.groupGames=def.groupGames||6;c.maxPhase=def.knockoutPhases||4;
-        const groupOpponents=c.groupGames===6?3:c.groupGames;
-        c.teams=[team(S.teamName,S.teamOvr,'BR')].concat(chooseOpponents(S,def,groupOpponents));
-        c.table={};c.teams.forEach(t=>c.table[t.n]={n:t.n,p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0});c.opponents=chooseOpponents(S,def,Math.max(c.maxPhase,4));
+        c.phaseLegs=def.phaseLegs||null;
+        const official=REGIONAL_GROUPS_2026[def.id];
+        if(official){
+          let groupIndex=official.findIndex(g=>g.includes(S.teamName));
+          if(groupIndex<0){const st=stateOf(S.teamName);groupIndex=def.id==='bra-verde'&&['DF','ES','GO','MT','MS','TO'].includes(st)?2:0;}
+          let own=official[groupIndex]||[];if(!own.includes(S.teamName))own=own.slice(0,Math.max(0,own.length-1)).concat(S.teamName);
+          c.groupName=String.fromCharCode(65+groupIndex);
+          c.teams=own.map(n=>team(n,69));
+          if(def.id==='bra-nordeste'){const pair=groupIndex%2===0?groupIndex+1:groupIndex-1;c.crossOpponents=(official[pair]||[]).map(n=>team(n,69));}
+          else if(def.id==='bra-sulse')c.crossOpponents=(official[groupIndex===0?1:0]||[]).map(n=>team(n,69));
+          c.groupGames=c.crossOpponents?c.crossOpponents.length:c.teams.length-1;
+          c.opponents=official.flat().filter(n=>n!==S.teamName).map(n=>team(n,69)).slice(0,Math.max(c.maxPhase,4));
+        }else{
+          const groupOpponents=c.groupGames===6?3:c.groupGames;
+          c.teams=[team(S.teamName,S.teamOvr,'BR')].concat(chooseOpponents(S,def,groupOpponents));
+          c.opponents=chooseOpponents(S,def,Math.max(c.maxPhase,4));
+        }
+        c.table={};c.teams.forEach(t=>c.table[t.n]={n:t.n,p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0});
       }else{
         c.maxPhase=def.phases||1;c.legs=def.legs||1;
         c.startPhase=def.id==='bra-copa'?(LEAGUE_BY_ID(S.leagueId).id==='bra-sa'?5:LEAGUE_BY_ID(S.leagueId).id==='bra-sb'?2:1):1;
@@ -106,46 +156,88 @@
     });return S.comps;
   };
 
-  function leagueRounds(c){let rounds=E._roundPairs(c.teams);if(c.isLeague&&c.compId==='bra-sc')rounds=rounds.slice(0,c.teams.length-1);if(!c.isLeague)rounds=rounds.slice(0,c.teams.length-1);return rounds;}
+  function leagueRounds(c){if(c.rounds)return c.rounds;let rounds=E._roundPairs(c.teams);if(c.isLeague&&c.compId==='bra-sc')rounds=rounds.slice(0,c.teams.length-1);if(!c.isLeague)rounds=rounds.slice(0,c.teams.length-1);return rounds;}
   function matchFromPair(S,c,pair,round,extra){const home=pair[0].n===S.teamName,rival=home?pair[1]:pair[0];return Object.assign({type:'match',comp:c.compId,round,opp:{n:rival.n,o:rival.o},home},extra||{});}
   function knockoutQueue(S,c){
     const def=COMP_BY_ID(c.compId)||{},out=[];
     for(let phase=(c.startPhase||1);phase<=c.maxPhase;phase++){
       const opp=(c.opponents||[])[phase-1]||{n:'Adversário',o:72};let legs=c.legs||1;
-      if(c.compId==='bra-copa')legs=(phase>=5&&phase<c.maxPhase)?2:1;
+      if(c.phaseLegs&&c.phaseLegs[phase-(c.startPhase||1)]!=null)legs=c.phaseLegs[phase-(c.startPhase||1)];
+      else if(c.compId==='bra-copa')legs=(phase>=5&&phase<c.maxPhase)?2:1;
       else if(c.type==='mata'&&def.twoLeggedUntilFinal)legs=phase===c.maxPhase?1:2;
-      if(c.type==='grupos_mata'&&c.level==='regional')legs=phase===1?1:2;
+      else if(c.type==='grupos_mata'&&c.level==='regional')legs=phase===1?1:2;
       else if(c.type==='grupos_mata'&&c.compId!=='world-club')legs=phase===c.maxPhase?1:2;
       for(let leg=1;leg<=legs;leg++)out.push({type:'match',comp:c.compId,stage:'knockout',phase,round:phase,leg,legs,opp:{n:opp.n,o:opp.o},home:legs===1||leg===2});
     }return out;
   }
   E.genCompCalendar=function(S){
     if(!S.comps||!S.comps.length)return E.genCalendar(S);
-    const queues=S.comps.map(c=>{
-      if(c.type==='pontos')return leagueRounds(c).map((rp,i)=>{const p=rp.find(x=>x[0].n===S.teamName||x[1].n===S.teamName);return p?matchFromPair(S,c,p,i+1):null;}).filter(Boolean);
-      if(c.type==='grupos_mata'){
-        const group=c.teams.slice(1).map((opp,i)=>({type:'match',comp:c.compId,stage:'group',round:i+1,opp:{n:opp.n,o:opp.o},home:i%2===0}));
-        if(c.groupGames>c.teams.length-1)c.teams.slice(1).forEach((opp,i)=>group.push({type:'match',comp:c.compId,stage:'group',round:c.teams.length+i,opp:{n:opp.n,o:opp.o},home:i%2!==0}));
-        return group.slice(0,c.groupGames).concat(knockoutQueue(S,c));
-      }return knockoutQueue(S,c);
+    const entries=S.comps.map(c=>{let q;
+      if(c.type==='pontos')q=leagueRounds(c).map((rp,i)=>{const p=rp.find(x=>x[0].n===S.teamName||x[1].n===S.teamName);return p?matchFromPair(S,c,p,i+1):null;}).filter(Boolean);
+      if(c.type==='pontos_mata'){
+        const group=leagueRounds(c).map((rp,i)=>{const p=rp.find(x=>x[0].n===S.teamName||x[1].n===S.teamName);return p?matchFromPair(S,c,p,i+1,{stage:'group'}):null;}).filter(Boolean);
+        q=group.concat(knockoutQueue(S,c));
+      }else if(c.type==='grupos_mata'){
+        const rivals=c.crossOpponents||c.teams.filter(t=>t.n!==S.teamName);
+        const group=rivals.map((opp,i)=>({type:'match',comp:c.compId,stage:'group',round:i+1,opp:{n:opp.n,o:opp.o},home:i%2===0}));
+        if(!c.crossOpponents&&c.groupGames>rivals.length)rivals.forEach((opp,i)=>group.push({type:'match',comp:c.compId,stage:'group',round:rivals.length+i+1,opp:{n:opp.n,o:opp.o},home:i%2!==0}));
+        q=group.slice(0,c.groupGames).concat(knockoutQueue(S,c));
+      }else if(!q)q=knockoutQueue(S,c);
+      return {c,q};
     });
-    const cal=[];let active=true;while(active){active=false;for(const q of queues)if(q.length){cal.push(q.shift());active=true;}}
+    const cal=[],league=entries.find(x=>x.c.isLeague),state=entries.find(x=>x.c.level==='estadual');
+    const take=x=>{if(x&&x.q.length)cal.push(x.q.shift());};
+    if(state){
+      for(let i=0;i<3&&state.q.length;i++)take(state);
+      if(league&&league.c.compId==='bra-sa')while(state.q.length){take(league);take(state);}
+      else while(state.q.length)take(state);
+    }
+    let active=true;while(active){active=false;for(const entry of entries){if(entry===state)continue;if(entry.q.length){take(entry);active=true;}}}
     const out=[];cal.forEach((wk,i)=>{out.push(wk);if((i+1)%3===0&&i<cal.length-1)out.push({type:'train'});});return out;
   };
 
-  function applyTable(table,a,b,gf,ga){const A=table[a],B=table[b];if(!A||!B)return;A.p++;B.p++;A.gf+=gf;A.ga+=ga;B.gf+=ga;B.ga+=gf;if(gf>ga){A.w++;B.l++;A.pts+=3;}else if(gf<ga){B.w++;A.l++;B.pts+=3;}else{A.d++;B.d++;A.pts++;B.pts++;}}
+  function applyStanding(row,gf,ga){if(!row)return;row.p++;row.gf+=gf;row.ga+=ga;if(gf>ga){row.w++;row.pts+=3;}else if(gf<ga)row.l++;else{row.d++;row.pts++;}}
+  function applyTable(table,a,b,gf,ga){const A=table[a],B=table[b];applyStanding(A,gf,ga);applyStanding(B,ga,gf);}
+  function rememberResult(c,round,a,b,gf,ga){c.roundResults=c.roundResults||{};(c.roundResults[round]||(c.roundResults[round]=[])).push({home:a,away:b,gf,ga});}
+  function simulatePointsRound(S,c,wk,a,b,gf,ga){
+    c.roundResults=c.roundResults||{};if(c.roundResults[wk.round])return;
+    const pairs=(c.rounds||leagueRounds(c))[wk.round-1]||[];
+    for(const pair of pairs){const A=pair[0],B=pair[1];let r;
+      if((A.n===a&&B.n===b)||(A.n===b&&B.n===a)){const direct=A.n===a;r={gf:direct?gf:ga,ga:direct?ga:gf};}
+      else r=E.simMatch({teamOvr:A.o,ovr:A.o,pos:'MEI',form:3,skills:[]},B,false);
+      applyTable(c.table,A.n,B.n,r.gf,r.ga);rememberResult(c,wk.round,A.n,B.n,r.gf,r.ga);
+    }
+  }
+  function simulateCrossRound(S,c,wk,a,b,gf,ga){
+    c.roundResults=c.roundResults||{};if(c.roundResults[wk.round])return;
+    const rivals=c.crossOpponents||[],myIndex=Math.max(0,c.teams.findIndex(t=>t.n===S.teamName));
+    c.teams.forEach((A,i)=>{const B=rivals[(i-myIndex+wk.round-1+rivals.length)%rivals.length];if(!B)return;let r;
+      if(A.n===a&&B.n===b)r={gf,ga};else r=E.simMatch({teamOvr:A.o,ovr:A.o,pos:'MEI',form:3,skills:[]},B,false);
+      applyTable(c.table,A.n,B.n,r.gf,r.ga);rememberResult(c,wk.round,A.n,B.n,r.gf,r.ga);
+    });
+  }
   E.applyCompResult=function(S,id,a,b,gf,ga,wk){
-    const c=(S.comps||[]).find(x=>x.compId===id);if(!c||!c.table||!(c.type==='pontos'||(c.type==='grupos_mata'&&wk&&wk.stage==='group')))return;
-    applyTable(c.table,a,b,gf,ga);
-    if(c.type==='grupos_mata'){const rest=c.teams.filter(t=>t.n!==a&&t.n!==b).slice().sort(()=>Math.random()-.5);for(let i=0;i+1<rest.length;i+=2){const A=rest[i],B=rest[i+1],r=E.simMatch({teamOvr:A.o,ovr:A.o,pos:'MEI',form:3,skills:[]},B,false);applyTable(c.table,A.n,B.n,r.gf,r.ga);}}
+    const c=(S.comps||[]).find(x=>x.compId===id);if(!c||!c.table||!(c.type==='pontos'||c.type==='pontos_mata'||(c.type==='grupos_mata'&&wk&&wk.stage==='group')))return;
+    if(c.type==='pontos_mata')simulatePointsRound(S,c,wk,a,b,gf,ga);
+    else if(c.type==='grupos_mata'&&c.crossOpponents)simulateCrossRound(S,c,wk,a,b,gf,ga);
+    else {applyTable(c.table,a,b,gf,ga);rememberResult(c,wk.round,a,b,gf,ga);
+      if(c.type==='grupos_mata'){const rest=c.teams.filter(t=>t.n!==a&&t.n!==b).slice().sort(()=>Math.random()-.5);for(let i=0;i+1<rest.length;i+=2){const A=rest[i],B=rest[i+1],r=E.simMatch({teamOvr:A.o,ovr:A.o,pos:'MEI',form:3,skills:[]},B,false);applyTable(c.table,A.n,B.n,r.gf,r.ga);rememberResult(c,wk.round,A.n,B.n,r.gf,r.ga);}}
+    }
   };
   E.getCompTable=function(S,id){const c=(S.comps||[]).find(x=>x.compId===id);if(!c||!c.table)return[];return Object.values(c.table).map(r=>({n:r.n,p:r.p,w:r.w,d:r.d,l:r.l,gf:r.gf,ga:r.ga,sg:r.gf-r.ga,pts:r.pts,me:r.n===S.teamName})).sort((a,b)=>b.pts-a.pts||b.w-a.w||b.sg-a.sg||b.gf-a.gf||a.n.localeCompare(b.n));};
+  E.getCompRoundFixtures=function(S,id,round){
+    const c=(S.comps||[]).find(x=>x.compId===id);if(!c)return[];
+    if(c.roundResults&&c.roundResults[round])return c.roundResults[round].map(x=>Object.assign({played:true},x));
+    if(c.crossOpponents){const rivals=c.crossOpponents,myIndex=Math.max(0,c.teams.findIndex(t=>t.n===S.teamName));return c.teams.map((A,i)=>({home:A.n,away:rivals[(i-myIndex+round-1+rivals.length)%rivals.length].n,played:false}));}
+    const rounds=c.rounds||((c.type==='pontos'||c.type==='pontos_mata')?leagueRounds(c):E._roundPairs(c.teams).slice(0,c.groupGames||99));
+    return ((rounds&&rounds[round-1])||[]).map(pair=>({home:pair[0].n,away:pair[1].n,played:false}));
+  };
   function dropFuture(S,id){S.calendar=S.calendar.filter((wk,i)=>i<=S.calIdx||wk.comp!==id);}
   E.advanceCompPhase=function(S,id,wk,result){
     const c=(S.comps||[]).find(x=>x.compId===id);if(!c)return null;
-    if(c.type==='grupos_mata'&&wk.stage==='group'){
+    if((c.type==='grupos_mata'||c.type==='pontos_mata')&&wk.stage==='group'){
       c.groupPlayed=(c.groupPlayed||0)+1;
-      if(c.groupPlayed>=c.groupGames){const pos=E.getCompTable(S,id).findIndex(r=>r.me)+1;c.groupPosition=pos;c.phase=1;if(pos>2){c.status='eliminado';dropFuture(S,id);return{qualified:false,group:true};}}
+      if(c.groupPlayed>=c.groupGames){const pos=E.getCompTable(S,id).findIndex(r=>r.me)+1;c.groupPosition=pos;c.phase=1;if(pos>(c.qualify||2)){c.status='eliminado';dropFuture(S,id);return{qualified:false,group:true};}}
       return null;
     }
     if(wk.stage!=='knockout')return null;
@@ -156,7 +248,7 @@
 
   E.finishCompetitions=function(S,leaguePos){
     const reasons={},next=new Set(),get=id=>(S.comps||[]).find(c=>c.compId===id);const add=(id,reason)=>{next.add(id);reasons[id]=reason;};
-    (S.comps||[]).forEach(c=>{if(c.type==='pontos'&&!c.isLeague){const pos=E.getCompTable(S,c.compId).findIndex(r=>r.me)+1;c.finalPosition=pos;if(pos===1)c.status='campeao';
+    (S.comps||[]).forEach(c=>{if(['pontos','pontos_mata'].includes(c.type)&&!c.isLeague){const pos=E.getCompTable(S,c.compId).findIndex(r=>r.me)+1;c.finalPosition=pos;if(c.type==='pontos'&&pos===1)c.status='campeao';
       // histórico: campeão/vice/posição/pontos por temporada/comp
       const tb=E.getCompTable(S,c.compId); const me=tb.find(r=>r.me); const champ=tb[0]?tb[0].n:null; const vice=tb[1]?tb[1].n:null;
       S.history=S.history||[]; S.history.push({season:S.season,comp:c.compId,name:c.name,champion:champ,runnerUp:vice,position:pos,pts:me?me.pts:0,isLeague:false});
@@ -179,7 +271,8 @@
         else if(brChamp) add('bra-super','campeão brasileiro');
         else add('bra-super','campeão da Copa do Brasil');
       }
-      for(const id of ['bra-paulista','bra-carioca','bra-mineiro','bra-gaucho']){const c=get(id);if(c&&c.finalPosition&&c.finalPosition<=4)add('bra-copa',c.finalPosition+'º lugar no campeonato estadual');}
+      const estadual=(S.comps||[]).find(c=>c.level==='estadual');
+      if(estadual&&estadual.finalPosition&&estadual.finalPosition<=4){add('bra-copa',estadual.finalPosition+'º lugar no campeonato estadual');const regional=regionalForState(stateOf(S.teamName));if(regional)add(regional,estadual.finalPosition+'º lugar no campeonato estadual');}
       for(const id of ['bra-nordeste','bra-verde','bra-sulse','bra-sc','bra-sd']){const c=get(id);if(c&&c.status==='campeao')add('bra-copa','campeão de '+c.name);}
       if(lib){S.worldRankingPoints=(S.worldRankingPoints||0)+(lib.groupPosition?Math.max(0,5-lib.groupPosition):0)+(lib.phase||0)*2;}
       const nextSeason=S.season+1;
@@ -189,5 +282,5 @@
     if(next.has('sam-lib'))next.delete('sam-sula');
     S.nextComps=Array.from(next);S.compReasons=reasons;S.qualificationClub=S.teamName;
   };
-  E.COMP_LEVEL=COMP_LEVEL;E.COMP_BY_ID=COMP_BY_ID;
+  E.COMP_LEVEL=COMP_LEVEL;E.COMP_BY_ID=COMP_BY_ID;E.COMP_RULES_VERSION=COMP_RULES_VERSION;
 })();

@@ -197,6 +197,11 @@ E.normalizeSave = function(S){
   if (!S.table) S.table = {p:0,w:0,d:0,l:0,gf:0,ga:0};
   if (!S.calendar) S.calendar = E.genCalendar(S);
   if (typeof S.calIdx !== 'number') S.calIdx = 0;
+  // Migra calendários ainda não iniciados para as regras estaduais/regionais vigentes.
+  // Temporadas com partidas já disputadas são preservadas e migram na virada do ano.
+  if (typeof E.ensureComps==='function' && S.compRulesVersion!==E.COMP_RULES_VERSION && S.calIdx===0 && !(S.seasonMatches||[]).length){
+    S.comps=null;E.ensureComps(S);S.calendar=E.genCompCalendar(S);
+  }
   if (!S.trainPlan) S.trainPlan = {k:'tecnico', n:'Técnica Obsessiva'};
   // Liga: garante tabela + sincroniza com os jogos já disputados (corrige saves antigos desbalanceados)
   E.recomputeLeague(S);

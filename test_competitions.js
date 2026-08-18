@@ -29,6 +29,24 @@ check('Série A entra na 5ª fase da Copa do Brasil',copa.startPhase===5&&flamen
 E.finishCompetitions(flamengo,6);
 check('vaga da Libertadores prevalece sobre Sul-Americana',flamengo.nextComps.includes('sam-lib')&&!flamengo.nextComps.includes('sam-sula'));
 
+const athletico=E.createPlayer({name:'Teste PR',nation:'Brasil',pos:'ATA',age:20,arch:'branco',leagueId:'bra-sa'});
+athletico.teamName='Athletico-PR';athletico.teamOvr=79;athletico.comps=null;athletico.compRulesVersion=0;E.ensureComps(athletico);athletico.calendar=E.genCompCalendar(athletico);
+const athIds=athletico.comps.map(c=>c.compId),paranaense=athletico.comps.find(c=>c.compId==='bra-paranaense');
+check('Athletico disputa apenas o estadual do Paraná',athIds.includes('bra-paranaense')&&!athIds.includes('bra-paulista')&&!athIds.includes('bra-carioca'));
+check('Athletico não entra indevidamente na Copa Sul-Sudeste 2026',!athIds.includes('bra-sulse'));
+check('adversários do Paranaense pertencem ao Paraná',paranaense.teams.every(t=>t.state==='PR'));
+const prGame=athletico.calendar.find(w=>w.comp==='bra-paranaense'&&w.stage==='group');
+E.applyCompResult(athletico,'bra-paranaense','Athletico-PR',prGame.opp.n,2,1,prGame);
+check('rodada estadual simula e registra todos os jogos',Object.values(paranaense.table).every(r=>r.p===1)&&paranaense.roundResults[1].length===6);
+
+const volta=E.createPlayer({name:'Teste Regional',nation:'Brasil',pos:'ATA',age:20,arch:'branco',leagueId:'bra-sc'});
+volta.teamName='Volta Redonda';volta.teamOvr=67;volta.comps=null;volta.compRulesVersion=0;E.ensureComps(volta);volta.calendar=E.genCompCalendar(volta);
+const sulse=volta.comps.find(c=>c.compId==='bra-sulse');
+check('Sul-Sudeste usa os doze participantes oficiais de 2026',!!sulse&&sulse.teams.length===6&&sulse.crossOpponents.length===6);
+check('Sul-Sudeste agenda seis jogos contra a outra chave',volta.calendar.filter(w=>w.comp==='bra-sulse'&&w.stage==='group').length===6);
+check('regional começa somente após o fim do estadual',volta.calendar.findIndex(w=>w.comp==='bra-sulse')>volta.calendar.map(w=>w.comp).lastIndexOf('bra-carioca'));
+check('Série C começa somente após o fim do estadual',volta.calendar.findIndex(w=>w.comp==='bra-sc')>volta.calendar.map(w=>w.comp).lastIndexOf('bra-carioca'));
+
 const b=E.createPlayer({name:'Acesso',nation:'Brasil',pos:'ATA',age:20,arch:'branco',leagueId:'bra-sb'});
 const original=b.teamName;
 const target=T.find(x=>x.id==='bra-sa');

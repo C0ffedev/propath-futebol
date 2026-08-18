@@ -156,17 +156,30 @@ UI.temporada = function(){
     const t = (compShort?'🏆 ':'')+`vs ${c.opp.n}`+(c.home?' (CASA)':' (FORA)')+(compShort?` [${compShort}]`:'');
     const sp = (m&&m.specials&&m.specials.length)?` · 🌟${m.specials.join(', ')}`:'';
     const r = m?`${m.gf}x${m.ga} (${m.res}) ⭐${m.rating}${m.goals?' G'+m.goals:''}${m.assists?' A'+m.assists:''}${sp}`:'';
-    const round = compShort ? compShort : ('R'+(c.round||(done?'?':'')));
+    const stage = c.stage==='knockout' ? `F${c.phase}${c.legs>1?' · '+c.leg+'/'+c.legs:''}` : 'R'+(c.round||(done?'?':''));
+    const round = compShort ? `${compShort} · ${stage}` : stage;
     rows.push(`<tr class="${isCur?'pos':''}"><td>${done?'✓':(isCur?'▶':'')}</td><td class="rd">${round}</td><td style="text-align:left">${UI.esc(t)}</td><td>${r}</td></tr>`);
   });
   let tfBanner;
   if (S.pendingTransfer) tfBanner = `<div class="tf-banner open">🔔 JANELA DE TRANSFERÊNCIAS ABERTA — decida seu futuro na aba Mercado/Carreira.</div>`;
   else if (S.calIdx > midIdx) tfBanner = `<div class="tf-banner done">A janela de transferências da temporada ${S.season} já ocorreu (metade da temporada).</div>`;
   else tfBanner = `<div class="tf-banner">🔔 Próxima janela de transferências: <b>Semana ${midWeek}</b> (metade da temporada ${S.season}).</div>`;
+  const compTables=(S.comps||[]).filter(c=>c.table).map(c=>{
+    const table=c.isLeague?E.getLeagueTable(S):E.getCompTable(S,c.compId);
+    const upcoming=(S.calendar||[]).slice(S.calIdx).find(w=>w.type==='match'&&(w.comp||S.leagueId)===c.compId&&w.stage!=='knockout');
+    const round=upcoming?upcoming.round:Math.max(1,Math.min(c.groupGames||table.length-1,(c.groupPlayed||0)+1));
+    const fixtures=typeof E.getCompRoundFixtures==='function'?E.getCompRoundFixtures(S,c.compId,round):[];
+    const fixtureRows=fixtures.map(f=>`<tr class="${f.home===S.teamName||f.away===S.teamName?'me':''}"><td class="l">${UI.esc(f.home)}</td><td>×</td><td class="l">${UI.esc(f.away)}</td><td>${f.played?`${f.gf} × ${f.ga}`:'-'}</td></tr>`).join('');
+    const standingRows=table.map((r,i)=>`<tr class="${r.me?'me':''}"><td>${i+1}</td><td class="l">${UI.esc(r.n)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.sg>0?'+'+r.sg:r.sg}</td><td><b>${r.pts}</b></td></tr>`).join('');
+    return `<details class="season-comp" ${c.compId===((S.calendar[S.calIdx]||{}).comp||S.leagueId)?'open':''}><summary><span>${UI.esc(c.name)}</span><span class="pill">${UI.esc(c.short||'')}</span></summary>
+      <div class="season-comp-grid"><div><h3>Jogos da rodada ${round}</h3><table class="tbl fixture-table"><tr><th class="l">Mandante</th><th></th><th class="l">Visitante</th><th>Placar</th></tr>${fixtureRows||'<tr><td colspan="4">Rodada ainda não definida</td></tr>'}</table></div>
+      <div><h3>Classificação</h3><table class="tbl standings-table"><tr><th>#</th><th class="l">Clube</th><th>J</th><th>V</th><th>E</th><th>D</th><th>SG</th><th>Pts</th></tr>${standingRows}</table></div></div></details>`;
+  }).join('');
   return `<div class="panel"><h2><span class="ic">📅</span> Calendário de Jogos — Temporada ${S.season}</h2>
     ${tfBanner}
     <table class="tbl"><tr><th></th><th class="rd">Rod</th><th class="l">Jogo</th><th>Resultado</th></tr>${rows.join('')}</table>
-    <div class="muted" style="margin-top:8px">CASA/FORA definem mando; COPA = mata-mata extra. A tabela da liga (aba Liga) reflete estes resultados + os rivais simulados.</div>
+    <div class="muted" style="margin-top:8px">CASA/FORA definem mando. Cada rodada simula também os demais clubes e atualiza a classificação da competição.</div>
+    <div class="season-tables"><h2>Tabelas e rodadas</h2>${compTables}</div>
     <div class="actions"><button class="big-btn purple" id="btn-plan">⚙ Definir Plano de Treino</button>
       <button class="btn" id="btn-back">← Voltar ao Painel</button></div></div>`;
 };
@@ -394,11 +407,11 @@ UI.competicoes = function(){
     comps.forEach(c=>{
       const def = COMP_BY_ID(c.compId) || { name:c.compId, short:c.short };
       let body='';
-      if ((c.type==='pontos' || c.type==='grupos_mata') && c.table){
+      if ((c.type==='pontos' || c.type==='pontos_mata' || c.type==='grupos_mata') && c.table){
         const rows = c.isLeague ? E.getLeagueTable(S) : E.getCompTable(S, c.compId);
         body = `<table class="tbl"><tr><th>#</th><th class="l">Clube</th><th>J</th><th>V</th><th>E</th><th>D</th><th>GP</th><th>GC</th><th>SG</th><th>Pts</th></tr>` +
           rows.map((r,i)=>`<tr class="${r.me?'me':''}"><td>${i+1}</td><td class="l">${UI.esc(r.n)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gf}</td><td>${r.ga}</td><td>${r.sg>0?'+'+r.sg:r.sg}</td><td><b>${r.pts}</b></td></tr>`).join('') + '</table>';
-        if(c.type==='grupos_mata'){
+        if(c.type==='grupos_mata'||c.type==='pontos_mata'){
           const st=c.status==='campeao'?'🏆 CAMPEÃO':c.status==='eliminado'?'Eliminado':c.phase?`Mata-mata · fase ${c.phase}/${c.maxPhase}`:`Fase de grupos · ${c.groupPlayed||0}/${c.groupGames}`;
           body=`<div class="comp-cup-status">${st}${c.lastDecision?' · '+UI.esc(c.lastDecision):''}</div>`+body;
         }

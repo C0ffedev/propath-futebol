@@ -471,6 +471,19 @@ input:focus,select:focus{outline:none;border-color:var(--accent)}
 .comp-rule{margin:6px 0 10px;line-height:1.45}
 @media(max-width:760px){.comp-card .tbl{min-width:620px}.comp-card{padding:10px}}
 
+/* ===== TEMPORADA: jogos da rodada + classificação ===== */
+.season-tables{margin-top:22px;border-top:1px solid var(--line);padding-top:16px}
+.season-comp{border-bottom:1px solid var(--line);padding:0}
+.season-comp>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:46px;padding:8px 4px;cursor:pointer;font-weight:800;list-style:none}
+.season-comp>summary::-webkit-details-marker{display:none}
+.season-comp>summary:before{content:'›';color:var(--accent);font-size:22px;transition:transform .15s}
+.season-comp[open]>summary:before{transform:rotate(90deg)}
+.season-comp>summary .pill{margin-left:auto;white-space:nowrap}
+.season-comp-grid{display:grid;grid-template-columns:minmax(300px,.8fr) minmax(480px,1.2fr);gap:18px;padding:4px 0 18px;align-items:start}
+.season-comp-grid h3{font-size:12px;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.fixture-table,.standings-table{width:100%}
+@media(max-width:900px){.season-comp-grid{grid-template-columns:1fr}.season-comp-grid>div{overflow-x:auto}.standings-table{min-width:560px}}
+
 /* ===== LANDING (página inicial pública) ===== */
 #landing{position:fixed;inset:0;overflow-y:auto;z-index:50;background:var(--bg);padding:34px 16px 60px}
 .land-bg{position:fixed;inset:0;z-index:-1;background:

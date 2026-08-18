@@ -375,16 +375,34 @@ const SPECIAL_GOALS = [
 // TIPOS:   pontos (liga), mata (copa/playoff), decisao (supercopa/recopa)
 // ============================================================================
 const COMP_LEVEL = { estadual:0, regional:1, nacional:2, continental:3, mundial:4 };
+const STATE_CHAMPIONSHIPS_2026 = [
+  ['AC','acreano','Campeonato Acreano','ACREANO',8], ['AL','alagoano','Campeonato Alagoano','ALAGOANO',7],
+  ['AP','amapaense','Campeonato Amapaense','AMAPAENSE',7], ['AM','amazonense','Campeonato Amazonense','BAREZÃO',8],
+  ['BA','baiano','Campeonato Baiano','BAIANO',9], ['CE','cearense','Campeonato Cearense','CEARENSE',7],
+  ['DF','candango','Campeonato Candango','CANDANGO',9], ['ES','capixaba','Campeonato Capixaba','CAPIXABA',9],
+  ['GO','goiano','Campeonato Goiano','GOIANO',8], ['MA','maranhense','Campeonato Maranhense','MARANHENSE',7],
+  ['MT','matogrossense','Campeonato Mato-Grossense','MATO-GROSSENSE',9], ['MS','sulmatogrossense','Campeonato Sul-Mato-Grossense','SUL-MATO',8],
+  ['MG','mineiro','Campeonato Mineiro','MINEIRO',8], ['PA','paraense','Campeonato Paraense','PARAZÃO',8],
+  ['PB','paraibano','Campeonato Paraibano','PARAIBANO',9], ['PR','paranaense','Campeonato Paranaense','PARANAENSE',6],
+  ['PE','pernambucano','Campeonato Pernambucano','PERNAMBUCANO',7], ['PI','piauiense','Campeonato Piauiense','PIAUIENSE',8],
+  ['RJ','carioca','Campeonato Carioca','CARIOCA',6], ['RN','potiguar','Campeonato Potiguar','POTIGUAR',7],
+  ['RS','gaucho','Campeonato Gaúcho','GAÚCHO',6], ['RO','rondoniense','Campeonato Rondoniense','RONDONIENSE',8],
+  ['RR','roraimense','Campeonato Roraimense','RORAIMENSE',8], ['SC','catarinense','Campeonato Catarinense','CATARINENSE',8],
+  ['SP','paulista','Campeonato Paulista','PAULISTA',8], ['SE','sergipano','Campeonato Sergipano','SERGIPANO',9],
+  ['TO','tocantinense','Campeonato Tocantinense','TOCANTINENSE',7]
+].map(([state,slug,name,short,groupGames])=>({
+  id:'bra-'+slug, name, short, level:'estadual', type:'pontos_mata', scope:'BR', state,
+  teams:state==='SP'?16:12, groupGames, qualify:8, knockoutPhases:3,
+  phaseLegs:state==='SP'?[1,1,1]:state==='RJ'?[1,2,1]:state==='PR'?[2,2,2]:state==='RS'?[1,2,2]:[1,1,1],
+  desc:'Somente clubes filiados à federação de '+state+'; fase classificatória e mata-mata dentro do limite de datas de 2026.'
+}));
 const COMPETITIONS = [
   // ---- ESTADUAIS (BR) ----
-  { id:'bra-paulista', name:'Campeonato Paulista', short:'PAULISTA', level:'estadual', type:'pontos', scope:'BR', state:'SP', teams:12, desc:'Fase classificatória estadual; a campanha também pode abrir vagas nacionais.' },
-  { id:'bra-carioca',  name:'Campeonato Carioca',  short:'CARIOCA',  level:'estadual', type:'pontos', scope:'BR', state:'RJ', teams:12, desc:'Fase classificatória estadual; a campanha também pode abrir vagas nacionais.' },
-  { id:'bra-mineiro',  name:'Campeonato Mineiro',  short:'MINEIRO',  level:'estadual', type:'pontos', scope:'BR', state:'MG', teams:12, desc:'Fase classificatória estadual; a campanha também pode abrir vagas nacionais.' },
-  { id:'bra-gaucho',   name:'Campeonato Gaúcho',   short:'GAÚCHO',   level:'estadual', type:'pontos', scope:'BR', state:'RS', teams:12, desc:'Fase classificatória estadual; a campanha também pode abrir vagas nacionais.' },
+  ...STATE_CHAMPIONSHIPS_2026,
   // ---- REGIONAIS (BR) ----
-  { id:'bra-nordeste', name:'Copa do Nordeste', short:'NORDESTE', level:'regional', type:'grupos_mata', scope:'BR', region:'NE', teams:20, groupGames:5, knockoutPhases:3, desc:'20 clubes; vagas estaduais/RNF, grupos e mata-mata. Campeão entra na 3ª fase da Copa do Brasil seguinte.' },
-  { id:'bra-verde', name:'Copa Verde', short:'VERDE', level:'regional', type:'grupos_mata', scope:'BR', region:'NC', teams:24, groupGames:5, knockoutPhases:3, desc:'Copa Norte e Copa Centro-Oeste; os campeões entram na 3ª fase da Copa do Brasil seguinte.' },
-  { id:'bra-sulse', name:'Copa Sul-Sudeste', short:'SUL-SUD', level:'regional', type:'grupos_mata', scope:'BR', region:'SS', teams:12, groupGames:5, knockoutPhases:3, desc:'Clubes classificados pelos estaduais; campeão entra na 3ª fase da Copa do Brasil seguinte.' },
+  { id:'bra-nordeste', name:'Copa do Nordeste', short:'NORDESTE', level:'regional', type:'grupos_mata', scope:'BR', region:'NE', teams:20, groupGames:5, knockoutPhases:3, phaseLegs:[1,2,2], desc:'20 clubes em quatro grupos; cada chave enfrenta outra em turno único. Quartas em jogo único, semifinal e final em ida e volta.' },
+  { id:'bra-verde', name:'Copa Verde', short:'VERDE', level:'regional', type:'grupos_mata', scope:'BR', region:'NC', teams:24, groupGames:5, knockoutPhases:3, phaseLegs:[1,2,2], desc:'24 clubes em quatro grupos de seis, separados em Copa Norte e Copa Centro-Oeste; dois avançam por chave.' },
+  { id:'bra-sulse', name:'Copa Sul-Sudeste', short:'SUL-SUD', level:'regional', type:'grupos_mata', scope:'BR', region:'SS', teams:12, groupGames:6, knockoutPhases:2, phaseLegs:[2,2], desc:'12 classificados em dois grupos; cada clube enfrenta os seis da outra chave. Semifinal e final em ida e volta.' },
   // ---- NACIONAIS (pirâmide SÉRIES + COPA + SUPERCOPA) ----
   { id:'bra-sa', name:'Brasileirão Série A', short:'SÉRIE A', level:'nacional', type:'pontos', scope:'BR', teams:20, desc:'20 clubes, turno e returno (38 rodadas). Os quatro últimos caem; os cinco melhores abrem vagas à Libertadores.' },
   { id:'bra-sb', name:'Brasileirão Série B', short:'SÉRIE B', level:'nacional', type:'pontos', scope:'BR', teams:20, desc:'38 rodadas. 1º e 2º sobem; 3º×6º e 4º×5º disputam as outras vagas. Os quatro últimos caem.' },
