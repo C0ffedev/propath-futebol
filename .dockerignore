@@ -1,11 +1,8 @@
-# não enviar pro build da imagem
+node_modules
+npm-debug.log
 carreira.db
 *.db
-*.sqlite
-node_modules
 .git
 .gitignore
-gh.zip
-gh_extract
-_refactor_main.js
-npm-debug.log
+propath_verify_*.log
+.hermes

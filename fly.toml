@@ -1,37 +1,20 @@
-# fly.toml app configuration file generated for propath-futebol on 2026-08-13T10:14:10-03:00
-#
-# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
-#
-
-app = 'propath-futebol'
-primary_region = 'gru'
+app = "propath-futebol"
+primary_region = "gru"
 
 [build]
-  dockerfile = 'Dockerfile'
+  dockerfile = "Dockerfile"
 
 [env]
-  DB_PATH = '/data/carreira.db'
-  PORT = '3000'
-
-[[mounts]]
-  source = 'propath_data'
-  destination = '/data'
+  PORT = "4321"
 
 [http_service]
-  internal_port = 3000
+  internal_port = 4321
   force_https = true
-  auto_stop_machines = 'stop'
+  auto_stop_machines = true
   auto_start_machines = true
   min_machines_running = 0
-  processes = ['app']
-
-  [http_service.concurrency]
-    type = 'requests'
-    hard_limit = 250
-    soft_limit = 200
 
 [[vm]]
-  memory = '256mb'
-  cpu_kind = 'shared'
+  cpu_kind = "shared"
   cpus = 1
   memory_mb = 256
