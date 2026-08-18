@@ -91,7 +91,7 @@
   }
   function chooseOpponents(S,def,count){return compTeams(S,def).filter(t=>t.n!==S.teamName).sort(()=>Math.random()-.5).slice(0,count);}
 
-  const COMP_RULES_VERSION=4;
+  const COMP_RULES_VERSION=5;
   E.ensureComps=function(S){
     if(S.compRulesVersion===COMP_RULES_VERSION&&S.comps&&S.comps.length&&S.comps.every(c=>!['pontos','pontos_mata'].includes(c.type)||(c.table&&Object.keys(c.table).length)))return S.comps;
     const comps=E.buildComps(S);S.compRulesVersion=COMP_RULES_VERSION;return comps;
@@ -182,8 +182,13 @@
       for(let leg=1;leg<=legs;leg++)out.push({type:'match',comp:c.compId,stage:'knockout',phase,round:phase,leg,legs,opp:{n:opp.n,o:opp.o},home:legs===1||leg===2});
     }return out;
   }
+  // ===== CALENDÁRIO v2: ANO REAL POR GAMEWEEK (slotting) =====
+  // Cada GAMEWEEK (week 1..N) pode ter 1 jogo (weekend) ou 2 (weekend+midweek).
+  // Assim TODAS as competições paralelas cabem num ano de ~48 gameweeks, sem
+  // "semanas extras" artificiais. Teoria: references/propath-calendario-teoria.md
   E.genCompCalendar=function(S){
     if(!S.comps||!S.comps.length)return E.genCalendar(S);
+    // 1) Monta as filas de jogos de cada competição (cada jogo ainda é 1 entrada)
     const entries=S.comps.map(c=>{let q;
       if(c.type==='pontos')q=leagueRounds(c).map((rp,i)=>{const p=rp.find(x=>x[0].n===S.teamName||x[1].n===S.teamName);return p?matchFromPair(S,c,p,i+1):null;}).filter(Boolean);
       if(c.type==='pontos_mata'){
@@ -195,17 +200,60 @@
         if(!c.crossOpponents&&c.groupGames>rivals.length)rivals.forEach((opp,i)=>group.push({type:'match',comp:c.compId,stage:'group',round:rivals.length+i+1,opp:{n:opp.n,o:opp.o},home:i%2!==0}));
         q=group.slice(0,c.groupGames).concat(knockoutQueue(S,c));
       }else if(!q)q=knockoutQueue(S,c);
-      return {c,q};
+      // peso de prioridade para desempate de slot (seção 4 da teoria)
+      const weight = c.isLeague?100 : (c.level==='estadual'?80 : c.level==='continental'?60 : c.level==='nacional'?40 : 20);
+      return {c,q,weight};
     });
-    const cal=[],league=entries.find(x=>x.c.isLeague),state=entries.find(x=>x.c.level==='estadual');
-    const take=x=>{if(x&&x.q.length)cal.push(x.q.shift());};
-    if(state){
-      for(let i=0;i<3&&state.q.length;i++)take(state);
-      if(league&&league.c.compId==='bra-sa')while(state.q.length){take(league);take(state);}
-      else while(state.q.length)take(state);
-    }
-    let active=true;while(active){active=false;for(const entry of entries){if(entry===state)continue;if(entry.q.length){take(entry);active=true;}}}
-    const out=[];cal.forEach((wk,i)=>{out.push(wk);if((i+1)%3===0&&i<cal.length-1)out.push({type:'train'});});return out;
+    // 2) Slotting por gameweek (ano real). Regra: entradas de PONTOS (rodada/grupo) vão
+    //    pro slot 'weekend' (1 jogo por gameweek, com folgas); entradas de KNOCKOUT
+    //    (mata-mata, ida/volta) vão pro slot 'midweek' (reservadas em gw's consecutivas).
+    const grid={};
+    const put=(wk,slot,entry)=>{ if(!grid[wk])grid[wk]={weekend:null,midweek:null};
+      if(!grid[wk][slot])grid[wk][slot]=entry; else if(entry.weight>grid[wk][slot].weight)grid[wk][slot]=entry; };
+    // separa cada fila de competição em "pontos" (weekend) e "mata" (midweek)
+    const weekendEntries=[], midweekEntries=[];
+    entries.forEach(e=>{ if(!e||!e.q.length)return;
+      e.q.forEach(m=>{ const isKO=(m.stage==='knockout');
+        (isKO?midweekEntries:weekendEntries).push({entry:e,match:m}); }); });
+    // Weekend: separa em "early" (estadual/regional, concentrado no início do ano) e
+    // "late" (liga da divisão, começa após o estadual). Assim não empilham e o ano não estoura.
+    const early=[], late=[];
+    weekendEntries.forEach(x=>{ const lvl=(x.entry&&x.entry.c)?x.entry.c.level:'';
+      (lvl==='estadual'?early:late).push(x); });
+    let wk=1, gap=0;
+    for(const x of early){ while(grid[wk]&&grid[wk].weekend)wk++; put(wk,'weekend',x); wk++; gap++;
+      if(gap%2===0 && wk<14) wk++; }
+    const ligaStart=Math.max(1, wk);
+    { let wk=ligaStart, gap=0;
+      for(const x of late){ while(grid[wk]&&grid[wk].weekend)wk++; put(wk,'weekend',x); wk++; gap++;
+        if(gap%6===0 && wk<46) wk++; } }
+    // Midweek: TODOS os mata-mata (copas/continentais/estadual-fase-final/mundiais).
+    // "Gruda" nas gameweeks já abertas pela liga: só avança wk quando o midweek está ocupado
+    // (não cria gameweeks novas a cada jogo), evitando estourar o ano.
+    { let wk=2;
+      for(let qi=0; qi<midweekEntries.length; qi++){ const x=midweekEntries[qi];
+        const twoLegged=(x.match.legs&&x.match.legs>1);
+        if(twoLegged){
+          // acha 1ª gw onde AMBAS g1 e g1+1 estejam livres no midweek (garante consecutividade)
+          while((grid[wk]&&grid[wk].midweek) || (grid[wk+1]&&grid[wk+1].midweek)) wk++;
+          const g1=wk; put(g1,'midweek',x);
+          const g2=g1+1; put(g2,'midweek',midweekEntries[++qi]); wk=g2+1;
+        } else {
+          while(grid[wk]&&grid[wk].midweek)wk++; put(wk,'midweek',x); wk++;
+          // passo: pula 1 gameweek entre fases de copa (reaproveita as gw's da liga, não estica o ano)
+          if(wk<46) wk++;
+        }
+      } }
+    // 3) Achata o grid em uma linha linear de entradas (mantém 1 partida/entrada p/ QTE)
+    const weeks=Object.keys(grid).map(Number).sort((a,b)=>a-b);
+    const out=[];
+    weeks.forEach(wk=>{ const cell=grid[wk];
+      if(cell.weekend){ const {entry,match}=cell.weekend; out.push(Object.assign({},match,{week:wk,slot:'weekend'})); }
+      if(cell.midweek){ const {entry,match}=cell.midweek; out.push(Object.assign({},match,{week:wk,slot:'midweek'})); }
+      // gameweek sem nenhum jogo -> semana de treino (folga), não estica o ano
+      if(!cell.weekend&&!cell.midweek) out.push({type:'train',week:wk});
+    });
+    return out;
   };
 
   function applyStanding(row,gf,ga){if(!row)return;row.p++;row.gf+=gf;row.ga+=ga;if(gf>ga){row.w++;row.pts+=3;}else if(gf<ga)row.l++;else{row.d++;row.pts++;}}

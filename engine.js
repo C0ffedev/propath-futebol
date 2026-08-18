@@ -300,7 +300,9 @@ E.recomputeLeague = function(S){
   let mi = 0; // índice em seasonMatches (alinhado à ordem dos jogos)
   for (let i=0; i<cal.length && i<S.calIdx; i++){
     const c = cal[i];
-    if (c.type !== 'match' || c.cup) continue; // só liga
+    // só liga: mesma lógica isCup do advanceWeek (c.comp ausente = liga pura)
+    const _isCup = !!c.comp && (c.comp !== S.leagueId || ((S.comps||[]).find(x=>x.compId===c.comp)||{}).type !== 'pontos');
+    if (c.type !== 'match' || _isCup) continue; // só liga
     const m = S.seasonMatches[mi++];
     if (!m) continue;
     // resultado do jogador nesta rodada
@@ -757,7 +759,11 @@ E.advanceWeek = function(S, liveMods){
     S.pendingTrain = null;
   }
   S.sMeEvo.push({s:S.season, o:S.ovr, r: matchRes?matchRes.rating:S.ovr/10});
-  S.calIdx++; S.week++;
+  S.calIdx++;
+  // S.week reflete a GAMEWEEK da próxima entrada (não incrementa 1 por entrada):
+  // gameweeks podem ter 2 jogos (weekend+midweek) na mesma semana.
+  const _nxt = S.calendar[S.calIdx];
+  S.week = _nxt ? (_nxt.week || (S.week+1)) : (wk.week || S.week);
   // janela de transferências na METADE da temporada (uma vez por temporada)
   if (S._midWin !== S.season && S.calIdx >= Math.floor(S.calendar.length/2)){
     S.offers = E.genOffers(S); S.pendingTransfer = true; S._midWin = S.season;
