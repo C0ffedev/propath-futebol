@@ -841,6 +841,9 @@ E.endSeason = function(S){
     games:ss.games,goals:ss.goals,assists:ss.assists,mom:ss.mom,best:+(ss.bestRating||0).toFixed(1),worst:+(ss.worstRating||10).toFixed(1),
     champ:outcome.champion,pos,ovrEnd:S.ovr,pot:S.pot,promoted:outcome.promoted,relegated:outcome.relegated,accessDecision:outcome.decision,qualifiedNext:(S.nextComps||[]).slice()};
   S.seasonSummary=summary;
+  // histórico da liga principal: campeão/vice/posição/pontos/acesso/rebaixamento por temporada
+  const tb=table; const champName=tb[0]?tb[0].n:null; const viceName=tb[1]?tb[1].n:null; const meRow=tb.find(r=>r.me);
+  S.history=S.history||[]; S.history.push({season:S.season,comp:league.id,name:league.name,champion:champName,runnerUp:viceName,position:pos,pts:meRow?meRow.pts:0,isLeague:true,promoted:outcome.promoted,relegated:outcome.relegated});
   S.career.push(`FIM DA TEMP ${S.season}: ${S.table.w}V ${S.table.d}E ${S.table.l}D (${S.table.p} pts) — ${pos}º na ${league.name} — gols ${ss.goals}, assist ${ss.assists}.`);
   if(outcome.decision)S.career.push(outcome.decision+'.');
   (S.comps||[]).forEach(c=>{

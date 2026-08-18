@@ -51,7 +51,14 @@
     if(def.id===S.leagueId)return E.leagueTeams(S);
     if(STATE_TEAMS[def.id])return STATE_TEAMS[def.id].map(n=>team(n,68));
     if(REGIONAL_TEAMS[def.id])return REGIONAL_TEAMS[def.id].map(n=>team(n,69));
-    if(def.id==='bra-copa')return uniqueTeams(TIERS.filter(t=>t.code==='BR'&&t.id!=='bra-varzea').flatMap(t=>t.teams));
+    if(def.id==='bra-copa'){
+      // Copa do Brasil: exatamente 126 clubes (Séries A/B/C + complemento da Série D por classificação)
+      const abc=[]; ['bra-sa','bra-sb','bra-sc'].forEach(id=>{ const lg=LEAGUE_BY_ID(id); if(lg) abc.push(...lg.teams); });
+      const d=LEAGUE_BY_ID('bra-sd').teams.slice().sort((a,b)=>b.o-a.o);
+      const seen=new Set(abc.map(t=>t.n)); const extras=[];
+      for(const t of d){ if(seen.has(t.n))continue; if(abc.length+extras.length>=126)break; extras.push(t); seen.add(t.n); }
+      return abc.concat(extras).slice(0,126);
+    }
     const catalogCup=CUPS.find(x=>x.id===def.id);
     if(catalogCup&&catalogCup.type==='national')return uniqueTeams(TIERS.filter(t=>catalogCup.scope.includes(t.code)).flatMap(t=>t.teams));
     if(['sam-lib','sam-sula','sam-recopa'].includes(def.id))return uniqueTeams(TIERS.filter(t=>t.continent==='SAM').flatMap(t=>t.teams).concat(SOUTH_AMERICAN_TEAMS));
@@ -149,13 +156,29 @@
 
   E.finishCompetitions=function(S,leaguePos){
     const reasons={},next=new Set(),get=id=>(S.comps||[]).find(c=>c.compId===id);const add=(id,reason)=>{next.add(id);reasons[id]=reason;};
-    (S.comps||[]).forEach(c=>{if(c.type==='pontos'&&!c.isLeague){const pos=E.getCompTable(S,c.compId).findIndex(r=>r.me)+1;c.finalPosition=pos;if(pos===1)c.status='campeao';}});
+    (S.comps||[]).forEach(c=>{if(c.type==='pontos'&&!c.isLeague){const pos=E.getCompTable(S,c.compId).findIndex(r=>r.me)+1;c.finalPosition=pos;if(pos===1)c.status='campeao';
+      // histórico: campeão/vice/posição/pontos por temporada/comp
+      const tb=E.getCompTable(S,c.compId); const me=tb.find(r=>r.me); const champ=tb[0]?tb[0].n:null; const vice=tb[1]?tb[1].n:null;
+      S.history=S.history||[]; S.history.push({season:S.season,comp:c.compId,name:c.name,champion:champ,runnerUp:vice,position:pos,pts:me?me.pts:0,isLeague:false});
+    }});
     const lg=LEAGUE_BY_ID(S.leagueId);if(lg&&lg.code==='BR'&&lg.id!=='bra-varzea'){
       if(lg.id==='bra-sa'){if(leaguePos<=5)add('sam-lib',leaguePos+'º lugar no Brasileirão Série A');else if(leaguePos<=11)add('sam-sula',leaguePos+'º lugar no Brasileirão Série A');add('bra-copa','clube participante da Série A');}
       const copa=get('bra-copa');if(copa&&copa.status==='campeao')add('sam-lib','campeão da Copa do Brasil');if(copa&&copa.runnerUp)add('sam-lib','vice-campeão da Copa do Brasil (pré-Libertadores)');
       const lib=get('sam-lib'),sula=get('sam-sula');if(lib&&lib.status==='campeao'){add('sam-lib','atual campeão da Libertadores');add('sam-recopa','campeão da Libertadores');add('world-inter','campeão da Libertadores');S.worldQualificationHistory=S.worldQualificationHistory||[];S.worldQualificationHistory.push(S.season);}
       if(sula&&sula.status==='campeao'){add('sam-lib','campeão da Sul-Americana');add('sam-recopa','campeão da Sul-Americana');}
-      if(leaguePos===1||(copa&&copa.status==='campeao'))add('bra-super',leaguePos===1?'campeão brasileiro':'campeão da Copa do Brasil');
+      // Supercopa Rei: campeão do Brasileirão × campeão da Copa do Brasil.
+      // Se o MESMO clube vencer os dois, o regulamento define o substituto (vice do Brasileirão).
+      const brChamp = leaguePos===1;
+      const copaChamp = copa && copa.status==='campeao';
+      if(brChamp || copaChamp){
+        // vice do Brasileirão (2º na tabela da liga)
+        let runnerUp=null;
+        const lgComp = get(S.leagueId);
+        if(lgComp){ const tb=E.getCompTable(S,S.leagueId); runnerUp = tb[1] ? tb[1].n : null; }
+        if(brChamp && copaChamp) add('bra-super','campeão brasileiro também campeão da Copa — substituto: vice do Brasileirão ('+(runnerUp||'definido por regulamento')+')');
+        else if(brChamp) add('bra-super','campeão brasileiro');
+        else add('bra-super','campeão da Copa do Brasil');
+      }
       for(const id of ['bra-paulista','bra-carioca','bra-mineiro','bra-gaucho']){const c=get(id);if(c&&c.finalPosition&&c.finalPosition<=4)add('bra-copa',c.finalPosition+'º lugar no campeonato estadual');}
       for(const id of ['bra-nordeste','bra-verde','bra-sulse','bra-sc','bra-sd']){const c=get(id);if(c&&c.status==='campeao')add('bra-copa','campeão de '+c.name);}
       if(lib){S.worldRankingPoints=(S.worldRankingPoints||0)+(lib.groupPosition?Math.max(0,5-lib.groupPosition):0)+(lib.phase||0)*2;}
