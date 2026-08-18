@@ -195,9 +195,8 @@
     // marca o ponto do jogador do usuário conforme a posição real (não fixo no GOL)
     const POS_INDEX = { GOL:0, ZAG:2, LAT:1, VOL:6, MEI:5, ATA:9 };
     const youIdx = (POS_INDEX[S.pos]!=null) ? POS_INDEX[S.pos] : pts.findIndex(p=>p.s==='me');
-    pts.forEach((p,i)=>{ p.s = (i===youIdx)?'me':'me'; }); // time da casa = 'me' (verde/ciano)
-    // adversário já vem com s:'opp' na formação; garantir
-    pts[pts.length-1].s = 'opp';
+    // O s (side) de cada ponto já vem correto do formationPts: casa='me', visitante='opp'.
+    // Não sobrescrever aqui (bug anterior pintava os 11 adversários de azul em vez de vermelho).
     const squad = buildSquad(S, opp); // nomes alinhados aos 15 pontos
     let ball = { x:50, y:178 };
 
