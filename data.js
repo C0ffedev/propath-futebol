@@ -5,6 +5,50 @@
 // Ofertas de outros países = transferência internacional (joinTeam regera o calendário).
 // Teams: n=nome, o=overall(elencо), c=país, stars=destaque (2). honours só nos grandes.
 const NATIONS = ['Brasil','Argentina','Uruguai','Colômbia','Chile','Paraguai','Peru','Portugal','Espanha','França','Inglaterra','Itália','Alemanha','Holanda','México','Japão'];
+// ===== Mapas de região/UF (Camada 1: pirâmide por região de origem) =====
+// Região de cada UF
+const REGION_BY_UF = { SP:'SE', RJ:'SE', MG:'SE', ES:'SE', PR:'S', SC:'S', RS:'S',
+  BA:'NE', PE:'NE', CE:'NE', MA:'NE', PI:'NE', RN:'NE', PB:'NE', AL:'NE', SE:'NE',
+  GO:'CO', DF:'CO', MT:'CO', MS:'CO', AC:'N', AM:'N', RO:'N', RR:'N', PA:'N', AP:'N', TO:'N' };
+// UF inferida pelo nome do time (cobertura dos elencos reais A/B/Várzea + C/D)
+const UF_BY_TEAM = {
+  'EC Pânico':'SP','Club da Sombra':'SP','Operário do Brejo':'SP','Atlético Caverna':'SP','Riacho FC':'SP','Vila Oculta':'SP','Juventude do Vale':'SP','União Soturna':'SP',
+  'CRB':'AL','CSA':'AL','Coritiba':'PR','Goiás':'GO','Sport Recife':'PE','Mirassol':'SP','Vila Nova':'GO','Novorizontino':'SP','Guarani':'SP','Ponte Preta':'SP','Ituano':'SP','Amazonas':'AM','Avaí':'SC','Operário-PR':'PR','Paysandu':'PA','Botafogo-SP':'SP','Chapecoense':'SC','Ceará':'CE','Brusque':'SC','Santos':'SP','Athletico-PR':'PR',
+  'Palmeiras':'SP','Flamengo':'RJ','Botafogo':'RJ','Atlético-MG':'MG','São Paulo':'SP','Fluminense':'RJ','Grêmio':'RS','Internacional':'RS','Corinthians':'SP','Bahia':'BA','Bragantino':'SP','Cruzeiro':'MG','Vasco':'RJ','Fortaleza':'CE','Criciúma':'SC','Vitória':'BA','Juventude':'RS','Cuiabá':'MT',
+  'ABC':'RN','Botafogo-PB':'PB','Confiança':'SE','Ferroviário':'CE','Manaus':'AM','Remo':'PA','Volta Redonda':'RJ','Aparecidense':'GO','Atlético-GO':'GO','Ypiranga':'RS','Londrina':'PR','São Bernardo':'SP','Ferroviária':'SP','Caxias':'RS','São Jose':'SP','Brasil de Pelotas':'RS','Tocantinópolis':'TO','Treze':'PB','Sousa':'PB','Humaitá':'AC','River':'PI','Altos':'PI','CPA':'MT','Porto Velho':'RO','Real Noroeste':'ES','Inter de Limeira':'SP','Costa Rica':'MS','Novo Hamburgo':'RS','Santa Cruz':'PE','Penedense':'AL','Cianorte':'PR','Avenida':'RS','São Luiz':'RS','Aimoré':'RS','FC Cascavel':'PR','Iguatu':'CE','Maracanã':'MA','Água Santa':'SP','Portuguesa':'SP','Nova Iguaçu':'RJ','Madureira':'RJ','Volta Redonda':'RJ','Bangu':'RJ','Boavista':'RJ','Audax Rio':'RJ','Nova Iguaçu':'RJ','Tombense':'MG','Pouso Alegre':'MG','Villa Nova':'MG','Caldense':'MG','Uberlândia':'MG','Patrocinense':'MG','Aymorés':'MG','Democrata':'MG','Coimbra':'MG','Caxias':'RS','Ypiranga':'RS','São José':'RS','São Luiz':'RS','Novo Hamburgo':'RS','Avenida':'RS','Santa Cruz':'RS','Pelotas':'RS','Paraná':'PR','Londrina':'PR','Figueirense':'SC','Joinville':'SC','Marcílio Dias':'SC','Toledo':'PR','Maringá':'PR'
+};
+// Times da Série C por UF (nacional, acesso à B). ovr por faixa.
+const SERIE_C_TEAMS = [
+  {n:'ABC',uf:'RN',o:66},{n:'Botafogo-PB',uf:'PB',o:64},{n:'Confiança',uf:'SE',o:64},{n:'Ferroviário',uf:'CE',o:65},{n:'Manaus',uf:'AM',o:65},{n:'Paysandu',uf:'PA',o:68},{n:'Volta Redonda',uf:'RJ',o:67},{n:'Aparecidense',uf:'GO',o:65},{n:'Atlético-GO',uf:'GO',o:66},{n:'Ypiranga',uf:'RS',o:66},{n:'Londrina',uf:'PR',o:67},{n:'São Bernardo',uf:'SP',o:68},{n:'Ferroviária',uf:'SP',o:67},{n:'Caxias',uf:'RS',o:66},{n:'Sampaio Corrêa',uf:'MA',o:65},{n:'Figueirense',uf:'SC',o:67},{n:'Botafogo-SP',uf:'SP',o:68},{n:'Vitória',uf:'BA',o:69},{n:'CSA',uf:'AL',o:65},{n:'Remo',uf:'PA',o:67}
+];
+// Série D: 96 clubes em 16 grupos de 6, distribuídos por UF/região.
+const SERIE_D_TEAMS = [
+  // SP (grupo 1)
+  {n:'Água Santa',uf:'SP',o:62},{n:'Portuguesa',uf:'SP',o:63},{n:'Inter de Limeira',uf:'SP',o:60},{n:'São Jose',uf:'SP',o:61},{n:'XV de Piracicaba',uf:'SP',o:60},{n:'Sertãozinho',uf:'SP',o:59},
+  // RJ (grupo 2)
+  {n:'Madureira',uf:'RJ',o:60},{n:'Volta Redonda',uf:'RJ',o:64},{n:'Bangu',uf:'RJ',o:58},{n:'Boavista',uf:'RJ',o:59},{n:'Audax Rio',uf:'RJ',o:58},{n:'Nova Iguaçu',uf:'RJ',o:62},
+  // MG (grupo 3)
+  {n:'Tombense',uf:'MG',o:63},{n:'Pouso Alegre',uf:'MG',o:60},{n:'Villa Nova',uf:'MG',o:62},{n:'Caldense',uf:'MG',o:61},{n:'Uberlândia',uf:'MG',o:60},{n:'Patrocinense',uf:'MG',o:59},
+  // RS (grupo 4)
+  {n:'São Luiz',uf:'RS',o:62},{n:'Novo Hamburgo',uf:'RS',o:61},{n:'Avenida',uf:'RS',o:59},{n:'Pelotas',uf:'RS',o:60},{n:'São Paulo-RS',uf:'RS',o:58},{n:'Esportivo',uf:'RS',o:59},
+  // PR (grupo 5)
+  {n:'Cianorte',uf:'PR',o:61},{n:'FC Cascavel',uf:'PR',o:62},{n:'Maringá',uf:'PR',o:63},{n:'Toledo',uf:'PR',o:60},{n:'Paranavaí',uf:'PR',o:58},{n:'Londrina',uf:'PR',o:64},
+  // SC (grupo 6)
+  {n:'Marcílio Dias',uf:'SC',o:62},{n:'Joinville',uf:'SC',o:63},{n:'Brusque',uf:'SC',o:64},{n:'Figueirense',uf:'SC',o:64},{n:'Concórdia',uf:'SC',o:60},{n:'Hercílio Luz',uf:'SC',o:61},
+  // NE (grupos 7-10)
+  {n:'Treze',uf:'PB',o:60},{n:'Sousa',uf:'PB',o:59},{n:'Campinense',uf:'PB',o:61},{n:'Santa Cruz',uf:'PE',o:63},{n:'Retrô',uf:'PE',o:61},{n:'Central',uf:'PE',o:60},
+  {n:'Altos',uf:'PI',o:60},{n:'River',uf:'PI',o:58},{n:'Fluminense-PI',uf:'PI',o:57},{n:'4 de Julho',uf:'PI',o:58},{n:'Maranhão',uf:'MA',o:59},{n:'Maracanã',uf:'MA',o:58},
+  {n:'Iguatu',uf:'CE',o:60},{n:'Caucaia',uf:'CE',o:58},{n:'Atlético-CE',uf:'CE',o:59},{n:'Fortaleza-CE',uf:'CE',o:57},{n:'Ceará',uf:'CE',o:66},{n:'Ferroviário',uf:'CE',o:65},
+  {n:'CRB',uf:'AL',o:67},{n:'CSA',uf:'AL',o:65},{n:'Penedense',uf:'AL',o:57},{n:'Murici',uf:'AL',o:56},{n:'Sergipe',uf:'SE',o:58},{n:'Confiança',uf:'SE',o:64},
+  // CO (grupos 11-12)
+  {n:'Costa Rica',uf:'MS',o:60},{n:'Operário-MS',uf:'MS',o:58},{n:'Águia Negra',uf:'MS',o:57},{n:'Real Noroeste',uf:'ES',o:59},{n:'Rio Branco-ES',uf:'ES',o:57},{n:'Vilavelhense',uf:'ES',o:56},
+  {n:'Aparecidense',uf:'GO',o:65},{n:'Anápolis',uf:'GO',o:62},{n:'Goianésia',uf:'GO',o:60},{n:'Brasiliense',uf:'DF',o:63},{n:'Ceilândia',uf:'DF',o:61},{n:'União Rondonópolis',uf:'MT',o:59},
+  // N (grupos 13-16)
+  {n:'Tocantinópolis',uf:'TO',o:60},{n:'Palmas',uf:'TO',o:58},{n:'Cametá',uf:'PA',o:57},{n:'Castanhal',uf:'PA',o:56},{n:'Independente-PA',uf:'PA',o:57},{n:'Vitória-PA',uf:'PA',o:56},
+  {n:'Rio Branco-AC',uf:'AC',o:56},{n:'Humaitá',uf:'AC',o:55},{n:'Galvez',uf:'AC',o:55},{n:'Porto Velho',uf:'RO',o:57},{n:'Genus',uf:'RO',o:56},{n:'Vilhena',uf:'RO',o:56},
+  {n:'São Raimundo-RR',uf:'RR',o:54},{n:'Atlético Roraima',uf:'RR',o:53},{n:'Náutico-RR',uf:'RR',o:53},{n:'Manaus',uf:'AM',o:65},{n:'Princesa do Solimões',uf:'AM',o:55},{n:'Nacional-AM',uf:'AM',o:57},
+  {n:'Trem',uf:'AP',o:54},{n:'Santos-AP',uf:'AP',o:53},{n:'Independente-AP',uf:'AP',o:53},{n:'São Francisco-PA',uf:'PA',o:55},{n:'Iporá',uf:'GO',o:59},{n:'Costa Rica',uf:'MS',o:60}
+];
 const TIERS = [
   // ---------- BRASIL ----------
   { id:'bra-varzea', country:'Brasil', code:'BR', continent:'SAM', tier:0, name:'Várzea Amadora', short:'VÁRZEA', cup:null,
@@ -15,7 +59,11 @@ const TIERS = [
       {n:'Riacho FC', o:55, c:'BR', stars:['Tatu do Brejo','Sombra']}, {n:'Vila Oculta', o:58, c:'BR', stars:['Zé do Escuro','Caolho']},
       {n:'Juventude do Vale', o:54, c:'BR', stars:['Valentinho','Pé de Chumbo']}, {n:'União Soturna', o:57, c:'BR', stars:['Meia-Noite','Bruxo']}
     ] },
-  { id:'bra-sb', country:'Brasil', code:'BR', continent:'SAM', tier:1, name:'Brasileirão Série B', short:'SÉRIE B', cup:'bra-copa',
+  { id:'bra-sd', country:'Brasil', code:'BR', continent:'SAM', tier:1, name:'Brasileirão Série D', short:'SÉRIE D', cup:'bra-copa',
+    desc:'A base da pirâmide. 96 clubes em 16 grupos de 6, mata-mata pelo acesso.', teams:[] },
+  { id:'bra-sc', country:'Brasil', code:'BR', continent:'SAM', tier:2, name:'Brasileirão Série C', short:'SÉRIE C', cup:'bra-copa',
+    desc:'Divisão de acesso à Série B. 20 clubes, pontos corridos.', teams:[] },
+  { id:'bra-sb', country:'Brasil', code:'BR', continent:'SAM', tier:3, name:'Brasileirão Série B', short:'SÉRIE B', cup:'bra-copa',
     desc:'O caldeirão da Série B. Um ponto separa o sonho do pesadelo. Subir é tudo.',
     teams:[
       {n:'CRB', o:70, c:'BR', stars:['Wesley Phelps','Anselmo'], honours:{}},
@@ -39,7 +87,7 @@ const TIERS = [
       {n:'Santos', o:76, c:'BR', stars:['Neymar','Guilherme'], honours:{ligas:8, copasInt:1}},
       {n:'Athletico-PR', o:79, c:'BR', stars:['Pablo','Vitinho'], honours:{ligas:1, copasInt:2}}
     ] },
-  { id:'bra-sa', country:'Brasil', code:'BR', continent:'SAM', tier:2, name:'Brasileirão Série A', short:'SÉRIE A', cup:'bra-copa',
+  { id:'bra-sa', country:'Brasil', code:'BR', continent:'SAM', tier:4, name:'Brasileirão Série A', short:'SÉRIE A', cup:'bra-copa',
     desc:'A elite nacional. Estrelas, televisão e a obrigação de ser campeão.',
     teams:[
       {n:'Palmeiras', o:82, c:'BR', stars:['Estêvão','Paulinho'], honours:{ligas:12, copasInt:3, copasNac:1}},
@@ -60,7 +108,8 @@ const TIERS = [
       {n:'Fortaleza', o:75, c:'BR', stars:['Lucero','Moisés'], honours:{}},
       {n:'Criciúma', o:68, c:'BR', stars:['Éder','Marcelinho'], honours:{copasNac:1}},
       {n:'Vitória', o:73, c:'BR', stars:['Léo','Osvaldo'], honours:{ligas:1, copasNac:1}},
-      {n:'Juventude', o:72, c:'BR', stars:['Erick','Rodrigo'], honours:{}}
+      {n:'Juventude', o:72, c:'BR', stars:['Erick','Rodrigo'], honours:{}},
+      {n:'Cuiabá', o:71, c:'BR', stars:['Clayson','Walter'], honours:{}}
     ] },
   // ---------- INGLATERRA ----------
   { id:'eng-pl', country:'Inglaterra', code:'ENG', continent:'UEFA', tier:1, name:'Premier League', short:'PREMIER', cup:'eng-facup',
@@ -342,4 +391,30 @@ function COMP_LEAGUE_ID(comp){
   if (comp.id==='sam-lib') return 'sam-lib';
   return null;
 }
+
+// ===== Camada 1: pós-processamento — região/UF + pirâmide C/D por região =====
+(function buildPyramid(){
+  // 1) infere state/region em todos os times BR das TIERS
+  TIERS.forEach(lg => {
+    if (lg.code !== 'BR' || !lg.teams) return;
+    lg.teams.forEach(t => {
+      if (t.state) return; // já definido
+      const uf = UF_BY_TEAM[t.n];
+      if (uf){ t.state = uf; t.region = REGION_BY_UF[uf]; }
+    });
+  });
+  // 2) Série C: 20 times por região
+  const sc = TIERS.find(t=>t.id==='bra-sc');
+  if (sc){
+    sc.teams = SERIE_C_TEAMS.map(t=>({ n:t.n, o:t.o, c:'BR', state:t.uf, region:REGION_BY_UF[t.uf], stars:[] }));
+  }
+  // 3) Série D: 96 times em 16 grupos de 6 por região/UF
+  const sd = TIERS.find(t=>t.id==='bra-sd');
+  if (sd){
+    const groups = [];
+    for (let i=0;i<SERIE_D_TEAMS.length;i+=6) groups.push(SERIE_D_TEAMS.slice(i,i+6));
+    sd.groups = groups.length; // 16 grupos
+    sd.teams = SERIE_D_TEAMS.map((t,idx)=>({ n:t.n, o:t.o, c:'BR', state:t.uf, region:REGION_BY_UF[t.uf], group: Math.floor(idx/6)+1, stars:[] }));
+  }
+})();
 
