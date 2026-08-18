@@ -257,8 +257,8 @@
       c.setAttribute('cx', p.x); c.setAttribute('cy', p.y);
       c.setAttribute('r', (i===youIdx)?3.6:2.4);
       const isYou = (i===youIdx);
-      c.setAttribute('fill', p.s==='opp'?'#ff5bd0':(isYou?'#ffd21e':'#36e0ff'));
-      c.setAttribute('stroke', isYou?'#fff':'rgba(0,0,0,.45)');
+      c.setAttribute('fill', p.s==='opp'?'#ff2740':(isYou?'#ffd21e':'#2e7bff'));
+      c.setAttribute('stroke', isYou?'#fff':(p.s==='opp'?'#ff9aa6':'#9cc4ff'));
       c.setAttribute('stroke-width', isYou?'1':'0.5');
       if (isYou) c.setAttribute('class','live-you');
       const label = document.createElementNS(SVGNS,'text');

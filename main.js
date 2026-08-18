@@ -576,15 +576,17 @@ function renderMinimap(S, r, wkArg){
   all.forEach(n=>{
     const isYou = (n===youPos);
     const isDuo = (n===duo);
-    const col = n.side==='me' ? (isYou?'#ff2740':isDuo?'#b14bff':'#3da35d') : '#cfcfcf';
-    const rad = isYou?3.2:isDuo?2.6:2;
-    svg += `<circle cx="${n.x}" cy="${n.y}" r="${rad}" fill="${col}" ${isYou?'stroke="#fff" stroke-width="0.6"':''}/>`;
+    // esquema intuitivo: seu time AZUL, adversário VERMELHO, você DOURADO (destaque), dupla ROXA
+    const col = n.side==='me' ? (isYou?'#ffd21e':isDuo?'#b14bff':'#2e7bff') : '#ff2740';
+    const rad = isYou?3.4:isDuo?2.8:2.1;
+    const stroke = isYou ? '#fff' : (n.side==='me' ? '#9cc4ff' : '#ff9aa6');
+    svg += `<circle cx="${n.x}" cy="${n.y}" r="${rad}" fill="${col}" stroke="${stroke}" stroke-width="${isYou?0.7:0.4}"/>`;
   });
   // highlight: gol do jogador -> marca na área adversária; assist -> linha do meio
   if (r&&r.goals>0&&youPos){ svg += `<circle cx="${W/2}" cy="14" r="4" fill="#ffd21e"/>`; }
   if (r&&r.assists>0&&youPos){ svg += `<line x1="${youPos.x}" y1="${youPos.y}" x2="${W/2}" y2="14" stroke="#ffd21e" stroke-width="0.8" stroke-dasharray="1.5 1.5"/>`; }
   svg += `</svg>`;
-  const legend = `<div class="mini-legend"><span><i style="background:#ff2740"></i>Você</span><span><i style="background:#b14bff"></i>Dupla (sinergia)</span><span><i style="background:#3da35d"></i>Seu time</span><span><i style="background:#cfcfcf"></i>Adversário</span></div>`;
+  const legend = `<div class="mini-legend"><span><i style="background:#ffd21e"></i>Você</span><span><i style="background:#b14bff"></i>Dupla (sinergia)</span><span><i style="background:#2e7bff"></i>Seu time</span><span><i style="background:#ff2740"></i>Adversário</span></div>`;
   return `<div class="ms-card minimap"><div class="ms-card-h">MAPA DA PARTIDA (4-3-3)</div>${svg}${legend}${A?`<div class="mini-arch">⚡ ${A.n}: ${A.signature&&A.signature.name||''}</div>`:''}${M?`<div class="mini-arch" style="color:var(--obsession)">🧠 ${M.n}: ${M.signature&&M.signature.name||''}</div>`:''}</div>`;
 }
 
