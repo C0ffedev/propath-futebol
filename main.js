@@ -530,13 +530,18 @@ function renderMinimap(S, r, wkArg){
   const layout = {
     Goleiro:[50], Defesa:[22,40,60,78], Meio:[33,50,67], Ataque:[33,50,67]
   };
+  // rótulos curtos por setor+índice (exibidos abaixo de cada marcador)
+  const POS_LABELS = {
+    Goleiro:['G'], Defesa:['LD','Z1','Z2','LE'], Meio:['VOL1','VOL2','VOL3'], Ataque:['ATA1','ATA2','ATA3']
+  };
   function pts(sq, side){ // side: 'me' (baixo) ou 'opp' (topo)
     const out=[]; const order=['Goleiro','Defesa','Meio','Ataque'];
     let yBase = side==='me' ? [185,150,110,75] : [15,50,90,125];
     order.forEach((setor,si)=>{
       const rows=(sq||[]).filter(p=>p.setor===setor);
       const xs=layout[setor];
-      rows.forEach((p,i)=>{ out.push({x:xs[i]||50, y:yBase[si], p, side}); });
+      const labs=POS_LABELS[setor]||[];
+      rows.forEach((p,i)=>{ out.push({x:xs[i]||50, y:yBase[si], p, side, posLabel:labs[i]||''}); });
     });
     return out;
   }
@@ -566,13 +571,13 @@ function renderMinimap(S, r, wkArg){
   svg += `<rect x="${W/2-18}" y="${H-18}" width="36" height="16" fill="none" stroke="#1f7a3a" stroke-width="0.6"/>`;
   // camada reveal do arquétipo
   if (A&&A.reveal==='spaces'){
-    svg += `<circle cx="50" cy="14" r="9" fill="rgba(255,210,40,.18)" stroke="rgba(255,210,40,.5)" stroke-width="0.5"/>`;
-    svg += `<circle cx="33" cy="20" r="6" fill="rgba(255,210,40,.15)" stroke="rgba(255,210,40,.4)" stroke-width="0.4"/>`;
+    svg += `<circle class="layer-reveal" cx="50" cy="14" r="9" fill="rgba(255,210,40,.18)" stroke="rgba(255,210,40,.5)" stroke-width="0.5"/>`;
+    svg += `<circle class="layer-reveal" cx="33" cy="20" r="6" fill="rgba(255,210,40,.15)" stroke="rgba(255,210,40,.4)" stroke-width="0.4"/>`;
   } else if (A&&A.reveal==='finish'){
-    svg += `<circle cx="${W/2}" cy="${H-14}" r="10" fill="rgba(255,39,64,.20)" stroke="rgba(255,39,64,.6)" stroke-width="0.5"/>`;
+    svg += `<circle class="layer-reveal" cx="${W/2}" cy="${H-14}" r="10" fill="rgba(255,39,64,.20)" stroke="rgba(255,39,64,.6)" stroke-width="0.5"/>`;
   } else if (A&&A.reveal==='lines'){
-    svg += `<line x1="50" y1="110" x2="50" y2="40" stroke="rgba(70,160,255,.35)" stroke-width="1" stroke-dasharray="2 2"/>`;
-    svg += `<line x1="33" y1="110" x2="33" y2="30" stroke="rgba(70,160,255,.25)" stroke-width="0.8" stroke-dasharray="2 2"/>`;
+    svg += `<line class="layer-reveal" x1="50" y1="110" x2="50" y2="40" stroke="rgba(70,160,255,.35)" stroke-width="1" stroke-dasharray="2 2"/>`;
+    svg += `<line class="layer-reveal" x1="33" y1="110" x2="33" y2="30" stroke="rgba(70,160,255,.25)" stroke-width="0.8" stroke-dasharray="2 2"/>`;
   }
   // pontos
   all.forEach(n=>{
@@ -582,7 +587,9 @@ function renderMinimap(S, r, wkArg){
     const col = n.side==='me' ? (isYou?'#ffd21e':isDuo?'#b14bff':'#2e7bff') : '#ff2740';
     const rad = isYou?3.4:isDuo?2.8:2.1;
     const stroke = isYou ? '#fff' : (n.side==='me' ? '#9cc4ff' : '#ff9aa6');
-    svg += `<circle cx="${n.x}" cy="${n.y}" r="${rad}" fill="${col}" stroke="${stroke}" stroke-width="${isYou?0.7:0.4}"/>`;
+    svg += `<circle class="mini-dot ${isYou?'mini-you':''} ${isDuo?'layer-sync':''} layer-pos" cx="${n.x}" cy="${n.y}" r="${rad}" fill="${col}" stroke="${stroke}" stroke-width="${isYou?0.7:0.4}"/>`;
+    // rótulo de posição curto abaixo do marcador (camada de posições)
+    if (n.posLabel){ svg += `<text class="mini-poslabel layer-pos" x="${n.x}" y="${n.y + (n.side==='me'?5:-4)}" text-anchor="middle">${n.posLabel}</text>`; }
   });
   // ===== FRENTE B: gols/assistências em posição real + ícones de lance-chave =====
   if (r){
@@ -594,26 +601,36 @@ function renderMinimap(S, r, wkArg){
       const min = goalMins[i] || (12 + i*23);
       const gx = 36 + ((min*11) % 28);            // 36..64 (dentro da área)
       const gy = 9 + (i % 3) * 5;                  // 9 / 14 / 19 (variado em profundidade)
-      svg += `<circle class="mini-goal" cx="${gx}" cy="${gy}" r="2.4" fill="#ffd21e" stroke="#fff" stroke-width="0.3"/>`;
-      svg += `<text class="mini-goal-min" x="${gx}" y="${gy-3}" text-anchor="middle" font-size="3" fill="#ffd21e" font-weight="700">${min}'</text>`;
+      svg += `<circle class="mini-goal layer-lance" cx="${gx}" cy="${gy}" r="2.4" fill="#ffd21e" stroke="#fff" stroke-width="0.3"/>`;
+      svg += `<text class="mini-goal-min layer-lance" x="${gx}" y="${gy-3}" text-anchor="middle" font-size="3" fill="#ffd21e" font-weight="700">${min}'</text>`;
     }
     // assistências: linha do seu x/y até a área (onde o companheiro finalizou), uma por assist
     for (let i=0;i<r.assists;i++){
       const ax = 38 + (i*15 % 24);                 // 38..62 variado
       const ay = 12 + (i % 2) * 6;                 // 12 / 18
-      if (youPos){ svg += `<line class="mini-assist-line" x1="${youPos.x}" y1="${youPos.y}" x2="${ax}" y2="${ay}" stroke="#ffd21e" stroke-width="0.8" stroke-dasharray="1.5 1.5"/>`; }
-      svg += `<text class="mini-assist" x="${ax}" y="${ay+3}" text-anchor="middle" font-size="3.4" fill="#ffd21e" font-weight="800">A</text>`;
+      if (youPos){ svg += `<line class="mini-assist-line layer-lance" x1="${youPos.x}" y1="${youPos.y}" x2="${ax}" y2="${ay}" stroke="#ffd21e" stroke-width="0.8" stroke-dasharray="1.5 1.5"/>`; }
+      svg += `<text class="mini-assist layer-lance" x="${ax}" y="${ay+3}" text-anchor="middle" font-size="3.4" fill="#ffd21e" font-weight="800">A</text>`;
     }
     // ícones de lance-chave posicionados por zona
     const pstat = (r.stats && r.stats.player) || {};
     // defesa difícil (goleiro com defesas) -> luva na área própria
-    if (S.pos==='GOL' && (r.stats && r.stats.mySaves>0)){ svg += `<text class="mini-lance" x="50" y="190" text-anchor="middle" font-size="5">🧤</text>`; }
+    if (S.pos==='GOL' && (r.stats && r.stats.mySaves>0)){ svg += `<text class="mini-lance layer-lance" x="50" y="190" text-anchor="middle" font-size="5">🧤</text>`; }
     // desarme (vol/zag com desarmes) -> botinha no meio-campo
-    if ((S.pos==='ZAG'||S.pos==='VOL') && (pstat.tackles||0)>0){ const tp = (me.find(n=>n.p&&n.p.pos===S.pos)||me[2]); if(tp) svg += `<text class="mini-lance" x="${tp.x}" y="${tp.y+5}" text-anchor="middle" font-size="4.5">👟</text>`; }
+    if ((S.pos==='ZAG'||S.pos==='VOL') && (pstat.tackles||0)>0){ const tp = (me.find(n=>n.p&&n.p.pos===S.pos)||me[2]); if(tp) svg += `<text class="mini-lance layer-lance" x="${tp.x}" y="${tp.y+5}" text-anchor="middle" font-size="4.5">👟</text>`; }
   }
   svg += `</svg>`;
+  // ===== FRENTE C: toggle de camadas (liga/desliga via classe no container) =====
+  const toggle = `
+    <div class="mini-toggle">
+      <label><input type="checkbox" class="mini-layer-chk" data-layer="pos" checked> Posições</label>
+      <label><input type="checkbox" class="mini-layer-chk" data-layer="sync" checked> Sinergia</label>
+      <label><input type="checkbox" class="mini-layer-chk" data-layer="reveal" checked> Revelar</label>
+      <label><input type="checkbox" class="mini-layer-chk" data-layer="lance" checked> Lances</label>
+    </div>`;
   const legend = `<div class="mini-legend"><span><i style="background:#ffd21e"></i>Você</span><span><i style="background:#b14bff"></i>Dupla (sinergia)</span><span><i style="background:#2e7bff"></i>Seu time</span><span><i style="background:#ff2740"></i>Adversário</span><span><i style="background:#ffd21e;border-radius:50%"></i>Gol (min)</span><span><i style="background:transparent;color:#ffd21e;font-weight:800">A</i>Assist.</span></div>`;
-  return `<div class="ms-card minimap"><div class="ms-card-h">MAPA DA PARTIDA (4-3-3)</div>${svg}${legend}${A?`<div class="mini-arch">⚡ ${A.n}: ${A.signature&&A.signature.name||''}</div>`:''}${M?`<div class="mini-arch" style="color:var(--obsession)">🧠 ${M.n}: ${M.signature&&M.signature.name||''}</div>`:''}</div>`;
+  // handlers dos checkboxes: togglam a classe hide-<layer> no container do minimapa
+  const post = `<script>try{ var mm=document.currentScript.previousElementSibling; mm.querySelectorAll('.mini-layer-chk').forEach(function(c){ c.onclick=function(){ mm.classList.toggle('hide-'+c.dataset.layer, !c.checked); }; }); }catch(e){}<\/script>`;
+  return `<div class="ms-card minimap">${toggle}<div class="ms-card-h">MAPA DA PARTIDA (4-3-3)</div>${svg}${legend}${A?`<div class="mini-arch">⚡ ${A.n}: ${A.signature&&A.signature.name||''}</div>`:''}${M?`<div class="mini-arch" style="color:var(--obsession)">🧠 ${M.n}: ${M.signature&&M.signature.name||''}</div>`:''}${post}</div>`;
 }
 
 // Nota de impacto do arquétipo (estilo Valorant): conta o efeito da assinatura na partida

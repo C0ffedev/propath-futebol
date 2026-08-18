@@ -430,6 +430,16 @@ input:focus,select:focus{outline:none;border-color:var(--accent)}
 .mini-legend span{display:inline-flex;align-items:center;gap:4px}
 .mini-legend i{width:9px;height:9px;border-radius:50%;display:inline-block}
 .mini-arch{margin-top:8px;font-size:12px;color:var(--gold);font-weight:700}
+.mini-poslabel{font-size:3px;font-weight:700;fill:#dff6ff;paint-order:stroke;stroke:rgba(0,0,0,.55);stroke-width:.5px;pointer-events:none}
+.mini-you + .mini-poslabel{fill:#fff;stroke:#a8122a}
+/* FRENTE C: toggle de camadas — esconde camada quando o container tem .hide-<layer> */
+.mini-toggle{display:flex;flex-wrap:wrap;gap:8px 14px;margin-bottom:8px;font-size:11px;color:var(--muted)}
+.mini-toggle label{display:inline-flex;align-items:center;gap:4px;cursor:pointer;user-select:none}
+.mini-toggle input{accent-color:var(--accent)}
+.minimap.hide-pos .layer-pos{display:none}
+.minimap.hide-sync .layer-sync{display:none}
+.minimap.hide-reveal .layer-reveal{display:none}
+.minimap.hide-lance .layer-lance{display:none}
 .mini-goal{animation:miniPulse 1.1s ease-in-out infinite}
 @keyframes miniPulse{0%,100%{r:2.4;opacity:1}50%{r:3.1;opacity:.8}}
 .mini-goal-min{font-family:inherit;pointer-events:none}
