@@ -584,11 +584,35 @@ function renderMinimap(S, r, wkArg){
     const stroke = isYou ? '#fff' : (n.side==='me' ? '#9cc4ff' : '#ff9aa6');
     svg += `<circle cx="${n.x}" cy="${n.y}" r="${rad}" fill="${col}" stroke="${stroke}" stroke-width="${isYou?0.7:0.4}"/>`;
   });
-  // highlight: gol do jogador -> marca na área adversária; assist -> linha do meio
-  if (r&&r.goals>0&&youPos){ svg += `<circle cx="${W/2}" cy="14" r="4" fill="#ffd21e"/>`; }
-  if (r&&r.assists>0&&youPos){ svg += `<line x1="${youPos.x}" y1="${youPos.y}" x2="${W/2}" y2="14" stroke="#ffd21e" stroke-width="0.8" stroke-dasharray="1.5 1.5"/>`; }
+  // ===== FRENTE B: gols/assistências em posição real + ícones de lance-chave =====
+  if (r){
+    // minutos dos gols do jogador vindos da crônica (c==='me' e cita o nome)
+    const myGoals = (r.feed||[]).filter(f=>f.c==='me' && /GOL do/.test(f.t) && f.t.indexOf(S.name)>=0);
+    const goalMins = myGoals.map(f=>f.min);
+    // espalha os gols pela área adversária (não sempre no centro) — um marcador por gol
+    for (let i=0;i<r.goals;i++){
+      const min = goalMins[i] || (12 + i*23);
+      const gx = 36 + ((min*11) % 28);            // 36..64 (dentro da área)
+      const gy = 9 + (i % 3) * 5;                  // 9 / 14 / 19 (variado em profundidade)
+      svg += `<circle class="mini-goal" cx="${gx}" cy="${gy}" r="2.4" fill="#ffd21e" stroke="#fff" stroke-width="0.3"/>`;
+      svg += `<text class="mini-goal-min" x="${gx}" y="${gy-3}" text-anchor="middle" font-size="3" fill="#ffd21e" font-weight="700">${min}'</text>`;
+    }
+    // assistências: linha do seu x/y até a área (onde o companheiro finalizou), uma por assist
+    for (let i=0;i<r.assists;i++){
+      const ax = 38 + (i*15 % 24);                 // 38..62 variado
+      const ay = 12 + (i % 2) * 6;                 // 12 / 18
+      if (youPos){ svg += `<line class="mini-assist-line" x1="${youPos.x}" y1="${youPos.y}" x2="${ax}" y2="${ay}" stroke="#ffd21e" stroke-width="0.8" stroke-dasharray="1.5 1.5"/>`; }
+      svg += `<text class="mini-assist" x="${ax}" y="${ay+3}" text-anchor="middle" font-size="3.4" fill="#ffd21e" font-weight="800">A</text>`;
+    }
+    // ícones de lance-chave posicionados por zona
+    const pstat = (r.stats && r.stats.player) || {};
+    // defesa difícil (goleiro com defesas) -> luva na área própria
+    if (S.pos==='GOL' && (r.stats && r.stats.mySaves>0)){ svg += `<text class="mini-lance" x="50" y="190" text-anchor="middle" font-size="5">🧤</text>`; }
+    // desarme (vol/zag com desarmes) -> botinha no meio-campo
+    if ((S.pos==='ZAG'||S.pos==='VOL') && (pstat.tackles||0)>0){ const tp = (me.find(n=>n.p&&n.p.pos===S.pos)||me[2]); if(tp) svg += `<text class="mini-lance" x="${tp.x}" y="${tp.y+5}" text-anchor="middle" font-size="4.5">👟</text>`; }
+  }
   svg += `</svg>`;
-  const legend = `<div class="mini-legend"><span><i style="background:#ffd21e"></i>Você</span><span><i style="background:#b14bff"></i>Dupla (sinergia)</span><span><i style="background:#2e7bff"></i>Seu time</span><span><i style="background:#ff2740"></i>Adversário</span></div>`;
+  const legend = `<div class="mini-legend"><span><i style="background:#ffd21e"></i>Você</span><span><i style="background:#b14bff"></i>Dupla (sinergia)</span><span><i style="background:#2e7bff"></i>Seu time</span><span><i style="background:#ff2740"></i>Adversário</span><span><i style="background:#ffd21e;border-radius:50%"></i>Gol (min)</span><span><i style="background:transparent;color:#ffd21e;font-weight:800">A</i>Assist.</span></div>`;
   return `<div class="ms-card minimap"><div class="ms-card-h">MAPA DA PARTIDA (4-3-3)</div>${svg}${legend}${A?`<div class="mini-arch">⚡ ${A.n}: ${A.signature&&A.signature.name||''}</div>`:''}${M?`<div class="mini-arch" style="color:var(--obsession)">🧠 ${M.n}: ${M.signature&&M.signature.name||''}</div>`:''}</div>`;
 }
 
