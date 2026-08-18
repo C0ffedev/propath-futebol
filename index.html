@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ProPath Futebol — A Carreira</title>
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=12">
 </head>
 <body>
   <!-- LANDING (página inicial pública) -->
@@ -37,13 +37,35 @@
   <div id="modal" class="modal hidden"><div class="modal-box" id="modal-box"></div></div>
   <div id="toast" class="toast hidden"></div>
 
-  <script src="data.js"></script>
-  <script src="archetypes.js"></script>
-  <script src="engine.js"></script>
-  <script src="ui.js"></script>
-  <script src="comps.js"></script>
-  <script src="home.js"></script>
-  <script src="main.js"></script>
-  <script src="livematch.js"></script>
+  <script src="data.js?v=12"></script>
+  <script src="archetypes.js?v=12"></script>
+  <script src="engine.js?v=12"></script>
+  <script src="ui.js?v=12"></script>
+  <script src="comps.js?v=12"></script>
+  <script src="home.js?v=12"></script>
+  <script src="main.js?v=12"></script>
+  <script src="livematch.js?v=12"></script>
+  <script>
+  // Defesa extra: garante handlers do topbar mesmo se o main.js falhar ao carregar.
+  // (O bindTopbar do main.js é a fonte principal; isto é apenas um safety net idempotente.)
+  (function(){
+    function safeBind(id, fn){
+      var el = document.getElementById(id);
+      if (el && !el.dataset.bound){ try { el.onclick = fn; el.dataset.bound = '1'; } catch(e){} }
+    }
+    function tryBind(){
+      var menu = document.getElementById('btn-menu');
+      if (menu && !menu.dataset.bound){
+        safeBind('btn-menu', function(){ if (window.UI && window.UI.S){ if (window.UI.hub) window.UI.hub(); } else if (typeof loadList === 'function'){ loadList(); } });
+        safeBind('btn-save', function(){ if (typeof saveGame === 'function') saveGame(); });
+        safeBind('btn-logout', function(){ if (typeof logout === 'function') logout(); });
+      }
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tryBind);
+    else tryBind();
+    // tenta de novo após o main.js carregar (caso a ordem atrase)
+    window.addEventListener('load', tryBind);
+  })();
+  </script>
 </body>
 </html>
