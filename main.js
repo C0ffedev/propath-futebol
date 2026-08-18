@@ -288,18 +288,22 @@ window.startCareer=startCareer; window.renderMinimap=renderMinimap; window.arche
 // ---------- NAVEGAÇÃO ----------
 function bindNav(){
   $$('#tabs .tab').forEach(b=>b.onclick=()=>{UI.tab=b.dataset.tab; UI.render(); afterRender();});
-  $('#btn-save').onclick=saveGame;
-  $('#btn-god') && ($('#btn-god').onclick = ()=>{
+  bindTopbar();
+  $('#btn-back') && ($('#btn-back').onclick = ()=>{ UI.tab='carreira'; UI.render(); afterRender(); });
+}
+// Liga os botões do topbar UMA vez (são estáticos no index.html e não são recriados pelo render).
+function bindTopbar(){
+  const save=$('#btn-save'); if(save && !save.dataset.bound){ save.onclick=saveGame; save.dataset.bound='1'; }
+  const god=$('#btn-god'); if(god && !god.dataset.bound){ god.onclick=()=>{
     if (!UI.S){ showToast('Abra uma carreira primeiro'); return; }
     if (Session.id !== 'C0ffe'){ showToast('God Mode só para o dono'); return; }
     const on = !UI.S.godMode;
     E.setGodMode(UI.S, on);
     UI.render(); afterRender(); saveGame();
     showToast(on ? '👑 God Mode ATIVADO!' : 'God Mode desativado');
-  });
-  $('#btn-back') && ($('#btn-back').onclick = ()=>{ UI.tab='carreira'; UI.render(); afterRender(); });
-  $('#btn-menu').onclick=function(){ UI.S ? UI.hub() : (typeof loadList==='function' && loadList()); };
-  $('#btn-logout').onclick=logout;
+  }; god.dataset.bound='1'; }
+  const menu=$('#btn-menu'); if(menu && !menu.dataset.bound){ menu.onclick=function(){ UI.S ? UI.hub() : (typeof loadList==='function' && loadList()); }; menu.dataset.bound='1'; }
+  const out=$('#btn-logout'); if(out && !out.dataset.bound){ out.onclick=logout; out.dataset.bound='1'; }
 }
 function afterRender(){
   $('#btn-advance') && ($('#btn-advance').onclick = advanceWeek);
@@ -674,6 +678,7 @@ UI.render = function(){
 };
 
 window.addEventListener('DOMContentLoaded', ()=>{
+  bindTopbar(); // garante handlers do topbar (menu/salvar/god/logout) desde o início
   UI.tab='carreira';
   UI.loadRankSaves(); // pré-carrega Hall da Fama (offline) para a aba Ranking
   loadSession();
