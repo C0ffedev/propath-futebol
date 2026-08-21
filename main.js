@@ -477,6 +477,7 @@ function showMatchScreen(r){
       <div class="ms-team"><div class="ms-nm">${UI.esc(oppName)}</div><div class="ms-ovr">OVR ${opp?opp.o:'—'}</div></div>
     </div>
     ${penaltiesTxt}
+    ${(S.injury&&S.injury.weeks>0)?'<div class="ms-inj-warn">🚑 Você ficou de fora desta partida (lesão: '+S.injury.type+'). O time jogou sem você.</div>':''}
     <div class="ms-body">
       <div class="ms-card perf">
         <div class="ms-card-h">SEU DESEMPENHO</div>

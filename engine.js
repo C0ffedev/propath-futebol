@@ -665,7 +665,7 @@ E.buildFeed = function(S, opp, gf, ga, goals, assists, rating, mom, specials){
 
 E.applyInjury = function(S){
   if (S.injury && S.injury.weeks>0){ S.injury.left--; if (S.injury.left<=0){ S.career.push('Recuperado: '+S.name+' volta apos lesao ('+S.injury.type+').'); S.injury=null; } return; }
-  const ageF=(S.age||20)>=30?1.4:1; const stamF=(typeof S.stamina==='number'&&S.stamina<40)?1.8:1; const base=0.05*ageF*stamF; if (Math.random()<base){ const types=['Entorse','Coxa','Joelho','Panturrilha','Calcanhar']; const type=types[Math.floor(Math.random()*types.length)]; const weeks=1+Math.floor(Math.random()*3); S.injury={type:type,weeks:weeks,left:weeks}; S.stamina=Math.max(40,S.stamina||100); S.career.push('LESAO: '+S.name+' sofreu '+type+' e fica '+weeks+' semana(s) fora.'); }
+  const ageF=(S.age||20)>=30?1.4:1; const stamF=(typeof S.stamina==='number'&&S.stamina<40)?1.8:1; const posF=(S.pos==='VOL'||S.pos==='ZAG'||S.pos==='LE'||S.pos==='LD')?1.4:(S.pos==='GOL'?0.7:1); const base=0.03*ageF*stamF*posF; if (Math.random()<base){ const types=['Entorse','Coxa','Joelho','Panturrilha','Calcanhar']; const type=types[Math.floor(Math.random()*types.length)]; const weeks=1+Math.floor(Math.random()*3); S.injury={type:type,weeks:weeks,left:weeks}; S.stamina=Math.max(40,S.stamina||100); S.career.push('LESAO: '+S.name+' sofreu '+type+' e fica '+weeks+' semana(s) fora.'); }
 };
 
 E.advanceWeek = function(S, liveMods){

@@ -698,3 +698,9 @@ input:focus,select:focus{outline:none;border-color:var(--accent)}
 .hp-stam-fill{height:100%;background:linear-gradient(90deg,#2ecc71,#27ae60)}
 .hp-cond{font-size:11px;font-weight:700;color:#2ecc71;margin-top:4px}
 .hp-cond.inj{color:#ff5a5a}
+/* B5: cor da barra de estamina por nivel */
+.mini-stam-fill.ok,.hp-stam-fill.ok{background:linear-gradient(90deg,#2ecc71,#27ae60)}
+.mini-stam-fill.warn,.hp-stam-fill.warn{background:linear-gradient(90deg,#f1c40f,#f39c12)}
+.mini-stam-fill.crit,.hp-stam-fill.crit{background:linear-gradient(90deg,#ff5a5a,#c0392b)}
+.hp-cond{font-size:11px;font-weight:700;color:#2ecc71;margin-top:4px}
+.hp-cond.inj{color:#ff5a5a}

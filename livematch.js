@@ -540,8 +540,9 @@
     function runTiming(q, cb){
       const attrVal = (S.attrs && q.attr) ? (S.attrs[q.attr]||50) : 50;
       const mul = q.sweetMul || 1;
+      const _stamN=(typeof S.stamina==="number")?S.stamina:100; const _injN=(S.injury&&S.injury.weeks>0); const condMul=(_injN?0.62:(_stamN<40?0.72:(_stamN<70?0.88:1)));
       // janela "doce" baseada na ação/estatística: quanto maior a attr, mais fácil (janela maior)
-      const sweetW = (0.12 + (attrVal/100)*0.16) * mul;
+      const sweetW = (0.12 + (attrVal/100)*0.16) * mul * condMul;
       // local dourado aparece em posição aleatória na barra (não sempre no meio)
       const center = 0.2 + Math.random()*0.6;
       const lo = Math.max(0, center - sweetW/2), hi = Math.min(1, center + sweetW/2);
@@ -608,7 +609,8 @@
           const dirOk = (i===correct);
           // fase 2: timing (janela por estatística, centro aleatório, mais lento)
           const attrVal = (S.attrs && q.attr) ? (S.attrs[q.attr]||50) : 50;
-          const sweetW = (0.12 + (attrVal/100)*0.16);
+          const _stamH=(typeof S.stamina==="number")?S.stamina:100; const _injH=(S.injury&&S.injury.weeks>0); const condH=(_injH?0.62:(_stamH<40?0.72:(_stamH<70?0.88:1)));
+          const sweetW = (0.12 + (attrVal/100)*0.16) * condH;
           const center = 0.2 + Math.random()*0.6;
           const lo = Math.max(0, center - sweetW/2), hi = Math.min(1, center + sweetW/2);
           let t=0, dir=1, raf=null, done=false;
