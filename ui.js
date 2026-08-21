@@ -28,10 +28,10 @@ UI.topbar = function(){
 UI.render = function(){
   const S=UI.S; if(!S) return;
   document.getElementById('topbar-info').innerHTML = UI.topbar();
-  const tabs=[['carreira','Carreira'],['ficha','Ficha'],['estatisticas','Estatísticas'],['temporada','Temporada'],['liga','Liga'],['ligas','Ligas'],['competicoes','Comp'],['mercado','Mercado'],['conquistas','Conquistas'],['ranking','Ranking']];
+  const tabs=[['carreira','Carreira'],['ficha','Ficha'],['estatisticas','Estatísticas'],['academia','Academia'],['temporada','Temporada'],['liga','Liga'],['ligas','Ligas'],['competicoes','Comp'],['mercado','Mercado'],['conquistas','Conquistas'],['ranking','Ranking']];
   document.getElementById('tabs').innerHTML = tabs.map(t=>`<button class="tab ${UI.tab===t[0]?'on':''}" data-tab="${t[0]}">${t[1]}</button>`).join('');
   const app=document.getElementById('app');
-  const map={carreira:UI.carreira, ficha:UI.ficha, estatisticas:UI.estatisticas, temporada:UI.temporada, liga:UI.liga, ligas:UI.ligas, competicoes:UI.competicoes, mercado:UI.mercado, conquistas:UI.conquistas, ranking:UI.ranking};
+  const map={carreira:UI.carreira, ficha:UI.ficha, estatisticas:UI.estatisticas, academia:UI.academia, temporada:UI.temporada, liga:UI.liga, ligas:UI.ligas, competicoes:UI.competicoes, mercado:UI.mercado, conquistas:UI.conquistas, ranking:UI.ranking};
   const out = (map[UI.tab]||UI.carreira)();
   app.innerHTML = out;
   return out;
@@ -45,7 +45,7 @@ UI.carreira = function(){
   const feed = S.career.slice(-6).map(c=>`<p class="muted">${UI.esc(c)}</p>`).join('');
   const foot = FOOT_LABEL[S.foot]||'Destro';
   const footNote = FOOT_INFO[S.foot] ? FOOT_INFO[S.foot].note : '';
-  const skills = (S.skills||[]).map(k=>SKILLS.find(s=>s.k===k)).filter(Boolean).map(s=>s.n);
+  const skills = (S.skills||[]).map(s=>({n:(SKILLS.find(x=>x.k===(s.k||s))||{}).n||'', lvl:(s.lvl||1)})).filter(s=>s.n).map(s=>s.n+(s.lvl>1?(' '+s.lvl+'★'):''));
   return `<div class="panel"><h2><span class="ic">🔥</span> Modo Carreira — ${UI.esc(LEAGUE_BY_ID(S.leagueId).name)}</h2>
     <div class="row">
       <div class="col card"><div class="muted">Próximo evento (Semana ${S.week})</div><div style="font-size:18px;font-weight:800;margin:6px 0">${UI.esc(nextTxt)}</div>
@@ -56,7 +56,7 @@ UI.carreira = function(){
         <div class="mini-row"><span>Pé</span><b>${foot}</b></div>
         <div class="mini-row"><span>Idade</span><b>${S.age}</b></div>
         <div class="mini-row"><span>Clube</span><b>${UI.esc(S.teamName)}</b></div>
-        ${skills.length?`<div class="mini-skills">${skills.map(s=>`<span class="pill">${s}</span>`).join('')}</div>`:''}
+        ${skills.length?`<div class="mini-skills">${skills.map(s=>`<span class="pill">${s}${(s.lvl>1)?' '+s.lvl+'★':''}</span>`).join('')}</div>`:''}
         <div class="muted" style="margin-top:6px;font-size:11px">${UI.esc(footNote)}</div>
         <div class="actions" style="margin-top:8px"><button class="btn" id="btn-clubhall">🏛️ Hall do Clube</button></div>
       </div>
@@ -64,6 +64,37 @@ UI.carreira = function(){
     <div class="panel"><h2><span class="ic">📈</span> Evolução na carreira (OVR ● / Nota ◌)</h2>
       ${UI.spark(S.sMeEvo, 'var(--accent)')}
       <div style="margin-top:10px">${feed}</div></div>`;
+};
+UI.academia = function(){
+  const S=UI.S;
+  const pts = S.skillPts||0;
+  const have = (S.skills||[]).map(s=>({k:s.k, lvl:s.lvl||1}));
+  const haveKeys = have.map(h=>h.k);
+  const cost = (curLvl)=> (curLvl>0 ? curLvl+2 : 3);
+  const cards = SKILLS.map(def=>{
+    const cur = have.find(h=>h.k===def.k);
+    const lvl = cur?cur.lvl:0;
+    const c = cost(lvl);
+    const can = pts >= c && lvl < 5;
+    const btn = lvl===0 ? (can?`<button class="btn acad-buy" data-act="unlock" data-k="${def.k}">Destravar (${c} pts)</button>`:`<button class="btn" disabled>Faltam ${c-pts} pts</button>`)
+      : (can?`<button class="btn acad-buy" data-act="up" data-k="${def.k}">Subir p/ ${lvl+1}★ (${c} pts)</button>`:(lvl>=5?`<button class="btn" disabled>Máx</button>`:`<button class="btn" disabled>Faltam ${c-pts} pts</button>`));
+    const attrTxt = Object.entries(def.attr||{}).map(([a,v])=>a+' +'+v).join(', ');
+    const lvlDots = '★'.repeat(lvl)+'☆'.repeat(5-lvl);
+    return `<div class="acad-card" style="opacity:${lvl?1:0.7}"><div class="acad-n">${UI.esc(def.n)} <span class="acad-lvl">${lvlDots}</span></div><div class="muted">${UI.esc(def.d)}</div><div class="acad-attr">${UI.esc(attrTxt)}</div>${btn}</div>`;
+  }).join('');
+  return `<div class="panel"><h2><span class="ic">🎓</span> Academia de Habilidades</h2>
+    <div class="acad-pts">Pontos disponíveis: <b>${pts}</b> · ganhe mais ao fim de cada temporada (gols, MOM, títulos).</div>
+    <div class="acad-grid">${cards}</div>
+    <div class="muted" style="margin-top:10px">Subir o nível amplia o bônus da habilidade em jogo (ex.: Finalizador 1★ +25% gols → 3★ +75%).</div></div>`;
+};
+
+UI._acadApply = function(act, k){
+  const S=UI.S; const have=(S.skills||[]); const cur=have.find(h=>h.k===k); const lvl=cur?cur.lvl:0; const c=(lvl>0?lvl+2:3);
+  if ((S.skillPts||0) < c || lvl>=5) return;
+  S.skillPts -= c;
+  if (cur) cur.lvl += 1; else have.push({k:k, lvl:1});
+  S.career.push('ACADEMIA: '+(act==='unlock'?'destravou':'subiu p/ '+(lvl+1)+'★')+' '+(SKILLS.find(s=>s.k===k)||{}).n+'.');
+  UI.render();
 };
 
 UI.estatisticas = function(){
@@ -101,7 +132,7 @@ UI.ficha = function(){
   const arch = ARCHETYPES.find(a=>a.k===(S.creationArch||S.archetype));
   const pa = resolveArchetype(S.archetype);
   const ma = resolveArchetype(S.mental);
-  const skills = (S.skills||[]).map(k=>SKILLS.find(s=>s.k===k)).filter(Boolean);
+  const skills = (S.skills||[]).map(s=>({d:SKILLS.find(x=>x.k===(s.k||s)), lvl:(s.lvl||1)})).filter(s=>s.d);
   const clubs = S.careerStats && S.careerStats.teamsPlayed ? Object.keys(S.careerStats.teamsPlayed) : [S.teamName];
   const archBlock = pa ? `<div class="panel" style="margin-top:12px"><h2><span class="ic">⚡</span> Arquétipo de Estilo — ${UI.esc(pa.n)}${pa._mutated?' <span class="mut-badge">MUTADO</span>':''}</h2>
     <div class="muted">${UI.esc(pa.insp)}</div>
@@ -130,7 +161,7 @@ UI.ficha = function(){
           <div><span>Lesão</span><b>${(S.injury&&S.injury.weeks>0)?(S.injury.type+' ('+S.injury.left+'sem)'):'Saudável'}</b></div>
 
         </div>
-        ${skills.length?`<div class="muted" style="margin-top:8px">Skills</div><div class="mini-skills">${skills.map(s=>`<span class="pill">${s.n}</span>`).join('')}</div>`:''}
+        ${skills.length?`<div class="muted" style="margin-top:8px">Skills</div><div class="mini-skills">${skills.map(s=>`<span class="pill">${UI.esc(s.d.n)}${(s.lvl>1)?' '+s.lvl+'★':''}</span>`).join('')}</div>`:''}
       </div>
     </div>
     ${archBlock}

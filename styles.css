@@ -704,3 +704,13 @@ input:focus,select:focus{outline:none;border-color:var(--accent)}
 .mini-stam-fill.crit,.hp-stam-fill.crit{background:linear-gradient(90deg,#ff5a5a,#c0392b)}
 .hp-cond{font-size:11px;font-weight:700;color:#2ecc71;margin-top:4px}
 .hp-cond.inj{color:#ff5a5a}
+
+/* ===== ACADEMIA DE HABILIDADES (PRIORIDADE 2) ===== */
+.acad-pts{margin:8px 0 14px;font-size:13px}
+.acad-pts b{color:var(--gold);font-size:16px}
+.acad-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.acad-card{background:var(--panel-2,#1b2030);border:1px solid var(--line);border-radius:10px;padding:12px}
+.acad-n{font-weight:800;font-size:14px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center}
+.acad-lvl{color:var(--gold);letter-spacing:1px}
+.acad-attr{font-size:11px;color:#9fb0c9;margin:6px 0 10px}
+.acad-card .btn{width:100%}

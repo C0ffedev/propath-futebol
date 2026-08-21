@@ -197,7 +197,7 @@
     }
     if (S && UI.tab==='carreira'){
       document.getElementById('topbar-info').innerHTML = UI.topbar();
-      const tabs=[['carreira','Carreira'],['ficha','Ficha'],['estatisticas','Estatísticas'],['temporada','Temporada'],['liga','Liga'],['ligas','Ligas'],['competicoes','Comp'],['mercado','Mercado'],['conquistas','Conquistas'],['ranking','Ranking']];
+      const tabs=[['carreira','Carreira'],['ficha','Ficha'],['estatisticas','Estatísticas'],['academia','Academia'],['temporada','Temporada'],['liga','Liga'],['ligas','Ligas'],['competicoes','Comp'],['mercado','Mercado'],['conquistas','Conquistas'],['ranking','Ranking']];
       document.getElementById('tabs').innerHTML = tabs.map(t=>`<button class="tab ${UI.tab===t[0]?'on':''}" data-tab="${t[0]}">${t[1]}</button>`).join('');
       let html;
       try { html = UI.hubDashboard(); }
@@ -224,6 +224,7 @@
     const adv = document.getElementById('hub-advance'); if (adv) adv.onclick = ()=>{ if (typeof advanceWeek==='function') advanceWeek(); };
     document.querySelectorAll('#app .hub-quick [data-tab]').forEach(b=>b.onclick=()=>{ UI.tab=b.dataset.tab; UI.render(); afterRender(); });
     document.querySelectorAll('#app .comp-pill').forEach(p=>p.onclick=()=>{ UI.tab='competicoes'; UI.render(); afterRender(); });
+    document.querySelectorAll('#app .acad-buy').forEach(b=>b.onclick=()=>{ if (typeof UI._acadApply==='function') UI._acadApply(b.dataset.act, b.dataset.k); });
   }
 
   // expõe para main.js

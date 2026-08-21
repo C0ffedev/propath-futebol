@@ -93,7 +93,7 @@ function get(url){return new Promise((res,rej)=>{http.get(url,r=>{let d='';r.on(
 
   // 6) percorre abas sem erro, incluindo a nova aba Competições
   let compHtml='';
-  ['ficha','temporada','liga','ligas','competicoes','mercado','conquistas','ranking'].forEach(t=>{ w.UI.tab=t; w.UI.render(); if(t==='competicoes') compHtml = d.getElementById('app').innerHTML; });
+  ['ficha','temporada','liga','ligas','competicoes','academia','mercado','conquistas','ranking'].forEach(t=>{ w.UI.tab=t; w.UI.render(); if(t==='competicoes') compHtml = d.getElementById('app').innerHTML; });
   console.log('todas abas renderizaram');
   const compOk = compHtml.includes('Competi') && compHtml.includes('class="comp-card"') && compHtml.includes('Como conquistar vagas') && compHtml.includes('Libertadores');
   console.log('aba Competições renderizou cards?', compOk);

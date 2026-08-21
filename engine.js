@@ -127,7 +127,7 @@ E.createPlayer = function(o){
   const me = {
     id: 'save-' + Date.now().toString(36),
     name: o.name, nation: o.nation, pos: o.pos,
-    age, attrs, ovr, pot, foot, skills: o.skills||[],
+    age, attrs, ovr, pot, foot, skills: (o.skills||[]).map(s=>(typeof s==='string'?{k:s,lvl:1}:s)), skillPts: (typeof o.skillPts==='number'?o.skillPts:0),
     creationArch: o.arch || 'branco',
     archetype: o.power || null,
     mental: null, mentalAwakened: [],
@@ -168,6 +168,11 @@ E.normalizeSave = function(S){
     cleanSheets:0, mom:0, goalsConceded:0, bestRating:0, worstRating:10, biggestWin:0,
     hatTricks:0, cupGames:0, seasons:S.season||1, teamsPlayed:{} };
   if (!S.skills) S.skills = [];
+  if (Array.isArray(S.skills) && S.skills.length && typeof S.skills[0] === 'string'){
+    S.skills = S.skills.map(k => ({k:k, lvl:1}));
+  }
+  if (!Array.isArray(S.skills)) S.skills = [];
+  if (typeof S.skillPts !== 'number') S.skillPts = 0;
   if (!S.foot) S.foot = 'dir';
   if (!S.seasonSummary) S.seasonSummary = null;
   // compatibilidade com saves ANTIGOS (criados antes da refatoração de ligas):
@@ -377,11 +382,19 @@ E.trainGain = function(S, planOverride){
 };
 
 // multiplicador de skill para uma categoria especial
+// nivel de uma skill do jogador (0 se nao tem). Suporta {k,lvl} ou string legada.
+E.skillLvl = function(S, k){
+  const arr = (S.skills||[]);
+  for (const s of arr){ if (typeof s === 'string'){ if (s === k) return 1; } else if (s && s.k === k) return (s.lvl||1); }
+  return 0;
+};
 E.skillMul = function(S, catKey){
   let mul = 1;
   for (const sk of (S.skills||[])){
-    const def = SKILLS.find(s=>s.k===sk);
-    if (def && def.cat && def.cat[catKey]) mul *= def.cat[catKey];
+    const k = (typeof sk === 'string') ? sk : (sk && sk.k);
+    const lvl = (typeof sk === 'string') ? 1 : (sk && (sk.lvl||1));
+    const def = SKILLS.find(s=>s.k===k);
+    if (def && def.cat && def.cat[catKey]) mul *= Math.pow(def.cat[catKey], lvl);
   }
   return mul;
 };
@@ -534,8 +547,8 @@ E.simMatch = function(S, opp, cup){
   let rating = rating0;
   const isAtt = (S.pos==='ATA'||S.pos==='MEI');
   let goals = 0, assists = 0;
-  const skillGoalMul = (S.skills||[]).includes('finalizador') ? 1.25 : 1;
-  const skillAstMul = (S.skills||[]).includes('armador') ? 1.3 : 1;
+  const _fgLvl = E.skillLvl(S,'finalizador'); const skillGoalMul = _fgLvl ? (1 + 0.25*_fgLvl) : 1;
+  const _faLvl = E.skillLvl(S,'armador'); const skillAstMul = _faLvl ? (1 + 0.3*_faLvl) : 1;
   if (isAtt){ goals = Math.round(E.poisson((rating-6)*0.7)*skillGoalMul); assists = Math.round(E.poisson((rating-6)*0.4)*skillAstMul); }
   else if (S.pos==='MEI'){ assists = Math.round(E.poisson((rating-6)*0.5)*skillAstMul); }
   // coerência: gols+assists <= gols do próprio time
@@ -884,6 +897,10 @@ E.endSeason = function(S){
   E.evolveLeague(S);
   if(outcome.promoted){const adj=ADJ_LEAGUE(league,+1);if(adj){E.moveClubDivision(S,adj);S.salary=Math.round(S.salary*1.5);S.career.push(`ACESSO! O ${S.teamName} disputará a ${adj.name}.`);}}
   else if(outcome.relegated){const adj=ADJ_LEAGUE(league,-1);if(adj){E.moveClubDivision(S,adj);S.salary=Math.round(S.salary*.75);S.career.push(`REBAIXADO! O ${S.teamName} disputará a ${adj.name}.`);}}
+  const _ss = S.seasonStats;
+  let _pts = 3 + Math.floor((_ss.goals||0)/8) + ((_ss.mom||0) > 5 ? 2 : 0) + (outcome.champion ? 3 : 0);
+  S.skillPts = (S.skillPts||0) + _pts;
+  S.career.push('ACADEMIA: +'+_pts+' pontos de habilidade (total ' + S.skillPts + '). Use na aba Academia.');
   S.season++; S.week=1; S.calIdx=0; S.table={p:0,w:0,d:0,l:0,gf:0,ga:0};
   // recorde de gols em uma temporada
   if (S.seasonStats.goals > (S.records.bestSeasonGoals||0)) S.records.bestSeasonGoals = S.seasonStats.goals;
