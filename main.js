@@ -312,6 +312,8 @@ function afterRender(){
   $$('#app [data-offer]').forEach(b=>b.onclick=()=>acceptOffer(parseInt(b.dataset.offer)));
   $$('#app [data-club]').forEach(el=>el.onclick=(e)=>{ e.stopPropagation(); UI.clubProfile(el.dataset.club, el.dataset.league); });
   const hallBtn = document.querySelector('#btn-clubhall'); if (hallBtn) hallBtn.onclick = UI.clubHall;
+  const retireBtn = document.querySelector('#btn-retire'); if (retireBtn) retireBtn.onclick = UI.retireNow;
+  const legacyBtn = document.querySelector('#btn-legacy'); if (legacyBtn) legacyBtn.onclick = UI.legacy;
   // God Mode: reflete estado no botão E revela só para o dono (C0ffe) em toda renderização
   const godBtn2 = document.getElementById('btn-god');
   if (godBtn2){

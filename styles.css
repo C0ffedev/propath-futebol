@@ -714,3 +714,9 @@ input:focus,select:focus{outline:none;border-color:var(--accent)}
 .acad-lvl{color:var(--gold);letter-spacing:1px}
 .acad-attr{font-size:11px;color:#9fb0c9;margin:6px 0 10px}
 .acad-card .btn{width:100%}
+
+/* ===== LEGADO / FIM DE CARREIRA (PRIORIDADE 3) ===== */
+.legacy-screen{max-width:520px}
+.legacy-hero{font-size:18px;font-weight:800;color:var(--gold);margin:10px 0 6px;text-align:center}
+.legacy-note{margin-top:12px;padding:10px;background:var(--panel-2,#1b2030);border-radius:8px;font-size:13px;line-height:1.5}
+.club-hall .club-sec-h{font-weight:700;color:var(--accent);font-size:12px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}

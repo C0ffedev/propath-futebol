@@ -58,7 +58,7 @@ UI.carreira = function(){
         <div class="mini-row"><span>Clube</span><b>${UI.esc(S.teamName)}</b></div>
         ${skills.length?`<div class="mini-skills">${skills.map(s=>`<span class="pill">${s}${(s.lvl>1)?' '+s.lvl+'★':''}</span>`).join('')}</div>`:''}
         <div class="muted" style="margin-top:6px;font-size:11px">${UI.esc(footNote)}</div>
-        <div class="actions" style="margin-top:8px"><button class="btn" id="btn-clubhall">🏛️ Hall do Clube</button></div>
+        <div class="actions" style="margin-top:8px"><button class="btn" id="btn-clubhall">🏛️ Hall do Clube</button>${S.retired?'<button class="btn" id="btn-legacy">🏆 Ver Legado</button>':'<button class="btn ghost" id="btn-retire">🚪 Encerrar Carreira</button>'}</div>
       </div>
     </div></div>
     <div class="panel"><h2><span class="ic">📈</span> Evolução na carreira (OVR ● / Nota ◌)</h2>
@@ -294,22 +294,53 @@ UI.clubProfile = function(teamName, leagueId){
 
 // Hall do clube atual: troféus do JOGADOR no clube + estatísticas básicas
 UI.clubHall = function(){
-  const S = UI.S; const lg = LEAGUE_BY_ID(S.leagueId);
-  const trophies = (S.trophies||[]).filter(t=>t.includes(lg.name));
-  const clubGames = (S.seasonMatches||[]).length + (S.careerStats.games||0);
-  const body = trophies.length
-    ? trophies.map(t=>'<div class="trophy">'+UI.esc(t)+'</div>').join('')
-    : '<div class="muted">Você ainda não conquistou títulos no '+UI.esc(S.teamName)+'. Mono a sua obsessão! 🔥</div>';
-  modal('<div class="club-hall"><h3>🏛️ Hall do '+UI.esc(S.teamName)+'</h3>'+
-    '<div class="club-sec-h">Troféus com este clube</div>'+body+
-    '<div class="club-sec-h" style="margin-top:10px">Estatísticas básicas</div>'+
-    '<div class="mini-row"><span>Jogos pelo clube</span><b>'+(S.careerStats.teamsPlayed && S.careerStats.teamsPlayed[S.teamName] || 0)+'</b></div>'+
-    '<div class="mini-row"><span>Gols na carreira</span><b>'+(S.careerStats.goals||0)+'</b></div>'+
-    '<div class="mini-row"><span>Assistências na carreira</span><b>'+(S.careerStats.assists||0)+'</b></div>'+
-    '<div class="mini-row"><span>Temporadas</span><b>'+(S.season||1)+'</b></div>'+
-    '<div class="mini-row"><span>OVR atual</span><b>'+S.ovr+'</b></div>'+
-    '</div>');
+  const S = UI.S; const cs = S.careerStats || {};
+  const clubTrophies = (S.trophies||[]).filter(t=>t.includes(S.teamName));
+  const body = clubTrophies.length
+    ? clubTrophies.map(t=>'<div class="trophy">'+UI.esc(t)+'</div>').join('')
+    : '<div class="muted">Voce ainda nao conquistou titulos no '+UI.esc(S.teamName)+'. Mono a sua obsessao! 🔥</div>';
+  const clubsTxt = (cs.teamsPlayed && Object.keys(cs.teamsPlayed).length) ? Object.keys(cs.teamsPlayed).map(c=>UI.esc(c)).join(', ') : UI.esc(S.teamName);
+  modal('<div class="club-hall"><h3>🏛️ Hall do '+UI.esc(S.teamName)+'</h3>'
+    +'<div class="club-sec-h">Troféus com este clube</div>'+body
+    +'<div class="club-sec-h" style="margin-top:10px">Estatísticas básicas</div>'
+    +'<div class="mini-row"><span>Jogos pelo clube</span><b>'+(cs.teamsPlayed && cs.teamsPlayed[S.teamName] || 0)+'</b></div>'
+    +'<div class="mini-row"><span>Gols na carreira</span><b>'+(cs.goals||0)+'</b></div>'
+    +'<div class="mini-row"><span>Assistências na carreira</span><b>'+(cs.assists||0)+'</b></div>'
+    +'<div class="mini-row"><span>Temporadas</span><b>'+(S.season||1)+'</b></div>'
+    +'<div class="mini-row"><span>OVR atual</span><b>'+S.ovr+'</b></div>'
+    +'<div class="club-sec-h" style="margin-top:12px">CARREIRA INTEIRA</div>'
+    +'<div class="mini-row"><span>Clubes</span><b>'+clubsTxt+'</b></div>'
+    +'<div class="mini-row"><span>Títulos totais</span><b>'+(S.trophies||[]).length+'</b></div>'
+    +(S.legacy?('<div class="club-sec-h" style="margin-top:12px">LEGADO</div><div class="muted">'+UI.esc(E.legacySummary(S))+'</div>'):'')
+    +'</div>');
 };
+
+UI.legacy = function(){
+  const S = UI.S; const L = S.legacy;
+  if (!L){ modal('<div class="club-hall"><h3>🏁 Legado</h3><div class="muted">Carreira ainda em andamento.</div></div>'); return; }
+  const clubTxt = (L.clubs&&L.clubs.length)? L.clubs.map(c=>UI.esc(c)).join(', ') : S.teamName;
+  const tropTxt = (L.trophies&&L.trophies.length)? L.trophies.map(t=>'<div class="trophy">'+UI.esc(t)+'</div>').join('') : '<div class="muted">Nenhum título conquistado.</div>';
+  modal('<div class="club-hall legacy-screen"><h3>🏆 FIM DE CARREIRA — Legado de '+UI.esc(L.name)+'</h3>'
+    +'<div class="legacy-hero">'+L.goals+' gols · '+L.assists+' assist · '+L.games+' jogos · '+L.seasons+' temporadas</div>'
+    +'<div class="club-sec-h">Resumo</div>'
+    +'<div class="mini-row"><span>Idade de aposentadoria</span><b>'+L.age+'</b></div>'
+    +'<div class="mini-row"><span>Clubes</span><b>'+clubTxt+'</b></div>'
+    +'<div class="mini-row"><span>OVR final / teto</span><b>'+L.finalOvr+' / '+L.peakOvr+'</b></div>'
+    +'<div class="mini-row"><span>Melhor nota</span><b>'+(L.bestRating?L.bestRating.toFixed(1):'—')+'</b></div>'
+    +'<div class="mini-row"><span>Recordes de gols numa temporada</span><b>'+L.bestSeasonGoals+'</b></div>'
+    +'<div class="mini-row"><span>Melhor sequência invicta</span><b>'+L.bestStreak+'</b></div>'
+    +'<div class="club-sec-h" style="margin-top:12px">Troféus ('+L.trophies.length+')</div>'+tropTxt
+    +'<div class="legacy-note">'+UI.esc(E.legacySummary(S))+'</div>'
+    +'<div class="actions" style="margin-top:14px"><button class="big-btn" id="legacy-close">Fechar</button></div></div>');
+  const c = document.getElementById('legacy-close'); if (c) c.onclick = closeModal;
+};
+
+UI.retireNow = function(){
+  const S = UI.S; if (S.retired) return;
+  if (!confirm('Encerrar a carreira de '+S.name+'? Isso congela seu Legado (nao da pra voltar).')) return;
+  E.retirePlayer(S); UI.render(); UI.legacy();
+};
+
 
 UI.ligas = function(){
   const S=UI.S;

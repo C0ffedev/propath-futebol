@@ -684,6 +684,7 @@ E.applyInjury = function(S){
 E.advanceWeek = function(S, liveMods){
   const wk = S.calendar[S.calIdx];
   let matchRes = null;
+  if (S.retired){ if (typeof showToast==='function') showToast('Carreira encerrada — veja seu Legado.'); return null; }
   E.applyInjury(S);
   const _injuredThisWeek = !!(S.injury && S.injury.weeks>0);
   if (wk && wk.type==='match'){
@@ -871,6 +872,32 @@ E.moveClubDivision = function(S, targetLeague){
   S.leagueId=targetLeague.id;S.tierIndex=TIERS.indexOf(targetLeague);S.leagueTeams=target;S.teamOvr=current.o;
 };
 
+// Aposentadoria / Legado: congela a carreira e monta o resumo de legado.
+E.retirePlayer = function(S){
+  const cs = S.careerStats || {};
+  const legacy = {
+    retired:true, age:(S.age||40), name:S.name, pos:S.pos, nation:S.nation,
+    seasons: cs.seasons || S.season || 1,
+    games:cs.games||0, goals:cs.goals||0, assists:cs.assists||0, mom:cs.mom||0,
+    cleanSheets:cs.cleanSheets||0, bestRating:cs.bestRating||0, hatTricks:cs.hatTricks||0,
+    trophies:(S.trophies||[]).slice(),
+    clubs:Object.keys(cs.teamsPlayed||{}),
+    peakOvr:S.pot||S.ovr, finalOvr:S.ovr,
+    bestSeasonGoals:(S.records||{}).bestSeasonGoals||0, bestStreak:(S.records||{}).bestStreak||0
+  };
+  S.legacy = legacy; S.retired = true;
+  S.career.push('APOSENTADORIA ('+(S.age||40)+' anos): '+S.name+' encerra a carreira com '+legacy.goals+' gols e '+legacy.trophies.length+' titulos.');
+  return legacy;
+};
+
+// Resumo legível do legado (usado na tela de fim de carreira).
+E.legacySummary = function(S){
+  const L = S.legacy; if (!L) return '';
+  const clubTxt = (L.clubs&&L.clubs.length)? L.clubs.join(', ') : S.teamName;
+  const tropTxt = (L.trophies&&L.trophies.length)? L.trophies.length+' título(s)' : 'nenhum título';
+  return L.name+' — '+L.age+' anos, '+L.seasons+' temporadas, '+L.games+' jogos, '+L.goals+' gols, '+L.assists+' assistências, '+tropTxt+'. Passou por: '+clubTxt+'.';
+};
+
 E.endSeason = function(S){
   E.maintainGodMode(S);
   const league=LEAGUE_BY_ID(S.leagueId),table=E.getLeagueTable(S),pos=table.findIndex(r=>r.me)+1;
@@ -912,6 +939,7 @@ E.endSeason = function(S){
   S.offers = E.genOffers(S); S.pendingTransfer = true; S._midWin = null;
   S.careerStats.seasons = S.season;
   if (S.age < 40) S.age++;
+  if (S.age >= 40 && !S.retired) E.retirePlayer(S);
 };
 
 E.genOffers = function(S){

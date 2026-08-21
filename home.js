@@ -155,7 +155,7 @@
 
           <div class="hp-league">${LEAGUE_BY_ID(S.leagueId)?LEAGUE_BY_ID(S.leagueId).name:'—'}</div>
         </div>
-        <button class="big-btn hub-advance" id="hub-advance">▶ Avançar Semana</button>
+        ${S.retired?'<button class="big-btn hub-advance" id="hub-legacy">🏆 Ver Legado</button>':'<button class="big-btn hub-advance" id="hub-advance">▶ Avançar Semana</button>'}
       </div>
       <div class="hub-next">
         <div class="muted">PRÓXIMO EVENTO (Semana ${S.week})</div>
@@ -222,6 +222,7 @@
 
   function bindHubDash(){
     const adv = document.getElementById('hub-advance'); if (adv) adv.onclick = ()=>{ if (typeof advanceWeek==='function') advanceWeek(); };
+    const leg = document.getElementById('hub-legacy'); if (leg) leg.onclick = ()=>{ if (typeof UI.legacy==='function') UI.legacy(); };
     document.querySelectorAll('#app .hub-quick [data-tab]').forEach(b=>b.onclick=()=>{ UI.tab=b.dataset.tab; UI.render(); afterRender(); });
     document.querySelectorAll('#app .comp-pill').forEach(p=>p.onclick=()=>{ UI.tab='competicoes'; UI.render(); afterRender(); });
     document.querySelectorAll('#app .acad-buy').forEach(b=>b.onclick=()=>{ if (typeof UI._acadApply==='function') UI._acadApply(b.dataset.act, b.dataset.k); });
