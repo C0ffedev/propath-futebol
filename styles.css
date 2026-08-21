@@ -585,7 +585,27 @@ input:focus,select:focus{outline:none;border-color:var(--accent)}
 .live-vs{font-size:15px;font-weight:800;color:var(--txt)}
 .live-vs b{color:var(--red);margin:0 6px}
 .live-svg{width:100%;max-width:240px;height:auto;display:block;margin:0 auto;background:#0b3d1f;border-radius:10px;border:1px solid rgba(255,255,255,.06)}
-.live-field{fill:#0b3d1f;stroke:rgba(255,255,255,.25);stroke-width:.6}
+.live-field{fill:url(#liveGrass);stroke:rgba(255,255,255,.3);stroke-width:.6}
+.live-pa{fill:none;stroke:rgba(255,255,255,.32);stroke-width:.5}
+.live-parc{fill:none;stroke:rgba(255,255,255,.32);stroke-width:.5}
+.live-spot{fill:rgba(255,255,255,.45)}
+.live-corner{fill:none;stroke:rgba(255,255,255,.32);stroke-width:.5}
+.live-box{fill:rgba(255,255,255,.14)}
+/* CAMADA 3: toggles de camada na tela ao vivo */
+.live-layers{display:flex;flex-wrap:wrap;gap:6px 12px;justify-content:center;margin:6px 0 2px;font-size:11px;color:var(--muted)}
+.live-layers label{display:inline-flex;align-items:center;gap:4px;cursor:pointer;user-select:none}
+.live-layers input{accent-color:var(--accent)}
+.hide-posse #live-owner-ring{display:none}
+.hide-posse .live-has-ball,.hide-posse .live-posse-king{display:none}
+.hide-zona #live-zone{display:none}
+.hide-passe #live-pass{display:none}
+.hide-nomes .live-plabel,.hide-nomes .live-pnum{display:none}
+@media (max-width:480px){
+  .live-svg{max-width:300px}
+  .live-layers{font-size:10px;gap:4px 8px}
+  .live-title{font-size:11px}
+}
+@media (max-width:360px){ .live-svg{max-width:340px} }
 .live-mid{stroke:rgba(255,255,255,.3);stroke-width:.5;stroke-dasharray:2 2}
 .live-circle{fill:none;stroke:rgba(255,255,255,.3);stroke-width:.5}
 .live-box{fill:rgba(255,255,255,.18)}

@@ -199,6 +199,14 @@
     // Não sobrescrever aqui (bug anterior pintava os 11 adversários de azul em vez de vermelho).
     const squad = buildSquad(S, opp); // nomes alinhados aos 15 pontos
     let ball = { x:50, y:178 };
+    // CAMADA 3: detalhe do campo (grama + linhas)
+    const _cx = W/2;
+    let _stripes='';
+    const _band=(H-4)/10;
+    for (let i=0;i<10;i++){ _stripes += `<rect x="2" y="${(2+i*_band).toFixed(1)}" width="${W-4}" height="${_band.toFixed(1)}" fill="${i%2?'#0e4a26':'#0a3720'}"/>`; }
+    const _paTop = `<rect x="${_cx-20}" y="2" width="40" height="22" class="live-pa"/><circle cx="${_cx}" cy="15" r="0.9" class="live-spot"/><path class="live-parc" d="M ${_cx-11} 24 A 11 11 0 0 0 ${_cx+11} 24"/>`;
+    const _paBot = `<rect x="${_cx-20}" y="${H-24}" width="40" height="22" class="live-pa"/><circle cx="${_cx}" cy="${H-15}" r="0.9" class="live-spot"/><path class="live-parc" d="M ${_cx-11} ${H-24} A 11 11 0 0 1 ${_cx+11} ${H-24}"/>`;
+    const _corners = `<path class="live-corner" d="M 2 8 A 6 6 0 0 1 8 2"/><path class="live-corner" d="M ${W-8} 2 A 6 6 0 0 1 ${W-2} 8"/><path class="live-corner" d="M 2 ${H-8} A 6 6 0 0 0 8 ${H-2}"/><path class="live-corner" d="M ${W-8} ${H-2} A 6 6 0 0 0 ${W-2} ${H-8}"/>`;
 
     const overlay = document.createElement('div');
     overlay.id = 'live-overlay';
@@ -223,11 +231,17 @@
           <button class="btn live-watch" id="live-watch">▶ Assistir</button>
         </div>
         <svg class="live-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
+          <defs><linearGradient id="liveGrass" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0c4222"/><stop offset="100%" stop-color="#0a361c"/></linearGradient></defs>
           <rect x="2" y="2" width="${W-4}" height="${H-4}" rx="6" class="live-field"/>
+          ${_stripes}
           <line x1="2" y1="${H/2}" x2="${W-2}" y2="${H/2}" class="live-mid"/>
-          <circle cx="${W/2}" cy="${H/2}" r="14" class="live-circle"/>
-          <rect x="${W/2-12}" y="2" width="24" height="4" class="live-box"/>
-          <rect x="${W/2-12}" y="${H-6}" width="24" height="4" class="live-box"/>
+          <circle cx="${_cx}" cy="${H/2}" r="14" class="live-circle"/>
+          <circle cx="${_cx}" cy="${H/2}" r="1" class="live-spot"/>
+          ${_paTop}
+          ${_paBot}
+          ${_corners}
+          <rect x="${_cx-12}" y="2" width="24" height="4" class="live-box"/>
+          <rect x="${_cx-12}" y="${H-6}" width="24" height="4" class="live-box"/>
           <g id="live-zone"></g>
           <g id="live-players"></g>
           <g id="live-trail"></g>
@@ -236,11 +250,19 @@
           <circle id="live-ball" cx="${ball.x}" cy="${ball.y}" r="2.6" fill="#ffd21e"/>
           <g id="live-shadow"></g>
         </svg>
+        <div class="live-layers">
+          <label><input type="checkbox" class="live-layer-chk" data-layer="posse" checked> Posse</label>
+          <label><input type="checkbox" class="live-layer-chk" data-layer="zona" checked> Zona</label>
+          <label><input type="checkbox" class="live-layer-chk" data-layer="nomes" checked> Nomes</label>
+          <label><input type="checkbox" class="live-layer-chk" data-layer="passe" checked> Passe</label>
+        </div>
         <div class="live-status" id="live-status">⚽ Aquecimento…</div>
         <div class="live-qte" id="live-qte"></div>
         <div class="live-log" id="live-log"></div>
       </div>`;
     document.body.appendChild(overlay);
+    // CAMADA 3: toggles de camada na tela ao vivo (handler NEVER inline - pitfall 38)
+    overlay.querySelectorAll('.live-layer-chk').forEach(c=>{ c.onclick = ()=> overlay.classList.toggle('hide-'+c.dataset.layer, !c.checked); });
 
     const ballEl = overlay.querySelector('#live-ball');
     const statusEl = overlay.querySelector('#live-status');
