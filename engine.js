@@ -134,7 +134,7 @@ E.createPlayer = function(o){
     leagueId: tierDef.id, tierIndex: TIERS.indexOf(tierDef), teamName: team.n,
     teamOvr: team.o, salary: 1500,
     leagueTeams: _copyLeagueTeams(tierDef.id, team.n),
-    week: 1, season: 1, morale: 70, form: 3,
+    week: 1, season: 1, morale: 70, form: 3, stamina: 100, injury: null,
     table: {p:0,w:0,d:0,l:0,gf:0,ga:0},
     seasonMatches: [], calendar: [], calIdx: 0,
     trainPlan: {k:'tecnico', n:'Técnica Obsessiva'},
@@ -202,6 +202,8 @@ E.normalizeSave = function(S){
   if (typeof E.ensureComps==='function' && S.compRulesVersion!==E.COMP_RULES_VERSION && S.calIdx===0 && !(S.seasonMatches||[]).length){
     S.comps=null;E.ensureComps(S);S.calendar=E.genCompCalendar(S);
   }
+  if (!S.stamina || typeof S.stamina!=='number') S.stamina = 100;
+  if (typeof S.injury==='undefined' || S.injury===null) S.injury = null;
   if (!S.trainPlan) S.trainPlan = {k:'tecnico', n:'Técnica Obsessiva'};
   // Liga: garante tabela + sincroniza com os jogos já disputados (corrige saves antigos desbalanceados)
   E.recomputeLeague(S);
@@ -544,6 +546,7 @@ E.simMatch = function(S, opp, cup){
 
   // ----- estatísticas de jogo -----
   const mySkill = (S.ovr + S.teamOvr)/2;
+  const _stam=(typeof S.stamina==='number')?S.stamina:100; const _tired=Math.max(0,(100-_stam)/100); const _inj=(S.injury&&S.injury.weeks>0)?S.injury:null; if(_inj){ rating -= 1.5; }
   const oppSkill = (opp.o + opp.o)/2;
   const posse = Math.round(Math.min(78, Math.max(22, 50 + (mySkill-oppSkill)*0.9 + (Math.random()*8-4))));
   const totShots = gf + ga + E.poisson(6);
@@ -573,7 +576,7 @@ E.simMatch = function(S, opp, cup){
   const myInside = Math.round(myShots*0.45); const myOutside = myShots - myInside;
   const oppInside = Math.round(oppShots*0.45); const oppOutside = oppShots - oppInside;
   let pShots = 0, pPasses = 0, pTackles = 0, pDribbles = 0;
-  const infl = Math.max(0.2, (rating-5)/5);
+  const _injInfl=(_inj)?0.55:1; const inflRaw=Math.max(0.2,(rating-5)/5); const infl=inflRaw*(1-0.35*_tired)*_injInfl;
   if (S.pos==='ATA'){ pShots = 2 + Math.round(goals + infl*3); pPasses = 8 + Math.round(infl*14); pDribbles = 2 + Math.round(infl*4); }
   else if (S.pos==='MEI'){ pShots = 1 + Math.round(infl*2); pPasses = 25 + Math.round(infl*30); pDribbles = 2 + Math.round(infl*4); pTackles = Math.round(infl*3); }
   else if (S.pos==='GOL'){ pShots = 0; pPasses = 10 + Math.round(infl*10); pTackles = 0; pDribbles = 0; }
@@ -659,11 +662,20 @@ E.buildFeed = function(S, opp, gf, ga, goals, assists, rating, mom, specials){
   return feed;
 };
 
+
+E.applyInjury = function(S){
+  if (S.injury && S.injury.weeks>0){ S.injury.left--; if (S.injury.left<=0){ S.career.push('Recuperado: '+S.name+' volta apos lesao ('+S.injury.type+').'); S.injury=null; } return; }
+  const ageF=(S.age||20)>=30?1.4:1; const stamF=(typeof S.stamina==='number'&&S.stamina<40)?1.8:1; const base=0.05*ageF*stamF; if (Math.random()<base){ const types=['Entorse','Coxa','Joelho','Panturrilha','Calcanhar']; const type=types[Math.floor(Math.random()*types.length)]; const weeks=1+Math.floor(Math.random()*3); S.injury={type:type,weeks:weeks,left:weeks}; S.stamina=Math.max(40,S.stamina||100); S.career.push('LESAO: '+S.name+' sofreu '+type+' e fica '+weeks+' semana(s) fora.'); }
+};
+
 E.advanceWeek = function(S, liveMods){
   const wk = S.calendar[S.calIdx];
   let matchRes = null;
+  E.applyInjury(S);
+  const _injuredThisWeek = !!(S.injury && S.injury.weeks>0);
   if (wk && wk.type==='match'){
-    const r = E.simMatch(S, wk.opp, !!wk.comp);
+    let r;
+    if (_injuredThisWeek){ const _bk=S.ovr; S.ovr=Math.max(40,S.ovr-8); const _bki=S.injury; S.injury=null; r=E.simMatch(S,wk.opp,!!wk.comp); r.goals=0; r.assists=0; r.specials=[]; S.ovr=_bk; S.injury=_bki; S.stamina=Math.min(100,(S.stamina||100)+12); } else { r=E.simMatch(S,wk.opp,!!wk.comp); S.stamina=Math.max(1,(S.stamina||100)-(liveMods?16:10)); }
     // ----- APLICAÇÃO DOS QTEs AO VIVO (se vieram da tela ao vivo) -----
     if (liveMods){
       const simGoals = r.goals||0, simAssists = r.assists||0, simGa = r.ga||0;
@@ -757,6 +769,7 @@ E.advanceWeek = function(S, liveMods){
     E.trainGain(S, plan);
     S.career.push(`Sem ${S.calIdx+1}: treino (${plan.n}).`);
     S.pendingTrain = null;
+    S.stamina=Math.min(100,(S.stamina||100)+18);
   }
   S.sMeEvo.push({s:S.season, o:S.ovr, r: matchRes?matchRes.rating:S.ovr/10});
   S.calIdx++;

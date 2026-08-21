@@ -150,6 +150,9 @@
         <div class="hp-info">
           <div class="hp-name">${UI.esc(S.name)}</div>
           <div class="hp-meta">${UI.esc(S.teamName)} · ${FOOT_LABEL[S.foot]||''} · ${S.age} anos · ${POSITIONS[S.pos]?POSITIONS[S.pos].label:S.pos}</div>
+        <div class="hp-cond ${(S.injury&&S.injury.weeks>0)?'inj':''}">${(S.injury&&S.injury.weeks>0)?('🚑 '+S.injury.type+' ('+S.injury.left+' sem)'):'💚 Saudável'}</div>
+        <div class="hp-stam"><div class="hp-stam-fill" style="width:${(typeof S.stamina==='number'?S.stamina:100)}%"></div></div>
+
           <div class="hp-league">${LEAGUE_BY_ID(S.leagueId)?LEAGUE_BY_ID(S.leagueId).name:'—'}</div>
         </div>
         <button class="big-btn hub-advance" id="hub-advance">▶ Avançar Semana</button>

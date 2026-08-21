@@ -126,6 +126,9 @@ UI.ficha = function(){
           <div><span>Clube</span><b>${UI.esc(S.teamName)}</b> <i>(OVR ${S.teamOvr})</i></div>
           <div><span>Temporada</span><b>${S.season}</b></div>
           <div><span>Troféus</span><b>${S.trophies.length}</b></div>
+          <div><span>Estamina</span><b>${(typeof S.stamina==='number'?S.stamina:100)}%</b><div class="mini-stam"><div class="mini-stam-fill" style="width:${(typeof S.stamina==='number'?S.stamina:100)}%"></div></div></div>
+          <div><span>Lesão</span><b>${(S.injury&&S.injury.weeks>0)?(S.injury.type+' ('+S.injury.left+'sem)'):'Saudável'}</b></div>
+
         </div>
         ${skills.length?`<div class="muted" style="margin-top:8px">Skills</div><div class="mini-skills">${skills.map(s=>`<span class="pill">${s.n}</span>`).join('')}</div>`:''}
       </div>

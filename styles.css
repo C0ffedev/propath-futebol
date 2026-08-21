@@ -689,3 +689,12 @@ input:focus,select:focus{outline:none;border-color:var(--accent)}
 @keyframes liveRing{0%,100%{opacity:.5;r:4.2}50%{opacity:1;r:5.4}}
 .live-watch{align-self:flex-end;background:linear-gradient(180deg,#ff2740,#a8122a);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;padding:5px 12px;cursor:pointer;margin-top:4px;box-shadow:0 2px 8px rgba(255,39,64,.35)}
 .live-watch:hover{filter:brightness(1.12)}
+
+/* ===== ESTAMINA / LESÃO (Camada Lesao+Estamina) ===== */
+.mini-stam{height:4px;background:rgba(255,255,255,.12);border-radius:3px;margin-top:3px;overflow:hidden}
+.mini-stam-fill{height:100%;background:linear-gradient(90deg,#2ecc71,#27ae60)}
+.mini-stam-fill[style*="width:"]{background:linear-gradient(90deg,#2ecc71,#27ae60)}
+.hp-stam{height:6px;background:rgba(255,255,255,.12);border-radius:4px;margin-top:6px;overflow:hidden}
+.hp-stam-fill{height:100%;background:linear-gradient(90deg,#2ecc71,#27ae60)}
+.hp-cond{font-size:11px;font-weight:700;color:#2ecc71;margin-top:4px}
+.hp-cond.inj{color:#ff5a5a}
