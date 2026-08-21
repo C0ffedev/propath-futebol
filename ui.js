@@ -58,7 +58,7 @@ UI.carreira = function(){
         <div class="mini-row"><span>Clube</span><b>${UI.esc(S.teamName)}</b></div>
         ${skills.length?`<div class="mini-skills">${skills.map(s=>`<span class="pill">${s}${(s.lvl>1)?' '+s.lvl+'★':''}</span>`).join('')}</div>`:''}
         <div class="muted" style="margin-top:6px;font-size:11px">${UI.esc(footNote)}</div>
-        <div class="actions" style="margin-top:8px"><button class="btn" id="btn-clubhall">🏛️ Hall do Clube</button>${S.retired?'<button class="btn" id="btn-legacy">🏆 Ver Legado</button>':'<button class="btn ghost" id="btn-retire">🚪 Encerrar Carreira</button>'}</div>
+        <div class="actions" style="margin-top:8px"><button class="btn" id="btn-clubhall">🏛️ Hall do Clube</button><button class="btn" id="btn-myclub">🏟️ Meu Clube</button>${S.retired?'<button class="btn" id="btn-legacy">🏆 Ver Legado</button>':'<button class="btn ghost" id="btn-retire">🚪 Encerrar Carreira</button>'}</div>
       </div>
     </div></div>
     <div class="panel"><h2><span class="ic">📈</span> Evolução na carreira (OVR ● / Nota ◌)</h2>
@@ -270,11 +270,35 @@ UI.conquistas = function(){
 };
 
 
-// Perfil de um clube: info básica + honours (dados reais) + estatísticas
+// Identidade visual determinística do clube: escudo (SVG), estádio e torcida.
+UI.clubVisual = function(name){
+  const s = (name||'Clube').trim();
+  let h = 0; for (let i=0;i<s.length;i++) h=(h*31 + s.charCodeAt(i))>>>0;
+  const hue = h % 360;
+  const hue2 = (hue + 40) % 360;
+  const words = s.split(/[s-]+/).filter(Boolean);
+  const initials = (words.length>=2 ? (words[0][0]+words[1][0]) : s.slice(0,2)).toUpperCase();
+  const FANS = {Flamengo:'Nacao',Corinthians:'Fiel',Palmeiras:'Diretoria','Sao Paulo':'Paulista',Vasco:'Pequena',Gremio:'Imortal',Internacional:'Colorada','Atletico-MG':'Galou',Cruzeiro:'Raposa',Botafogo:'Estrela Solitaria',Bahia:'Fonte Nova',Santos:'Peixe'};
+  const fanNick = FANS[s] || (['Massa','Torcida','Nacao','Fanatica','Guerreira','Incondicional'][h%6]);
+  const STAD = ['Arena','Estadio','Caldeirao','Castelao','Mineirao','Maracana','Pacaembu','Beira-Rio','Couto Pereira','Morumbi','Ilha do Retiro','Barradao'];
+  const stadium = STAD[h%STAD.length] + ' ' + (words.length?words[0]:s);
+  const capacity = 20000 + (h % 50) * 1000;
+  const support = 70 + (h % 26);
+  return { initials:initials, hue:hue, hue2:hue2, fanNick:fanNick, stadium:stadium, capacity:capacity, support:support, color:'hsl('+hue+',65%,45%)', color2:'hsl('+hue2+',70%,35%)' };
+};
+
+UI.clubShield = function(name, size){
+  const v = UI.clubVisual(name); size = size||64;
+  return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 100 100" class="club-shield">'
+    +'<defs><linearGradient id="g'+v.initials+size+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+v.color+'"/><stop offset="1" stop-color="'+v.color2+'"/></linearGradient></defs>'
+    +'<path d="M50 4 L92 18 V52 C92 78 72 92 50 96 C28 92 8 78 8 52 V18 Z" fill="url(#g'+v.initials+size+')" stroke="#fff" stroke-width="3"/>'
+    +'<text x="50" y="58" font-size="38" font-weight="800" text-anchor="middle" fill="#fff">'+v.initials+'</text></svg>';
+};
+
 UI.clubProfile = function(teamName, leagueId){
   const lg = LEAGUE_BY_ID(leagueId);
   const team = lg && lg.teams.find(t=>t.n===teamName);
-  if (!team){ modal('<h3>'+UI.esc(teamName)+'</h3><p class="muted">Clube não encontrado.</p>'); return; }
+  if (!team){ modal('<h3>'+UI.esc(teamName)+'</h3><p class="muted">Clube nao encontrado.</p>'); return; }
   const h = team.honours || {};
   const hon = (h.ligas||h.copasNac||h.copasInt)
     ? '<div class="club-hon">'+
@@ -284,13 +308,16 @@ UI.clubProfile = function(teamName, leagueId){
       '</div>'
     : '<div class="muted">Sem títulos registrados (ou clube em ascensão).</div>';
   const stars = (team.stars||[]).length ? team.stars.map(s=>'<span class="pill">'+UI.esc(s)+'</span>').join(' ') : '<span class="muted">—</span>';
-  modal('<div class="club-profile">'+
-    '<h3>'+UI.esc(team.n)+'</h3>'+
-    '<div class="club-meta">'+UI.esc(lg.name)+' · '+UI.esc(lg.country)+' · OVR média <b>'+team.o+'</b></div>'+
-    '<div class="club-sec"><div class="club-sec-h">Estrelas</div><div class="club-stars">'+stars+'</div></div>'+
-    '<div class="club-sec"><div class="club-sec-h">Títulos (históricos)</div>'+hon+'</div>'+
-    '</div>');
+  const v = UI.clubVisual(team.n);
+  modal('<div class="club-club"><div class="club-head"><div class="club-shield-wrap">'+UI.clubShield(team.n,72)+'</div><div><h3>'+UI.esc(team.n)+'</h3>'
+    +'<div class="club-meta">'+UI.esc(lg.name)+' · '+UI.esc(lg.country)+' · OVR média <b>'+team.o+'</b></div></div></div>'
+    +'<div class="club-sec"><div class="club-sec-h">Estrelas</div><div class="club-stars">'+stars+'</div></div>'
+    +'<div class="club-sec"><div class="club-sec-h">Títulos (históricos)</div>'+hon+'</div>'
+    +'<div class="club-sec"><div class="club-sec-h">Estádio</div><div class="club-row"><span>'+UI.esc(v.stadium)+'</span><b>'+v.capacity.toLocaleString('pt-BR')+' lugares</b></div></div>'
+    +'<div class="club-sec"><div class="club-sec-h">Torcida</div><div class="club-row"><span>'+UI.esc(v.fanNick)+'</span><b>'+v.support+'% de apoio</b></div></div>'
+    +'</div>');
 };
+
 
 // Hall do clube atual: troféus do JOGADOR no clube + estatísticas básicas
 UI.clubHall = function(){

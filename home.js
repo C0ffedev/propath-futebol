@@ -176,6 +176,7 @@
             <button class="btn" data-tab="temporada">📅 Calendário</button>
             <button class="btn" data-tab="competicoes">🏆 Competições</button>
             <button class="btn" data-tab="mercado">💱 Mercado</button>
+            <button class="btn" id="hub-myclub">🏟️ Meu Clube</button>
             <button class="btn" data-tab="estatisticas">📊 Estatísticas</button>
           </div>
         </div>
@@ -223,6 +224,7 @@
   function bindHubDash(){
     const adv = document.getElementById('hub-advance'); if (adv) adv.onclick = ()=>{ if (typeof advanceWeek==='function') advanceWeek(); };
     const leg = document.getElementById('hub-legacy'); if (leg) leg.onclick = ()=>{ if (typeof UI.legacy==='function') UI.legacy(); };
+    const hmc = document.getElementById('hub-myclub'); if (hmc) hmc.onclick = ()=>{ if (typeof UI.clubProfile==='function') UI.clubProfile(UI.S.teamName, UI.S.leagueId); };
     document.querySelectorAll('#app .hub-quick [data-tab]').forEach(b=>b.onclick=()=>{ UI.tab=b.dataset.tab; UI.render(); afterRender(); });
     document.querySelectorAll('#app .comp-pill').forEach(p=>p.onclick=()=>{ UI.tab='competicoes'; UI.render(); afterRender(); });
     document.querySelectorAll('#app .acad-buy').forEach(b=>b.onclick=()=>{ if (typeof UI._acadApply==='function') UI._acadApply(b.dataset.act, b.dataset.k); });
