@@ -440,6 +440,9 @@ input:focus,select:focus{outline:none;border-color:var(--accent)}
 .minimap.hide-sync .layer-sync{display:none}
 .minimap.hide-reveal .layer-reveal{display:none}
 .minimap.hide-lance .layer-lance{display:none}
+.minimap.hide-heat .layer-heat{display:none}
+.mini-heat{animation:miniHeat 3s ease-in-out infinite}
+@keyframes miniHeat{0%,100%{opacity:.55}50%{opacity:.95}}
 .mini-goal{animation:miniPulse 1.1s ease-in-out infinite}
 @keyframes miniPulse{0%,100%{r:2.4;opacity:1}50%{r:3.1;opacity:.8}}
 .mini-goal-min{font-family:inherit;pointer-events:none}
@@ -447,6 +450,18 @@ input:focus,select:focus{outline:none;border-color:var(--accent)}
 @keyframes miniAssist{0%,100%{opacity:.55}50%{opacity:1}}
 .mini-assist{pointer-events:none}
 .mini-lance{pointer-events:none}
+.mini-goal-arrow{animation:miniPulse 1.1s ease-in-out infinite}
+.mini-assist-arrow{pointer-events:none}
+.mini-goal.replay-on{animation:miniReplay .7s ease-in-out;fill:#fff}
+@keyframes miniReplay{0%{opacity:.4;r:2.4}50%{opacity:1;r:4.2}100%{opacity:1;r:2.4}}
+.mini-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 2px}
+.mini-stat{display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:10px;padding:7px 4px;min-width:0}
+.mini-stat-ic{font-size:13px;line-height:1}
+.mini-stat b{font-size:16px;color:var(--txt);font-weight:800;margin-top:2px}
+.mini-stat i{font-size:9px;color:var(--muted);font-style:normal;line-height:1.1}
+.mini-stat-lab{font-size:9px;color:var(--gold);text-transform:uppercase;letter-spacing:.5px;margin-top:3px}
+.mini-replay{margin:6px auto 2px;display:block;background:linear-gradient(90deg,var(--accent),var(--obsession));color:#fff;border:none;border-radius:9px;padding:7px 14px;font-weight:800;font-size:12px;cursor:pointer;letter-spacing:.5px}
+.mini-replay:active{transform:scale(.97)}
 
 /* ===== NOTA DE IMPACTO DO ARQUÉTIPO (estilo Valorant) ===== */
 .impact-note{margin-top:14px;padding:12px 14px;border-radius:12px;background:linear-gradient(120deg,rgba(177,75,255,.12),rgba(255,39,64,.08));border:1px solid var(--line);text-align:left}

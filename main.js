@@ -517,6 +517,17 @@ function showMatchScreen(r){
   // FRENTE C: liga toggles de camada do minimapa (handlers não podem vir de <script> inline em innerHTML)
   const mm = $('#modal .minimap');
   if (mm){ mm.querySelectorAll('.mini-layer-chk').forEach(c=>{ c.onclick = ()=>{ mm.classList.toggle('hide-'+c.dataset.layer, !c.checked); }; }); }
+  const replay = $('#mini-replay');
+  if (replay){
+    replay.onclick = ()=>{
+      const mm2 = $('#modal .minimap'); if(!mm2) return;
+      const goals = [...mm2.querySelectorAll('.mini-goal')].sort((a,b)=> (+a.dataset.min||0) - (+b.dataset.min||0));
+      if(!goals.length) return;
+      if (replay._iv){ clearInterval(replay._iv); replay._iv=null; goals.forEach(g=>g.classList.remove('replay-on')); replay.textContent='▶ Replay dos gols'; return; }
+      let _i=0; replay.textContent='⏸ Replay...'; goals.forEach(g=>g.classList.remove('replay-on'));
+      replay._iv = setInterval(()=>{ goals.forEach(g=>g.classList.remove('replay-on')); goals[_i].classList.add('replay-on'); _i=(_i+1)%goals.length; }, 700);
+    };
+  }
 }
 
 // ===== MINIMAPA (campo top-down) + nota de impacto do arquétipo =====
@@ -562,7 +573,7 @@ function renderMinimap(S, r, wkArg){
     const mates = youSquad.filter(p=>p.n!==S.name && p.archetype && A.synergy.likes.includes(p.archetype));
     if (mates.length){ const m=mates[0]; duo = all.find(n=>n.p===m); }
   }
-  let svg = `<svg viewBox="0 0 ${W} ${H}" class="mini-svg" preserveAspectRatio="xMidYMid meet">`;
+  let svg = `<svg viewBox="0 0 ${W} ${H}" class="mini-svg" preserveAspectRatio="xMidYMid meet"><defs><radialGradient id="heatGrad" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#ff8a1e" stop-opacity="0.9"/><stop offset="100%" stop-color="#ff8a1e" stop-opacity="0"/></radialGradient></defs>`;
   // gramado
   svg += `<rect x="0" y="0" width="${W}" height="${H}" fill="#0c2a14"/>`;
   svg += `<rect x="2" y="2" width="${W-4}" height="${H-4}" fill="none" stroke="#1f7a3a" stroke-width="1"/>`;
@@ -604,7 +615,8 @@ function renderMinimap(S, r, wkArg){
       const min = goalMins[i] || (12 + i*23);
       const gx = 36 + ((min*11) % 28);            // 36..64 (dentro da área)
       const gy = 9 + (i % 3) * 5;                  // 9 / 14 / 19 (variado em profundidade)
-      svg += `<circle class="mini-goal layer-lance" cx="${gx}" cy="${gy}" r="2.4" fill="#ffd21e" stroke="#fff" stroke-width="0.3"/>`;
+      svg += `<circle class="mini-goal layer-lance" data-min="${min}" cx="${gx}" cy="${gy}" r="2.4" fill="#ffd21e" stroke="#fff" stroke-width="0.3"/>`;
+      if (youPos){ const _gx0=gx-youPos.x, _gy0=gy-youPos.y, _ang=Math.atan2(_gy0,_gx0), _a1=_ang+Math.PI/7, _a2=_ang-Math.PI/7; const _p1x=gx+Math.cos(_a1)*3, _p1y=gy+Math.sin(_a1)*3, _p2x=gx+Math.cos(_a2)*3, _p2y=gy+Math.sin(_a2)*3; svg += `<polygon class="mini-goal-arrow layer-lance" points="${gx},${gy} ${_p1x},${_p1y} ${_p2x},${_p2y}" fill="#ffd21e"/>`; }
       svg += `<text class="mini-goal-min layer-lance" x="${gx}" y="${gy-3}" text-anchor="middle" font-size="3" fill="#ffd21e" font-weight="700">${min}'</text>`;
     }
     // assistências: linha do seu x/y até a área (onde o companheiro finalizou), uma por assist
@@ -612,6 +624,7 @@ function renderMinimap(S, r, wkArg){
       const ax = 38 + (i*15 % 24);                 // 38..62 variado
       const ay = 12 + (i % 2) * 6;                 // 12 / 18
       if (youPos){ svg += `<line class="mini-assist-line layer-lance" x1="${youPos.x}" y1="${youPos.y}" x2="${ax}" y2="${ay}" stroke="#ffd21e" stroke-width="0.8" stroke-dasharray="1.5 1.5"/>`; }
+      const _aAng = Math.atan2(ay-(youPos?youPos.y:50), ax-(youPos?youPos.x:50)); const _aa1=_aAng+Math.PI/7, _aa2=_aAng-Math.PI/7; const _pa1x=ax+Math.cos(_aa1)*3, _pa1y=ay+Math.sin(_aa1)*3, _pa2x=ax+Math.cos(_aa2)*3, _pa2y=ay+Math.sin(_aa2)*3; svg += `<polygon class="mini-assist-arrow layer-lance" points="${ax},${ay} ${_pa1x},${_pa1y} ${_pa2x},${_pa2y}" fill="#ffd21e"/>`;
       svg += `<text class="mini-assist layer-lance" x="${ax}" y="${ay+3}" text-anchor="middle" font-size="3.4" fill="#ffd21e" font-weight="800">A</text>`;
     }
     // ícones de lance-chave posicionados por zona
@@ -621,6 +634,14 @@ function renderMinimap(S, r, wkArg){
     // desarme (vol/zag com desarmes) -> botinha no meio-campo
     if ((S.pos==='ZAG'||S.pos==='VOL') && (pstat.tackles||0)>0){ const tp = (me.find(n=>n.p&&n.p.pos===S.pos)||me[2]); if(tp) svg += `<text class="mini-lance layer-lance" x="${tp.x}" y="${tp.y+5}" text-anchor="middle" font-size="4.5">👟</text>`; }
   }
+  if (r && r.stats){
+    const _ps=(r.stats.player)||{};
+    const _vol=(_ps.shots||0)+(_ps.passes||0)+(_ps.tackles||0)+(_ps.dribbles||0);
+    const _hr=Math.min(22,9+_vol*0.12);
+    if (youPos){ svg += `<circle class="mini-heat layer-heat" cx="${youPos.x}" cy="${youPos.y}" r="${_hr}" fill="url(#heatGrad)"/>`; }
+    if ((_ps.shots||0)>=3 && youPos){ svg += `<circle class="mini-heat layer-heat" cx="${youPos.x}" cy="${Math.max(10,youPos.y-18)}" r="${Math.min(18,6+(_ps.shots||0))}" fill="url(#heatGrad)" opacity="0.75"/>`; }
+    else if ((_ps.passes||0)>=35 && youPos){ svg += `<circle class="mini-heat layer-heat" cx="${W/2}" cy="${H/2}" r="${Math.min(20,8+(_ps.passes||0)*0.18)}" fill="url(#heatGrad)" opacity="0.7"/>`; }
+  }
   svg += `</svg>`;
   // ===== FRENTE C: toggle de camadas (liga/desliga via classe no container) =====
   const toggle = `
@@ -628,10 +649,19 @@ function renderMinimap(S, r, wkArg){
       <label><input type="checkbox" class="mini-layer-chk" data-layer="pos" checked> Posições</label>
       <label><input type="checkbox" class="mini-layer-chk" data-layer="sync" checked> Sinergia</label>
       <label><input type="checkbox" class="mini-layer-chk" data-layer="reveal" checked> Revelar</label>
+      <label><input type="checkbox" class="mini-layer-chk" data-layer="heat" checked> Calor</label>
       <label><input type="checkbox" class="mini-layer-chk" data-layer="lance" checked> Lances</label>
     </div>`;
   const legend = `<div class="mini-legend"><span><i style="background:#ffd21e"></i>Você</span><span><i style="background:#b14bff"></i>Dupla (sinergia)</span><span><i style="background:#2e7bff"></i>Seu time</span><span><i style="background:#ff2740"></i>Adversário</span><span><i style="background:#ffd21e;border-radius:50%"></i>Gol (min)</span><span><i style="background:transparent;color:#ffd21e;font-weight:800">A</i>Assist.</span></div>`;
-  return `<div class="ms-card minimap">${toggle}<div class="ms-card-h">MAPA DA PARTIDA (4-3-3)</div>${svg}${legend}${A?`<div class="mini-arch">⚡ ${A.n}: ${A.signature&&A.signature.name||''}</div>`:''}${M?`<div class="mini-arch" style="color:var(--obsession)">🧠 ${M.n}: ${M.signature&&M.signature.name||''}</div>`:''}</div>`;
+  const _psr=(r && r.stats && r.stats.player)||{};
+  const miniStats = r ? `<div class="mini-stats">
+    <div class="mini-stat"><span class="mini-stat-ic">📊</span><b>${_psr.shots||0}</b><i>${_psr.onTarget||0} no gol</i><span class="mini-stat-lab">Chutes</span></div>
+    <div class="mini-stat"><span class="mini-stat-ic">🎯</span><b>${_psr.passes||0}</b><i>${_psr.passAcc||0}% prec.</i><span class="mini-stat-lab">Passes</span></div>
+    <div class="mini-stat"><span class="mini-stat-ic">👟</span><b>${_psr.tackles||0}</b><i>desarmes</i><span class="mini-stat-lab">Desarmes</span></div>
+    <div class="mini-stat"><span class="mini-stat-ic">🪄</span><b>${_psr.dribblesWon||0}</b><i>de ${_psr.dribbles||0}</i><span class="mini-stat-lab">Dribles</span></div>
+  </div>` : "";
+  const replayBtn = (r && r.goals>0) ? `<button class="mini-replay" id="mini-replay" type="button">▶ Replay dos gols</button>` : "";
+  return `<div class="ms-card minimap">${toggle}<div class="ms-card-h">MAPA DA PARTIDA (4-3-3)</div>${svg}${miniStats}${legend}${replayBtn}${A?`<div class="mini-arch">⚡ ${A.n}: ${A.signature&&A.signature.name||''}</div>`:''}${M?`<div class="mini-arch" style="color:var(--obsession)">🧠 ${M.n}: ${M.signature&&M.signature.name||''}</div>`:''}</div>`;
 }
 
 // Nota de impacto do arquétipo (estilo Valorant): conta o efeito da assinatura na partida
